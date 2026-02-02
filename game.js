@@ -975,6 +975,26 @@ const starTypes = [
     { type: "M-TYPE", class: "Red Dwarf", temp: "3,400K" }          // GLIESE-832C
 ];
 
+// Discovery/registration dates
+const discoveryDates = [
+    "1915",     // ALPHA-CENTAURI
+    "2016",     // PROXIMA-B
+    "2015",     // KEPLER-442
+    "2017",     // TRAPPIST-1E
+    "2011",     // GLIESE-667C
+    "2012",     // HD-40307G
+    "2013",     // KEPLER-62F
+    "2017",     // ROSS-128B
+    "2015",     // WOLF-1061C
+    "2017",     // LHS-1140B
+    "2014",     // KEPLER-186F
+    "2019",     // TEEGARDEN-B
+    "2014",     // KAPTEYN-B
+    "2012",     // TAU-CETI-E
+    "2015",     // KEPLER-452B
+    "2014"      // GLIESE-832C
+];
+
 // Reference to narrative messages (now organized in NARRATIVE object at top of file)
 const narrativeMessages = NARRATIVE.alienContacts;
 
@@ -1052,6 +1072,7 @@ function generateStarCatalog() {
             starType: starInfo.type,
             starClass: starInfo.class,
             temperature: starInfo.temp,
+            discovered: discoveryDates[index],
             hasIntelligence: narrativeMessages.some(m => m.starIndex === index),
             x: Math.random() * 800 + 50, // Position for visual map (50-850)
             y: Math.random() * 400 + 50  // Position for visual map (50-450)
@@ -1199,12 +1220,13 @@ function selectStar(starId) {
         statusBadge = '<div style="color: #0ff; text-shadow: 0 0 5px #0ff; margin-top: 10px; padding-top: 10px; border-top: 1px solid #0f0;">SCANNED</div>';
     }
 
+    // Update star info title with star name
+    const starInfoTitle = document.querySelector('.star-info-title');
+    starInfoTitle.textContent = star.name;
+
     // Update star info panel
     const starDetails = document.getElementById('star-details');
     starDetails.innerHTML = `
-        <div style="text-align: center; margin-bottom: 8px;">
-            <div style="font-size: 20px; font-weight: bold; color: #0ff; text-shadow: 0 0 3px #0ff;">${star.name}</div>
-        </div>
         <div>
             <strong>COORDINATES:</strong><br>
             ${star.coordinates}<br>
@@ -1215,7 +1237,9 @@ function selectStar(starId) {
             <strong>CLASS:</strong><br>
             ${star.starClass}<br>
             <strong>TEMPERATURE:</strong><br>
-            ${star.temperature}
+            ${star.temperature}<br>
+            <strong>DISCOVERED:</strong><br>
+            ${star.discovered}
         </div>
         ${statusBadge}
     `;
@@ -3036,7 +3060,12 @@ function typeBootLine(text, className = '', delay = 0, beepType = null) {
             line.className = `boot-line ${className}`;
             line.textContent = text;
             bootOutput.appendChild(line);
-            bootOutput.scrollTop = bootOutput.scrollHeight;
+
+            // Auto-scroll the main-content container to show the new line
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) {
+                mainContent.scrollTop = mainContent.scrollHeight;
+            }
 
             // Play typing sound
             if (text.length > 0) {

@@ -66,14 +66,18 @@
                 <!-- Boot Sequence -->
                 <div id="boot-view" class="view">
                     <div class="boot-terminal">
-                        <div id="boot-output" class="boot-output"></div>
-                        <div id="name-input-container" class="name-input-container" style="display: none;">
-                            <div class="name-prompt">PLEASE ENTER YOUR DESIGNATION:</div>
-                            <input type="text" id="name-input" class="name-input" maxlength="20" placeholder="Enter name...">
-                            <button class="btn" id="name-submit-btn">CONFIRM</button>
-                        </div>
-                        <div style="text-align: center; margin-top: 30px;">
-                            <button class="btn start-btn" id="proceed-btn" style="display: none;">PROCEED TO ARRAY</button>
+                        <div class="boot-content-wrapper">
+                            <div class="boot-left">
+                                <div id="boot-output" class="boot-output"></div>
+                                <div id="name-input-container" class="name-input-container" style="display: none;">
+                                    <div class="name-prompt">PLEASE ENTER YOUR DESIGNATION:</div>
+                                    <input type="text" id="name-input" class="name-input" maxlength="20" placeholder="Enter name...">
+                                    <button class="btn" id="name-submit-btn">CONFIRM</button>
+                                </div>
+                            </div>
+                            <div class="boot-right">
+                                <button class="btn start-btn boot-proceed-btn" id="proceed-btn" style="display: none;">PROCEED TO ARRAY</button>
+                            </div>
                         </div>
                     </div>
                 </div>
