@@ -36,7 +36,9 @@ const gameState = {
     patternGameBands: [],
     patternGameCorrectIndices: [],
     patternGameSelectedIndices: [],
-    patternGameCompleted: false
+    patternGameCompleted: false,
+    // Player info
+    playerName: ''
 };
 
 // Audio System
@@ -2750,5 +2752,209 @@ function completePatternGame(star) {
     }
 }
 
+// Boot Sequence Functions
+function playTypingSound() {
+    if (!audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.frequency.value = 800 + Math.random() * 200;
+    oscillator.type = 'square';
+
+    gainNode.gain.setValueAtTime(0.02 * masterVolume, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.05);
+
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.05);
+}
+
+function playSecurityBeep(type = 'normal') {
+    if (!audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    if (type === 'warning') {
+        oscillator.frequency.value = 600;
+        gainNode.gain.setValueAtTime(0.08 * masterVolume, audioContext.currentTime);
+    } else if (type === 'success') {
+        oscillator.frequency.value = 1200;
+        gainNode.gain.setValueAtTime(0.06 * masterVolume, audioContext.currentTime);
+    } else {
+        oscillator.frequency.value = 900;
+        gainNode.gain.setValueAtTime(0.05 * masterVolume, audioContext.currentTime);
+    }
+
+    oscillator.type = 'sine';
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.15);
+
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.15);
+}
+
+function typeBootLine(text, className = '', delay = 0, beepType = null) {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            const bootOutput = document.getElementById('boot-output');
+            const line = document.createElement('div');
+            line.className = `boot-line ${className}`;
+            line.textContent = text;
+            bootOutput.appendChild(line);
+            bootOutput.scrollTop = bootOutput.scrollHeight;
+
+            // Play typing sound
+            if (text.length > 0) {
+                playTypingSound();
+            }
+
+            // Play beep if specified
+            if (beepType) {
+                setTimeout(() => playSecurityBeep(beepType), 150);
+            }
+
+            // Add slight delay for animation
+            setTimeout(resolve, 100);
+        }, delay);
+    });
+}
+
+async function runBootSequence() {
+    const bootLines = [
+        { text: 'SETI DEEP SPACE MONITORING SYSTEM v1.3.7', class: 'success', delay: 200, beep: 'success' },
+        { text: 'Copyright © 2026 Advanced Signal Intelligence Division', class: '', delay: 100 },
+        { text: '═══════════════════════════════════════════════════════', class: '', delay: 100 },
+        { text: '', class: '', delay: 50 },
+        { text: 'Initializing core systems...', class: '', delay: 400 },
+        { text: '[OK] Memory allocation complete', class: '', delay: 300 },
+        { text: '[OK] Neural network initialized', class: '', delay: 200 },
+        { text: '[OK] Quantum processors online', class: '', delay: 250 },
+        { text: '', class: '', delay: 100 },
+        { text: 'Loading orbital receiver array...', class: '', delay: 400 },
+        { text: '[OK] Satellite link established', class: '', delay: 300 },
+        { text: '[OK] Deep space antenna array synchronized', class: '', delay: 250 },
+        { text: '[OK] Signal processing modules loaded', class: '', delay: 300 },
+        { text: '', class: '', delay: 200 },
+        { text: 'Running security protocols...', class: 'warning', delay: 500, beep: 'warning' },
+        { text: '[SECURITY] Biometric scan required', class: 'warning', delay: 600, beep: 'warning' },
+        { text: '[SECURITY] Scanning...', class: 'warning', delay: 400 },
+        { text: '[SECURITY] Clearance level: CLASSIFIED', class: 'warning', delay: 500, beep: 'warning' },
+        { text: '[SECURITY] Authorization: PENDING', class: 'warning', delay: 400, beep: 'warning' },
+        { text: '', class: '', delay: 300 },
+        { text: 'Verifying personnel credentials...', class: '', delay: 600 }
+    ];
+
+    for (const line of bootLines) {
+        await typeBootLine(line.text, line.class, line.delay, line.beep);
+    }
+
+    // Show name input with beep
+    playSecurityBeep('normal');
+    document.getElementById('name-input-container').style.display = 'block';
+    document.getElementById('name-input').focus();
+}
+
+function continueBootSequence(playerName) {
+    gameState.playerName = playerName;
+
+    const nameInputContainer = document.getElementById('name-input-container');
+    nameInputContainer.style.display = 'none';
+
+    const continuationLines = [
+        { text: '', class: '', delay: 200 },
+        { text: `[SECURITY] Identity confirmed: Dr. ${playerName}`, class: 'success', delay: 500, beep: 'success' },
+        { text: '[SECURITY] Clearance approved: LEVEL 4', class: 'success', delay: 400, beep: 'success' },
+        { text: '[SECURITY] Access granted', class: 'success', delay: 400, beep: 'success' },
+        { text: '', class: '', delay: 300 },
+        { text: `Welcome, Dr. ${playerName}`, class: '', delay: 600 },
+        { text: 'Finalizing system startup...', class: '', delay: 500 },
+        { text: '', class: '', delay: 100 },
+        { text: '[OK] Stellar database loaded (15,847 catalogued objects)', class: '', delay: 250 },
+        { text: '[OK] Signal analysis algorithms ready', class: '', delay: 200 },
+        { text: '[OK] Pattern recognition matrices initialized', class: '', delay: 200 },
+        { text: '[OK] Contact protocol systems active', class: '', delay: 250 },
+        { text: '', class: '', delay: 200 },
+        { text: 'All systems operational', class: 'success', delay: 500, beep: 'success' },
+        { text: 'Standing by for target acquisition...', class: '', delay: 400 },
+        { text: '', class: '', delay: 200 },
+        { text: '═══════════════════════════════════════════════════════', class: '', delay: 200 },
+        { text: 'INITIALIZATION COMPLETE', class: 'success', delay: 400, beep: 'success' }
+    ];
+
+    (async () => {
+        for (const line of continuationLines) {
+            await typeBootLine(line.text, line.class, line.delay, line.beep);
+        }
+
+        // Show proceed button instead of auto-transitioning
+        setTimeout(() => {
+            const proceedBtn = document.getElementById('proceed-btn');
+            proceedBtn.style.display = 'block';
+            playSecurityBeep('success');
+        }, 500);
+    })();
+}
+
+function setupBootSequence() {
+    // Start button
+    document.getElementById('start-btn').addEventListener('click', () => {
+        playClick();
+        showView('boot-view');
+        runBootSequence();
+    });
+
+    // Name input submit
+    document.getElementById('name-submit-btn').addEventListener('click', () => {
+        const nameInput = document.getElementById('name-input');
+        const name = nameInput.value.trim();
+
+        if (name) {
+            playClick();
+            continueBootSequence(name);
+        }
+    });
+
+    // Allow Enter key to submit name
+    document.getElementById('name-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            const name = e.target.value.trim();
+            if (name) {
+                playClick();
+                continueBootSequence(name);
+            }
+        }
+    });
+
+    // Proceed to array button
+    document.getElementById('proceed-btn').addEventListener('click', () => {
+        playClick();
+        showView('starmap-view');
+        log(`Dr. ${gameState.playerName} logged in - System ready`, 'highlight');
+    });
+}
+
 // Start the game
-init();
+function startGame() {
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // Initialize audio on first user interaction
+    document.addEventListener('click', () => {
+        initAudio();
+    }, { once: true });
+
+    generateBackgroundStars();
+    generateStarCatalog();
+    setupEventListeners();
+    setupStarMapCanvas();
+    startStarMapAnimation();
+    setupBootSequence();
+}
+
+startGame();

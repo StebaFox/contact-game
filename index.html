@@ -29,8 +29,50 @@
 
             <!-- Main content area -->
             <div class="main-content">
+                <!-- Start Screen -->
+                <div id="start-view" class="view active">
+                    <div class="start-screen">
+                        <pre class="start-ascii">
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║     ░█████╗░░█████╗░███╗░░██╗████████╗░█████╗░░█████╗░████████╗    ║
+║     ██╔══██╗██╔══██╗████╗░██║╚══██╔══╝██╔══██╗██╔══██╗╚══██╔══╝    ║
+║     ██║░░╚═╝██║░░██║██╔██╗██║░░░██║░░░███████║██║░░╚═╝░░░██║░░░    ║
+║     ██║░░██╗██║░░██║██║╚████║░░░██║░░░██╔══██║██║░░██╗░░░██║░░░    ║
+║     ╚█████╔╝╚█████╔╝██║░╚███║░░░██║░░░██║░░██║╚█████╔╝░░░██║░░░    ║
+║     ░╚════╝░░╚════╝░╚═╝░░╚══╝░░░╚═╝░░░╚═╝░░╚═╝░╚════╝░░░░╚═╝░░░    ║
+║                                                               ║
+║              DEEP SPACE SIGNAL ANALYSIS SYSTEM                ║
+║                        Version 1.3.7                          ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+                        </pre>
+                        <div class="start-info">
+                            <p>CLASSIFIED RESEARCH STATION</p>
+                            <p>SECTOR 7 - DEEP SPACE MONITORING ARRAY</p>
+                            <p style="margin-top: 30px; color: #ff0; text-shadow: 0 0 5px #ff0;">AUTHORIZED PERSONNEL ONLY</p>
+                        </div>
+                        <button class="btn start-btn" id="start-btn">INITIALIZE SYSTEM</button>
+                    </div>
+                </div>
+
+                <!-- Boot Sequence -->
+                <div id="boot-view" class="view">
+                    <div class="boot-terminal">
+                        <div id="boot-output" class="boot-output"></div>
+                        <div id="name-input-container" class="name-input-container" style="display: none;">
+                            <div class="name-prompt">PLEASE ENTER YOUR DESIGNATION:</div>
+                            <input type="text" id="name-input" class="name-input" maxlength="20" placeholder="Enter name...">
+                            <button class="btn" id="name-submit-btn">CONFIRM</button>
+                        </div>
+                        <div style="text-align: center; margin-top: 30px;">
+                            <button class="btn start-btn" id="proceed-btn" style="display: none;">PROCEED TO ARRAY</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Star Map Section -->
-                <div id="starmap-view" class="view active">
+                <div id="starmap-view" class="view">
                     <h2>═══ DEEP SPACE MONITORING ARRAY ═══</h2>
                     <p class="instruction">SELECT TARGET FOR SIGNAL ANALYSIS</p>
 
