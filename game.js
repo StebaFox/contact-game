@@ -993,6 +993,7 @@ function init() {
     setupEventListeners();
     setupStarMapCanvas();
     startStarMapAnimation();
+    clearStarVisualization(); // Initialize star visual canvas
 
     log("All systems operational", "highlight");
 }
@@ -1076,6 +1077,102 @@ function generateStarCatalog() {
     log(`Stellar catalog loaded: ${starNames.length} targets available`);
 }
 
+// Draw star visualization
+function drawStarVisualization(star) {
+    const canvas = document.getElementById('star-visual');
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+
+    // Clear canvas
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, width, height);
+
+    // Draw background starscape with even distribution
+    const starCount = 50;
+    for (let i = 0; i < starCount; i++) {
+        // Use a proper hash function to avoid patterns
+        let hash = (star.id * 73856093) ^ (i * 19349663);
+        hash = ((hash >> 16) ^ hash) * 0x45d9f3b;
+        hash = ((hash >> 16) ^ hash) * 0x45d9f3b;
+        hash = (hash >> 16) ^ hash;
+
+        const x = (Math.abs(hash) % width);
+
+        hash = ((star.id + 1) * 83492791) ^ ((i + 1) * 23456789);
+        hash = ((hash >> 16) ^ hash) * 0x45d9f3b;
+        hash = ((hash >> 16) ^ hash) * 0x45d9f3b;
+        hash = (hash >> 16) ^ hash;
+
+        const y = (Math.abs(hash) % height);
+        const size = ((Math.abs(hash) % 100) / 100) * 1.2 + 0.3;
+        const alpha = ((Math.abs(hash) % 50) + 20) / 100;
+
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Determine star glow color and size based on type
+    let glowColor, glowSize;
+    switch(star.starType) {
+        case 'G-TYPE': // Yellow dwarf
+            glowColor = '#fdd835';
+            glowSize = 40;
+            break;
+        case 'M-TYPE': // Red dwarf
+            glowColor = '#ff1744';
+            glowSize = 32;
+            break;
+        case 'K-TYPE': // Orange dwarf
+            glowColor = '#f57c00';
+            glowSize = 36;
+            break;
+        default:
+            glowColor = '#ffffff';
+            glowSize = 36;
+    }
+
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    // Draw colored glow layers
+    for (let i = 8; i > 0; i--) {
+        const radius = (glowSize / 8) * i;
+        const opacity = Math.pow(1 - (i / 8), 1.5);
+
+        const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+        gradient.addColorStop(0, glowColor + Math.floor(opacity * 255).toString(16).padStart(2, '0'));
+        gradient.addColorStop(0.5, glowColor + Math.floor(opacity * 0.6 * 255).toString(16).padStart(2, '0'));
+        gradient.addColorStop(1, glowColor + '00');
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Add bright white core
+    const coreGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, glowSize * 0.15);
+    coreGradient.addColorStop(0, '#ffffff');
+    coreGradient.addColorStop(0.5, '#ffffffaa');
+    coreGradient.addColorStop(1, '#ffffff00');
+
+    ctx.fillStyle = coreGradient;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, glowSize * 0.15, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+// Clear star visualization
+function clearStarVisualization() {
+    const canvas = document.getElementById('star-visual');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
 // Star selection
 function selectStar(starId) {
     const star = gameState.stars[starId];
@@ -1093,24 +1190,38 @@ function selectStar(starId) {
     const hasContact = gameState.contactedStars.has(starId);
 
     // Build status indicator
-    let statusIndicator = '';
+    let statusBadge = '';
     if (hasContact) {
-        statusIndicator = ' | <span style="color: #f0f; text-shadow: 0 0 5px #f0f;">★ CONTACT</span>';
+        statusBadge = '<div style="color: #f0f; text-shadow: 0 0 5px #f0f; margin-top: 10px; padding-top: 10px; border-top: 1px solid #0f0;">★ CONTACT ESTABLISHED</div>';
     } else if (isAnalyzed) {
-        statusIndicator = ' | <span style="color: #ff0; text-shadow: 0 0 5px #ff0;">✓ ANALYZED</span>';
+        statusBadge = '<div style="color: #ff0; text-shadow: 0 0 5px #ff0; margin-top: 10px; padding-top: 10px; border-top: 1px solid #0f0;">✓ ANALYZED</div>';
     } else if (isScanned) {
-        statusIndicator = ' | <span style="color: #0ff; text-shadow: 0 0 5px #0ff;">SCANNED</span>';
+        statusBadge = '<div style="color: #0ff; text-shadow: 0 0 5px #0ff; margin-top: 10px; padding-top: 10px; border-top: 1px solid #0f0;">SCANNED</div>';
     }
 
-    // Update status bar with star details
-    const statusText = document.getElementById('status-text');
-    statusText.innerHTML = `
-        <strong>${star.name}</strong> |
-        ${star.coordinates} |
-        ${star.distance} ly |
-        ${star.starType} (${star.starClass}) |
-        ${star.temperature}${statusIndicator}
+    // Update star info panel
+    const starDetails = document.getElementById('star-details');
+    starDetails.innerHTML = `
+        <div style="text-align: center; margin-bottom: 8px;">
+            <div style="font-size: 20px; font-weight: bold; color: #0ff; text-shadow: 0 0 3px #0ff;">${star.name}</div>
+        </div>
+        <div>
+            <strong>COORDINATES:</strong><br>
+            ${star.coordinates}<br>
+            <strong>DISTANCE:</strong><br>
+            ${star.distance} light years<br>
+            <strong>STAR TYPE:</strong><br>
+            ${star.starType}<br>
+            <strong>CLASS:</strong><br>
+            ${star.starClass}<br>
+            <strong>TEMPERATURE:</strong><br>
+            ${star.temperature}
+        </div>
+        ${statusBadge}
     `;
+
+    // Draw star visualization
+    drawStarVisualization(star);
 
     log(`Target acquired: ${star.name}`);
     log(`Coordinates: ${star.coordinates}, Distance: ${star.distance} ly`);
@@ -1178,7 +1289,10 @@ function setupEventListeners() {
         gameState.currentSignal = null;
         gameState.showScanConfirm = false;
         gameState.selectedStarId = null;
-        document.getElementById('status-text').innerHTML = 'READY';
+
+        // Reset star info panel
+        document.getElementById('star-details').innerHTML = '<div class="detail-label">SELECT A TARGET</div>';
+        clearStarVisualization();
 
         // Stop ambient sounds
         stopNaturalPhenomenaSound();
@@ -1199,7 +1313,10 @@ function setupEventListeners() {
         gameState.currentSignal = null;
         gameState.showScanConfirm = false;
         gameState.selectedStarId = null;
-        document.getElementById('status-text').innerHTML = 'READY';
+
+        // Reset star info panel
+        document.getElementById('star-details').innerHTML = '<div class="detail-label">SELECT A TARGET</div>';
+        clearStarVisualization();
 
         // Stop ambient sounds
         stopNaturalPhenomenaSound();
