@@ -159,7 +159,7 @@ Requires JavaScript and HTML5 Canvas support.
 
 ## Credits
 
-**Design & Development:** [Your Name]
+**Design & Development:** Stephen Reponen
 
 **Inspiration:** SETI Institute, NASA Exoplanet Archive
 
