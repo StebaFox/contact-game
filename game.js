@@ -1,3 +1,333 @@
+// ═════════════════════════════════════════════════════════════════════════════
+// NARRATIVE CONTENT - All game text organized for easy editing
+// ═════════════════════════════════════════════════════════════════════════════
+
+const NARRATIVE = {
+    // Boot sequence messages
+    bootSequence: {
+        initial: [
+            { text: 'SETI DEEP SPACE MONITORING SYSTEM v1.3.7', class: 'success', delay: 200, beep: 'success' },
+            { text: 'Copyright © 1995 Advanced Signal Intelligence Division', class: '', delay: 100 },
+            { text: '═══════════════════════════════════════════════════════', class: '', delay: 100 },
+            { text: '', class: '', delay: 50 },
+            { text: 'Initializing core systems...', class: '', delay: 400 },
+            { text: '[OK] Memory allocation complete', class: '', delay: 300 },
+            { text: '[OK] Neural network initialized', class: '', delay: 200 },
+            { text: '[OK] Quantum processors online', class: '', delay: 250 },
+            { text: '', class: '', delay: 100 },
+            { text: 'Loading orbital receiver array...', class: '', delay: 400 },
+            { text: '[OK] Satellite link established', class: '', delay: 300 },
+            { text: '[OK] Deep space antenna array synchronized', class: '', delay: 250 },
+            { text: '[OK] Signal processing modules loaded', class: '', delay: 300 },
+            { text: '', class: '', delay: 200 },
+            { text: 'Running security protocols...', class: 'warning', delay: 500, beep: 'warning' },
+            { text: '[SECURITY] Biometric scan required', class: 'warning', delay: 600, beep: 'warning' },
+            { text: '[SECURITY] Scanning...', class: 'warning', delay: 400 },
+            { text: '[SECURITY] Clearance level: CLASSIFIED', class: 'warning', delay: 500, beep: 'warning' },
+            { text: '[SECURITY] Authorization: PENDING', class: 'warning', delay: 400, beep: 'warning' },
+            { text: '', class: '', delay: 300 },
+            { text: 'Verifying personnel credentials...', class: '', delay: 600 }
+        ],
+        continuation: [
+            { text: '', class: '', delay: 200 },
+            { text: '[SECURITY] Identity confirmed: Dr. {NAME}', class: 'success', delay: 500, beep: 'success' },
+            { text: '[SECURITY] Clearance approved: LEVEL 4', class: 'success', delay: 400, beep: 'success' },
+            { text: '[SECURITY] Access granted', class: 'success', delay: 400, beep: 'success' },
+            { text: '', class: '', delay: 300 },
+            { text: 'Welcome, Dr. {NAME}', class: '', delay: 600 },
+            { text: 'Finalizing system startup...', class: '', delay: 500 },
+            { text: '', class: '', delay: 100 },
+            { text: '[OK] Stellar database loaded (15,847 catalogued objects)', class: '', delay: 250 },
+            { text: '[OK] Signal analysis algorithms ready', class: '', delay: 200 },
+            { text: '[OK] Pattern recognition matrices initialized', class: '', delay: 200 },
+            { text: '[OK] Contact protocol systems active', class: '', delay: 250 },
+            { text: '', class: '', delay: 200 },
+            { text: 'All systems operational', class: 'success', delay: 500, beep: 'success' },
+            { text: 'Standing by for target acquisition...', class: '', delay: 400 },
+            { text: '', class: '', delay: 200 },
+            { text: '═══════════════════════════════════════════════════════', class: '', delay: 200 },
+            { text: 'INITIALIZATION COMPLETE', class: 'success', delay: 400, beep: 'success' }
+        ]
+    },
+
+    // Email messages
+    emails: {
+        welcome: {
+            from: 'SETI PROGRAM DIRECTOR',
+            subject: 'Welcome to Sector 7',
+            body: `Welcome to the Deep Space Monitoring Array, Sector 7.
+
+Your mission is to analyze signals from distant star systems and identify potential signs of extraterrestrial intelligence.
+
+Remember: We are looking for patterns, anomalies, anything that suggests purposeful transmission.
+
+The future of humanity's search for contact rests in your capable hands.
+
+Good luck.
+
+- SETI Program Director
+Project Oversight`
+        }
+        // Add more emails here as needed
+    },
+
+    // Alien contact messages from different stars
+    alienContacts: [
+        {
+            starIndex: 2, // KEPLER-442
+            messages: [
+                "DECODING SIGNAL PATTERN...",
+                "MATHEMATICAL SEQUENCE DETECTED: PRIME NUMBERS",
+                "THIS IS NOT RANDOM NOISE",
+                "",
+                "TRANSLATION MATRIX ENGAGED...",
+                "",
+                "WE... RECEIVED... YOUR... TRANSMISSIONS...",
+                "THE VOYAGER PROBE... BEAUTIFUL MUSIC...",
+                "WE HAVE BEEN LISTENING... FOR SO LONG...",
+                "",
+                "[SIGNAL DETERIORATING]",
+                "",
+                "DO NOT... FEAR... WE ARE... [STATIC]"
+            ]
+        },
+        {
+            starIndex: 5, // HD-40307G
+            messages: [
+                "PATTERN RECOGNITION: 89.7% CONFIDENCE",
+                "ANALYZING FREQUENCY MODULATION...",
+                "",
+                ">>> WARNING: ANOMALOUS SIGNAL STRUCTURE <<<",
+                "",
+                "THEY ARE GONE NOW",
+                "WE ARE ALL THAT REMAINS",
+                "AUTOMATED SYSTEMS... STILL TRANSMITTING",
+                "OUR STAR IS DYING",
+                "",
+                "THIS MESSAGE HAS BEEN BROADCASTING FOR",
+                "847,293 CYCLES",
+                "",
+                "IS ANYONE LISTENING?",
+                "",
+                "[SIGNAL REPEATS]"
+            ]
+        },
+        {
+            starIndex: 10, // KEPLER-186F
+            messages: [
+                "COHERENT SIGNAL PATTERN IDENTIFIED",
+                "CROSS-REFERENCING KNOWN LANGUAGES...",
+                "NO MATCH FOUND",
+                "",
+                "ATTEMPTING SYMBOLIC INTERPRETATION...",
+                "",
+                "* * *",
+                "",
+                "THREE PULSES. REPEATING.",
+                "COUNTING? A QUESTION?",
+                "",
+                "THEY'RE ASKING IF WE'RE INTELLIGENT",
+                "THEY'RE WAITING FOR A RESPONSE",
+                "",
+                "[AWAITING YOUR REPLY]",
+                "",
+                "BUT WE HAVE NO WAY TO ANSWER...",
+                "THE SIGNAL IS 500 YEARS OLD"
+            ]
+        },
+        {
+            starIndex: 7, // ROSS-128B
+            hasImage: true,
+            beforeImage: [
+                "SIGNAL ANALYSIS COMPLETE",
+                "PATTERN: REPEATING GEOMETRIC SHAPES",
+                "",
+                "LOADING VISUAL DATA...",
+                "",
+                ">>> IMAGE DATA DETECTED <<<"
+            ],
+            imageData: [
+                "",
+                "    *────────*           ",
+                "    │        │           ",
+                "    │    *───┼───*       ",
+                "    │    │   │   │       ",
+                "    *────┼───*───┼───*   ",
+                "         │       │   │   ",
+                "         *───[SOL]──*    ",
+                "                │        ",
+                "                *        ",
+                "",
+                "   * = INHABITED SYSTEMS ",
+                "  [SOL] = OUR SOLAR SYSTEM",
+                ""
+            ],
+            afterImage: [
+                "IT'S A MAP",
+                "SHOWING MULTIPLE STAR SYSTEMS",
+                "HIGHLIGHTED ROUTES BETWEEN THEM",
+                "",
+                "THERE ARE OTHERS OUT THERE",
+                "THEY'RE CONNECTED",
+                "A NETWORK OF CIVILIZATIONS",
+                "",
+                "AND THEY'VE MARKED OUR SOLAR SYSTEM",
+                "",
+                "THEY KNOW ABOUT US",
+                "HAVE THEY BEEN WATCHING?"
+            ]
+        },
+        {
+            starIndex: 13, // TAU-CETI-E
+            hasImage: true,
+            beforeImage: [
+                "DETECTING STRUCTURED TRANSMISSION...",
+                "BINARY SEQUENCES... IMAGE DATA?",
+                "",
+                "RECONSTRUCTING...",
+                "",
+                ">>> IMAGE DATA DETECTED <<<"
+            ],
+            imageData: [
+                "        .---------.        ",
+                "      /  .::###::.  \\      ",
+                "    /  .:######[]##:. \\    ",
+                "   |  .::####*****##:. |   ",
+                "  | .::###[]******###:. |  ",
+                "  |.::###*********[]##::.|  ",
+                "  |.::##[]*******####:::.|  ",
+                "  | .::####****[]###::. |  ",
+                "   | .::######[]####:. |   ",
+                "    \\  .::########::. /    ",
+                "      \\  .::####::.  /      ",
+                "        `---------'        ",
+                "                           ",
+                "  # = LANDMASSES           ",
+                "  * = VEGETATION/FORESTS   ",
+                " [] = CITIES/STRUCTURES    "
+            ],
+            afterImage: [
+                "IT'S A PICTURE",
+                "SHOWING... A PLANET... BLUE AND GREEN",
+                "REMARKABLY SIMILAR TO EARTH",
+                "",
+                "MULTIPLE SPECIES... LIVING TOGETHER",
+                "BUILDINGS INTEGRATED WITH NATURE",
+                "",
+                "THIS IS NOT A MESSAGE",
+                "IT'S AN INVITATION",
+                "",
+                "COORDINATES EMBEDDED IN THE SIGNAL",
+                "THEY WANT US TO VISIT"
+            ]
+        },
+        {
+            starIndex: 3, // TRAPPIST-1E
+            hasImage: true,
+            beforeImage: [
+                "SIGNAL LOCK ACHIEVED",
+                "DECODING VISUAL TRANSMISSION...",
+                "",
+                "WARNING: NON-HUMAN BIOMETRIC DATA",
+                "",
+                ">>> IMAGE DATA DETECTED <<<"
+            ],
+            imageData: [
+                "                           ",
+                "        .-------.          ",
+                "      /    ___    \\        ",
+                "     |   /     \\   |       ",
+                "     |  | () () |  |       ",
+                "     |   \\ ___ /   |       ",
+                "      \\     |     /        ",
+                "       `--.___,--'         ",
+                "          | |              ",
+                "       .--' '--.           ",
+                "      /    _    \\          ",
+                "     |    / \\    |         ",
+                "      \\  |   |  /          ",
+                "       `-|   |-'           ",
+                "         |   |             ",
+                "        /     \\            ",
+                "       /       \\           ",
+                "                           ",
+                "   BIOLOGICAL SCAN DATA    ",
+                "   HEIGHT: ~1.2m           ",
+                "   CRANIAL CAPACITY: 1.8x  "
+            ],
+            afterImage: [
+                "THIS IS... A PORTRAIT",
+                "A SELF-REPRESENTATION",
+                "",
+                "LARGE CRANIUM",
+                "LARGE OPTICAL SENSORS",
+                "SMALL FRAME",
+                "",
+                "THEY'RE SHOWING US WHAT THEY LOOK LIKE",
+                "",
+                "BUT WHY?",
+                "AN INTRODUCTION?",
+                "A WARNING?",
+                "",
+                "[SIGNAL CONTINUES BROADCASTING]"
+            ]
+        },
+        {
+            starIndex: 11, // TEEGARDEN-B
+            hasImage: true,
+            beforeImage: [
+                "DETECTING COMPLEX BINARY PATTERN...",
+                "STRUCTURE RESEMBLES KNOWN FORMAT",
+                "",
+                "CROSS-REFERENCING DATABASE...",
+                "MATCH FOUND: ARECIBO MESSAGE (1974)",
+                "",
+                ">>> IMAGE DATA DETECTED <<<"
+            ],
+            imageData: [
+                "     ■ ■   ■ ■   ■ ■      ",
+                "    ■■■■■■■■■■■■■■■■■     ",
+                "      ■     ■   ■         ",
+                "   ■■■■  ■■■■  ■■■■       ",
+                "      ■■     ■■           ",
+                "                          ",
+                "    ■ ■ ■ ■ ■ ■ ■ ■       ",
+                "   ■  ■■   ■■   ■  ■      ",
+                "  ■    ■   ■   ■    ■     ",
+                "   ■  ■■   ■■   ■  ■      ",
+                "    ■ ■ ■ ■ ■ ■ ■ ■       ",
+                "         ■■■              ",
+                "          ■               ",
+                "        ■■■■■             ",
+                "       ■  ■  ■            ",
+                "      ■   ■   ■           ",
+                "     ■    ■    ■          ",
+                "    ■           ■         ",
+                "                          ",
+                " THEY RECEIVED OUR MESSAGE",
+                " THEY'RE SENDING IT BACK   "
+            ],
+            afterImage: [
+                "IT'S OUR OWN MESSAGE",
+                "THE ARECIBO TRANSMISSION",
+                "SENT IN 1974",
+                "",
+                "BUT IT'S BEEN... MODIFIED",
+                "ADDITIONAL DATA ENCODED",
+                "COORDINATES",
+                "MATHEMATICAL PROOFS",
+                "CHEMICAL FORMULAS",
+                "",
+                "THEY'RE NOT JUST ACKNOWLEDGING",
+                "THEY'RE RESPONDING",
+                "",
+                "SOMEONE OUT THERE IS LISTENING",
+                "AND THEY UNDERSTAND"
+            ]
+        }
+    ]
+};
+
 // Game State
 const gameState = {
     currentStar: null,
@@ -38,7 +368,12 @@ const gameState = {
     patternGameSelectedIndices: [],
     patternGameCompleted: false,
     // Player info
-    playerName: ''
+    playerName: '',
+    // Mailbox
+    mailboxMessages: [],
+    unreadMailCount: 0,
+    lastMailTime: Date.now(),
+    previousView: 'starmap-view'
 };
 
 // Audio System
@@ -418,7 +753,7 @@ function startStaticHiss() {
         staticGainNode.connect(audioContext.destination);
 
         // Start at maximum volume (will be updated by tuningFeedbackLoop)
-        staticGainNode.gain.value = 0.08 * masterVolume;
+        staticGainNode.gain.value = 0.03 * masterVolume;
 
         staticNoiseNode.start();
     }
@@ -640,261 +975,8 @@ const starTypes = [
     { type: "M-TYPE", class: "Red Dwarf", temp: "3,400K" }          // GLIESE-832C
 ];
 
-// Narrative messages for different stars (some stars have intelligent signals)
-const narrativeMessages = [
-    {
-        starIndex: 2, // KEPLER-442
-        messages: [
-            "DECODING SIGNAL PATTERN...",
-            "MATHEMATICAL SEQUENCE DETECTED: PRIME NUMBERS",
-            "THIS IS NOT RANDOM NOISE",
-            "",
-            "TRANSLATION MATRIX ENGAGED...",
-            "",
-            "WE... RECEIVED... YOUR... TRANSMISSIONS...",
-            "THE VOYAGER PROBE... BEAUTIFUL MUSIC...",
-            "WE HAVE BEEN LISTENING... FOR SO LONG...",
-            "",
-            "[SIGNAL DETERIORATING]",
-            "",
-            "DO NOT... FEAR... WE ARE... [STATIC]"
-        ]
-    },
-    {
-        starIndex: 5, // HD-40307G
-        messages: [
-            "PATTERN RECOGNITION: 89.7% CONFIDENCE",
-            "ANALYZING FREQUENCY MODULATION...",
-            "",
-            ">>> WARNING: ANOMALOUS SIGNAL STRUCTURE <<<",
-            "",
-            "THEY ARE GONE NOW",
-            "WE ARE ALL THAT REMAINS",
-            "AUTOMATED SYSTEMS... STILL TRANSMITTING",
-            "OUR STAR IS DYING",
-            "",
-            "THIS MESSAGE HAS BEEN BROADCASTING FOR",
-            "847,293 CYCLES",
-            "",
-            "IS ANYONE LISTENING?",
-            "",
-            "[SIGNAL REPEATS]"
-        ]
-    },
-    {
-        starIndex: 10, // KEPLER-186F
-        messages: [
-            "COHERENT SIGNAL PATTERN IDENTIFIED",
-            "CROSS-REFERENCING KNOWN LANGUAGES...",
-            "NO MATCH FOUND",
-            "",
-            "ATTEMPTING SYMBOLIC INTERPRETATION...",
-            "",
-            "* * *",
-            "",
-            "THREE PULSES. REPEATING.",
-            "COUNTING? A QUESTION?",
-            "",
-            "THEY'RE ASKING IF WE'RE INTELLIGENT",
-            "THEY'RE WAITING FOR A RESPONSE",
-            "",
-            "[AWAITING YOUR REPLY]",
-            "",
-            "BUT WE HAVE NO WAY TO ANSWER...",
-            "THE SIGNAL IS 500 YEARS OLD"
-        ]
-    },
-    {
-        starIndex: 7, // ROSS-128B
-        hasImage: true,
-        beforeImage: [
-            "SIGNAL ANALYSIS COMPLETE",
-            "PATTERN: REPEATING GEOMETRIC SHAPES",
-            "",
-            "LOADING VISUAL DATA...",
-            "",
-            ">>> IMAGE DATA DETECTED <<<"
-        ],
-        imageData: [
-            "",
-            "    *────────*           ",
-            "    │        │           ",
-            "    │    *───┼───*       ",
-            "    │    │   │   │       ",
-            "    *────┼───*───┼───*   ",
-            "         │       │   │   ",
-            "         *───[SOL]──*    ",
-            "                │        ",
-            "                *        ",
-            "",
-            "   * = INHABITED SYSTEMS ",
-            "  [SOL] = OUR SOLAR SYSTEM",
-            ""
-        ],
-        afterImage: [
-            "IT'S A MAP",
-            "SHOWING MULTIPLE STAR SYSTEMS",
-            "HIGHLIGHTED ROUTES BETWEEN THEM",
-            "",
-            "THERE ARE OTHERS OUT THERE",
-            "THEY'RE CONNECTED",
-            "A NETWORK OF CIVILIZATIONS",
-            "",
-            "AND THEY'VE MARKED OUR SOLAR SYSTEM",
-            "",
-            "THEY KNOW ABOUT US",
-            "HAVE THEY BEEN WATCHING?"
-        ]
-    },
-    {
-        starIndex: 13, // TAU-CETI-E
-        hasImage: true,
-        beforeImage: [
-            "DETECTING STRUCTURED TRANSMISSION...",
-            "BINARY SEQUENCES... IMAGE DATA?",
-            "",
-            "RECONSTRUCTING...",
-            "",
-            ">>> IMAGE DATA DETECTED <<<"
-        ],
-        imageData: [
-            "        .---------.        ",
-            "      /  .::###::.  \\      ",
-            "    /  .:######[]##:. \\    ",
-            "   |  .::####*****##:. |   ",
-            "  | .::###[]******###:. |  ",
-            "  |.::###*********[]##::.|  ",
-            "  |.::##[]*******####:::.|  ",
-            "  | .::####****[]###::. |  ",
-            "   | .::######[]####:. |   ",
-            "    \\  .::########::. /    ",
-            "      \\  .::####::.  /      ",
-            "        `---------'        ",
-            "                           ",
-            "  # = LANDMASSES           ",
-            "  * = VEGETATION/FORESTS   ",
-            " [] = CITIES/STRUCTURES    "
-        ],
-        afterImage: [
-            "IT'S A PICTURE",
-            "SHOWING... A PLANET... BLUE AND GREEN",
-            "REMARKABLY SIMILAR TO EARTH",
-            "",
-            "MULTIPLE SPECIES... LIVING TOGETHER",
-            "BUILDINGS INTEGRATED WITH NATURE",
-            "",
-            "THIS IS NOT A MESSAGE",
-            "IT'S AN INVITATION",
-            "",
-            "COORDINATES EMBEDDED IN THE SIGNAL",
-            "THEY WANT US TO VISIT"
-        ]
-    },
-    {
-        starIndex: 3, // TRAPPIST-1E
-        hasImage: true,
-        beforeImage: [
-            "SIGNAL LOCK ACHIEVED",
-            "DECODING VISUAL TRANSMISSION...",
-            "",
-            "WARNING: NON-HUMAN BIOMETRIC DATA",
-            "",
-            ">>> IMAGE DATA DETECTED <<<"
-        ],
-        imageData: [
-            "                           ",
-            "        .-------.          ",
-            "      /    ___    \\        ",
-            "     |   /     \\   |       ",
-            "     |  | () () |  |       ",
-            "     |   \\ ___ /   |       ",
-            "      \\     |     /        ",
-            "       `--.___,--'         ",
-            "          | |              ",
-            "       .--' '--.           ",
-            "      /    _    \\          ",
-            "     |    / \\    |         ",
-            "      \\  |   |  /          ",
-            "       `-|   |-'           ",
-            "         |   |             ",
-            "        /     \\            ",
-            "       /       \\           ",
-            "                           ",
-            "   BIOLOGICAL SCAN DATA    ",
-            "   HEIGHT: ~1.2m           ",
-            "   CRANIAL CAPACITY: 1.8x  "
-        ],
-        afterImage: [
-            "THIS IS... A PORTRAIT",
-            "A SELF-REPRESENTATION",
-            "",
-            "LARGE CRANIUM",
-            "LARGE OPTICAL SENSORS",
-            "SMALL FRAME",
-            "",
-            "THEY'RE SHOWING US WHAT THEY LOOK LIKE",
-            "",
-            "BUT WHY?",
-            "AN INTRODUCTION?",
-            "A WARNING?",
-            "",
-            "[SIGNAL CONTINUES BROADCASTING]"
-        ]
-    },
-    {
-        starIndex: 11, // TEEGARDEN-B
-        hasImage: true,
-        beforeImage: [
-            "DETECTING COMPLEX BINARY PATTERN...",
-            "STRUCTURE RESEMBLES KNOWN FORMAT",
-            "",
-            "CROSS-REFERENCING DATABASE...",
-            "MATCH FOUND: ARECIBO MESSAGE (1974)",
-            "",
-            ">>> IMAGE DATA DETECTED <<<"
-        ],
-        imageData: [
-            "     ■ ■   ■ ■   ■ ■      ",
-            "    ■■■■■■■■■■■■■■■■■     ",
-            "      ■     ■   ■         ",
-            "   ■■■■  ■■■■  ■■■■       ",
-            "      ■■     ■■           ",
-            "                          ",
-            "    ■ ■ ■ ■ ■ ■ ■ ■       ",
-            "   ■  ■■   ■■   ■  ■      ",
-            "  ■    ■   ■   ■    ■     ",
-            "   ■  ■■   ■■   ■  ■      ",
-            "    ■ ■ ■ ■ ■ ■ ■ ■       ",
-            "         ■■■              ",
-            "          ■               ",
-            "        ■■■■■             ",
-            "       ■  ■  ■            ",
-            "      ■   ■   ■           ",
-            "     ■    ■    ■          ",
-            "    ■           ■         ",
-            "                          ",
-            " THEY RECEIVED OUR MESSAGE",
-            " THEY'RE SENDING IT BACK   "
-        ],
-        afterImage: [
-            "IT'S OUR OWN MESSAGE",
-            "THE ARECIBO TRANSMISSION",
-            "SENT IN 1974",
-            "",
-            "BUT IT'S BEEN... MODIFIED",
-            "ADDITIONAL DATA ENCODED",
-            "COORDINATES",
-            "MATHEMATICAL PROOFS",
-            "CHEMICAL FORMULAS",
-            "",
-            "THEY'RE NOT JUST ACKNOWLEDGING",
-            "THEY'RE RESPONDING",
-            "",
-            "SOMEONE OUT THERE IS LISTENING",
-            "AND THEY UNDERSTAND"
-        ]
-    }
-];
+// Reference to narrative messages (now organized in NARRATIVE object at top of file)
+const narrativeMessages = NARRATIVE.alienContacts;
 
 // Initialize the game
 function init() {
@@ -937,7 +1019,14 @@ function generateBackgroundStars() {
 // Clock update
 function updateClock() {
     const now = new Date();
-    const timeString = now.toISOString().replace('T', ' ').substring(0, 19);
+    // Set year to 1995
+    const year = 1995;
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const timeString = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     document.getElementById('clock').textContent = timeString;
 }
 
@@ -1143,6 +1232,23 @@ function setupEventListeners() {
         const volume = parseInt(e.target.value) / 100; // Convert to 0-1 range
         setMasterVolume(volume);
         document.getElementById('volume-value').textContent = e.target.value + '%';
+    });
+
+    // Color scheme toggle
+    document.getElementById('color-scheme-btn').addEventListener('click', () => {
+        playClick();
+        toggleColorScheme();
+    });
+
+    // Mailbox event listeners
+    document.getElementById('mailbox-btn').addEventListener('click', () => {
+        playClick();
+        openMailbox();
+    });
+
+    document.getElementById('mailbox-back-btn').addEventListener('click', () => {
+        playClick();
+        closeMailbox();
     });
 }
 
@@ -2380,21 +2486,29 @@ function startPatternRecognitionGame(star) {
     document.getElementById('pattern-game').style.display = 'block';
     document.getElementById('analyze-btn').disabled = true;
 
-    // Generate 3 random component waves that will combine to make the reference
+    // Generate 3 VISUALLY DISTINCT component waves with clear frequency separation
+    // LOW frequency - slow baseline oscillation (1-2 complete waves visible)
     const component1 = {
-        freq: 0.010 + Math.random() * 0.015, // Random frequency
-        amp: 20 + Math.random() * 15,        // Random amplitude
-        phase: Math.random() * Math.PI * 2   // Random phase
+        freq: 0.006 + Math.random() * 0.004,  // 0.006-0.010 (slow)
+        amp: 18 + Math.random() * 10,         // 18-28 amplitude
+        phase: Math.random() * Math.PI * 2,
+        name: 'LOW'
     };
+
+    // MEDIUM frequency - moderate oscillation (3-5 complete waves visible)
     const component2 = {
-        freq: 0.003 + Math.random() * 0.008,
-        amp: 15 + Math.random() * 12,
-        phase: Math.random() * Math.PI * 2
+        freq: 0.018 + Math.random() * 0.008,  // 0.018-0.026 (medium)
+        amp: 12 + Math.random() * 8,          // 12-20 amplitude
+        phase: Math.random() * Math.PI * 2,
+        name: 'MEDIUM'
     };
+
+    // HIGH frequency - fast ripples (8-12 complete waves visible)
     const component3 = {
-        freq: 0.020 + Math.random() * 0.020,
-        amp: 10 + Math.random() * 10,
-        phase: Math.random() * Math.PI * 2
+        freq: 0.040 + Math.random() * 0.015,  // 0.040-0.055 (fast)
+        amp: 8 + Math.random() * 6,           // 8-14 amplitude (smaller so it shows as ripples)
+        phase: Math.random() * Math.PI * 2,
+        name: 'HIGH'
     };
 
     // Store components for this game session
@@ -2529,11 +2643,11 @@ function generateFrequencyBand(canvas, isCorrect, componentIndex, bandIndex, sta
     ctx.beginPath();
 
     if (isCorrect && componentIndex >= 0) {
-        // Draw the specific component wave for this band
+        // Draw the EXACT component wave that's in the reference
         const component = gameState.patternComponents[componentIndex];
 
         for (let x = 0; x < width; x++) {
-            const noise = (Math.random() - 0.5) * 8; // Small noise
+            const noise = (Math.random() - 0.5) * 4; // Minimal noise to show it's a clean signal
             const signal = Math.sin(x * component.freq + component.phase) * component.amp;
             const y = height / 2 + signal + noise;
 
@@ -2544,65 +2658,63 @@ function generateFrequencyBand(canvas, isCorrect, componentIndex, bandIndex, sta
             }
         }
     } else {
-        // Generate convincing decoy patterns (not just noise)
+        // Generate SIMILAR BUT WRONG decoys
+        // These frequencies are close to the correct ones but would create a different combined pattern
         const starId = star ? star.id : 0;
-        const decoyType = (bandIndex * 7 + starId * 3) % 5; // Different pattern for each band
+        const seed = bandIndex * 17 + starId * 3;
+        const decoyType = seed % 6;
 
+        let freq, amp, phase;
+
+        switch (decoyType) {
+            case 0:
+                // Wrong LOW frequency (too slow)
+                freq = 0.003 + (seed % 5) * 0.001;
+                amp = 15 + (seed % 4) * 5;
+                phase = (seed % 10) * 0.6;
+                break;
+
+            case 1:
+                // Wrong LOW frequency (too fast for low, not quite medium)
+                freq = 0.012 + (seed % 4) * 0.002;
+                amp = 20 + (seed % 3) * 4;
+                phase = (seed % 8) * 0.7;
+                break;
+
+            case 2:
+                // Wrong MEDIUM frequency (too slow)
+                freq = 0.013 + (seed % 4) * 0.001;
+                amp = 14 + (seed % 5) * 3;
+                phase = (seed % 7) * 0.8;
+                break;
+
+            case 3:
+                // Wrong MEDIUM frequency (too fast)
+                freq = 0.029 + (seed % 5) * 0.002;
+                amp = 16 + (seed % 4) * 4;
+                phase = (seed % 9) * 0.5;
+                break;
+
+            case 4:
+                // Wrong HIGH frequency (too slow)
+                freq = 0.032 + (seed % 3) * 0.002;
+                amp = 10 + (seed % 4) * 2;
+                phase = (seed % 6) * 0.9;
+                break;
+
+            case 5:
+                // Wrong HIGH frequency (way too fast or has harmonics)
+                freq = 0.060 + (seed % 4) * 0.005;
+                amp = 12 + (seed % 3) * 3;
+                phase = (seed % 11) * 0.4;
+                break;
+        }
+
+        // Draw the decoy wave
         for (let x = 0; x < width; x++) {
-            const noise = (Math.random() - 0.5) * 10;
-            let y;
-
-            switch (decoyType) {
-                case 0:
-                    // Similar frequency but different amplitude pattern
-                    const starSeed0 = starId + 1;
-                    const wrongAmp1 = (25 + (starSeed0 % 4) * 5) * 1.6; // Wrong amplitude
-                    const wrongAmp2 = (15 + (starSeed0 % 3) * 5) * 0.4;
-                    const signal0 = Math.sin(x * (0.015 + (starSeed0 % 3) * 0.005)) * wrongAmp1;
-                    const pulse0 = Math.sin(x * (0.002 + (starSeed0 % 5) * 0.001)) * wrongAmp2;
-                    y = height / 2 + signal0 + pulse0 + noise;
-                    break;
-
-                case 1:
-                    // Different frequency entirely
-                    const signal1 = Math.sin(x * 0.025) * 30;
-                    const pulse1 = Math.sin(x * 0.004) * 18;
-                    y = height / 2 + signal1 + pulse1 + noise;
-                    break;
-
-                case 2:
-                    // Inverted phase of correct pattern
-                    const starSeed2 = starId + 1;
-                    const freq1_inv = 0.015 + (starSeed2 % 3) * 0.005;
-                    const freq2_inv = 0.002 + (starSeed2 % 5) * 0.001;
-                    const amp1_inv = 25 + (starSeed2 % 4) * 5;
-                    const amp2_inv = 15 + (starSeed2 % 3) * 5;
-                    const signal2 = Math.sin(x * freq1_inv + Math.PI) * amp1_inv; // Phase shifted
-                    const pulse2 = Math.sin(x * freq2_inv) * amp2_inv;
-                    y = height / 2 + signal2 + pulse2 + noise;
-                    break;
-
-                case 3:
-                    // Irregular pulsar-like pattern
-                    const pulsar = Math.sin(x * 0.05) * 35;
-                    const irregularity = Math.sin(x * 0.008) * 15;
-                    y = height / 2 + pulsar + irregularity + noise;
-                    break;
-
-                case 4:
-                    // Multiple harmonics that don't match
-                    const harm1 = Math.sin(x * 0.012) * 20;
-                    const harm2 = Math.sin(x * 0.031) * 15;
-                    const harm3 = Math.sin(x * 0.006) * 10;
-                    y = height / 2 + harm1 + harm2 + harm3 + noise;
-                    break;
-
-                default:
-                    // Fallback to complex noise
-                    const complexNoise = (Math.random() - 0.5) * 30;
-                    const drift = Math.sin(x * 0.01) * 12;
-                    y = height / 2 + complexNoise + drift + noise;
-            }
+            const noiseSample = (Math.random() - 0.5) * 5;
+            const signal = Math.sin(x * freq + phase) * amp;
+            const y = height / 2 + signal + noiseSample;
 
             if (x === 0) {
                 ctx.moveTo(x, y);
@@ -2826,29 +2938,7 @@ function typeBootLine(text, className = '', delay = 0, beepType = null) {
 }
 
 async function runBootSequence() {
-    const bootLines = [
-        { text: 'SETI DEEP SPACE MONITORING SYSTEM v1.3.7', class: 'success', delay: 200, beep: 'success' },
-        { text: 'Copyright © 2026 Advanced Signal Intelligence Division', class: '', delay: 100 },
-        { text: '═══════════════════════════════════════════════════════', class: '', delay: 100 },
-        { text: '', class: '', delay: 50 },
-        { text: 'Initializing core systems...', class: '', delay: 400 },
-        { text: '[OK] Memory allocation complete', class: '', delay: 300 },
-        { text: '[OK] Neural network initialized', class: '', delay: 200 },
-        { text: '[OK] Quantum processors online', class: '', delay: 250 },
-        { text: '', class: '', delay: 100 },
-        { text: 'Loading orbital receiver array...', class: '', delay: 400 },
-        { text: '[OK] Satellite link established', class: '', delay: 300 },
-        { text: '[OK] Deep space antenna array synchronized', class: '', delay: 250 },
-        { text: '[OK] Signal processing modules loaded', class: '', delay: 300 },
-        { text: '', class: '', delay: 200 },
-        { text: 'Running security protocols...', class: 'warning', delay: 500, beep: 'warning' },
-        { text: '[SECURITY] Biometric scan required', class: 'warning', delay: 600, beep: 'warning' },
-        { text: '[SECURITY] Scanning...', class: 'warning', delay: 400 },
-        { text: '[SECURITY] Clearance level: CLASSIFIED', class: 'warning', delay: 500, beep: 'warning' },
-        { text: '[SECURITY] Authorization: PENDING', class: 'warning', delay: 400, beep: 'warning' },
-        { text: '', class: '', delay: 300 },
-        { text: 'Verifying personnel credentials...', class: '', delay: 600 }
-    ];
+    const bootLines = NARRATIVE.bootSequence.initial;
 
     for (const line of bootLines) {
         await typeBootLine(line.text, line.class, line.delay, line.beep);
@@ -2866,26 +2956,11 @@ function continueBootSequence(playerName) {
     const nameInputContainer = document.getElementById('name-input-container');
     nameInputContainer.style.display = 'none';
 
-    const continuationLines = [
-        { text: '', class: '', delay: 200 },
-        { text: `[SECURITY] Identity confirmed: Dr. ${playerName}`, class: 'success', delay: 500, beep: 'success' },
-        { text: '[SECURITY] Clearance approved: LEVEL 4', class: 'success', delay: 400, beep: 'success' },
-        { text: '[SECURITY] Access granted', class: 'success', delay: 400, beep: 'success' },
-        { text: '', class: '', delay: 300 },
-        { text: `Welcome, Dr. ${playerName}`, class: '', delay: 600 },
-        { text: 'Finalizing system startup...', class: '', delay: 500 },
-        { text: '', class: '', delay: 100 },
-        { text: '[OK] Stellar database loaded (15,847 catalogued objects)', class: '', delay: 250 },
-        { text: '[OK] Signal analysis algorithms ready', class: '', delay: 200 },
-        { text: '[OK] Pattern recognition matrices initialized', class: '', delay: 200 },
-        { text: '[OK] Contact protocol systems active', class: '', delay: 250 },
-        { text: '', class: '', delay: 200 },
-        { text: 'All systems operational', class: 'success', delay: 500, beep: 'success' },
-        { text: 'Standing by for target acquisition...', class: '', delay: 400 },
-        { text: '', class: '', delay: 200 },
-        { text: '═══════════════════════════════════════════════════════', class: '', delay: 200 },
-        { text: 'INITIALIZATION COMPLETE', class: 'success', delay: 400, beep: 'success' }
-    ];
+    // Replace {NAME} placeholder with actual player name
+    const continuationLines = NARRATIVE.bootSequence.continuation.map(line => ({
+        ...line,
+        text: line.text.replace('{NAME}', playerName)
+    }));
 
     (async () => {
         for (const line of continuationLines) {
@@ -2935,14 +3010,200 @@ function setupBootSequence() {
     document.getElementById('proceed-btn').addEventListener('click', () => {
         playClick();
         showView('starmap-view');
+        // Show mailbox button now that user has entered the system
+        document.getElementById('mailbox-btn').style.display = 'block';
         log(`Dr. ${gameState.playerName} logged in - System ready`, 'highlight');
+
+        // Send welcome message after entering the starmap
+        setTimeout(() => {
+            const welcome = NARRATIVE.emails.welcome;
+            addMailMessage(welcome.from, welcome.subject, welcome.body);
+        }, 3000);
     });
+}
+
+// Color Scheme Toggle
+function toggleColorScheme() {
+    const body = document.body;
+    const isWhiteMode = body.classList.toggle('white-mode');
+
+    // Update button label
+    const schemeLabel = document.getElementById('scheme-label');
+    schemeLabel.textContent = isWhiteMode ? 'WHITE' : 'GREEN';
+
+    // Save preference to localStorage
+    localStorage.setItem('colorScheme', isWhiteMode ? 'white' : 'green');
+
+    log(`Color scheme changed to ${isWhiteMode ? 'WHITE' : 'GREEN'} mode`);
+}
+
+function loadColorScheme() {
+    const savedScheme = localStorage.getItem('colorScheme');
+    if (savedScheme === 'white') {
+        document.body.classList.add('white-mode');
+        document.getElementById('scheme-label').textContent = 'WHITE';
+    }
+}
+
+// Mailbox Functions
+function openMailbox() {
+    // Check if already in mailbox view
+    const currentView = document.querySelector('.view.active').id;
+    if (currentView === 'mailbox-view') {
+        return; // Already in mailbox, do nothing
+    }
+
+    // Save current view to return to it later
+    gameState.previousView = currentView;
+
+    showView('mailbox-view');
+    updateMailboxDisplay();
+
+    // Mark all messages as read
+    gameState.mailboxMessages.forEach(msg => msg.read = true);
+    gameState.unreadMailCount = 0;
+    updateMailIndicator();
+
+    log('Accessing secure mailbox...');
+}
+
+function closeMailbox() {
+    // Return to previous view or default to starmap
+    const returnView = gameState.previousView || 'starmap-view';
+    showView(returnView);
+    log('Mailbox closed');
+}
+
+function updateMailboxDisplay() {
+    const messageList = document.getElementById('message-list');
+    const noMessages = document.getElementById('no-messages');
+    const mailboxStatus = document.getElementById('mailbox-status');
+
+    if (gameState.mailboxMessages.length === 0) {
+        noMessages.style.display = 'block';
+        messageList.style.display = 'none';
+        mailboxStatus.textContent = 'NO NEW MESSAGES';
+    } else {
+        noMessages.style.display = 'none';
+        messageList.style.display = 'flex';
+
+        const unreadCount = gameState.mailboxMessages.filter(msg => !msg.read).length;
+        mailboxStatus.textContent = unreadCount > 0 ?
+            `${unreadCount} UNREAD MESSAGE${unreadCount > 1 ? 'S' : ''}` :
+            'ALL MESSAGES READ';
+
+        // Generate message HTML
+        messageList.innerHTML = gameState.mailboxMessages
+            .slice()
+            .reverse() // Show newest first
+            .map((msg, index) => `
+                <div class="mail-item ${msg.read ? '' : 'unread'}" data-index="${gameState.mailboxMessages.length - 1 - index}">
+                    <div class="mail-header">
+                        <div class="mail-from">${msg.from}</div>
+                        <div class="mail-date">${msg.date}</div>
+                    </div>
+                    <div class="mail-subject">${msg.subject}</div>
+                    <div class="mail-preview">${msg.preview}</div>
+                    <div class="mail-body">${msg.body}</div>
+                </div>
+            `).join('');
+
+        // Add click handlers to expand/collapse messages
+        document.querySelectorAll('.mail-item').forEach(item => {
+            item.addEventListener('click', function() {
+                this.classList.toggle('expanded');
+                playClick();
+            });
+        });
+    }
+}
+
+function addMailMessage(from, subject, body, preview = null) {
+    const now = new Date();
+    const dateStr = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-1995`;
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    const message = {
+        from: from,
+        subject: subject,
+        body: body,
+        preview: preview || body.substring(0, 80) + '...',
+        date: `${dateStr} ${timeStr}`,
+        read: false,
+        timestamp: now.getTime()
+    };
+
+    gameState.mailboxMessages.push(message);
+    gameState.unreadMailCount++;
+    updateMailIndicator();
+
+    log(`New message received from ${from}`, 'highlight');
+    playSecurityBeep('normal');
+}
+
+function updateMailIndicator() {
+    const indicator = document.getElementById('mail-indicator');
+    if (gameState.unreadMailCount > 0) {
+        indicator.style.display = 'inline';
+    } else {
+        indicator.style.display = 'none';
+    }
+}
+
+function checkForNewMail() {
+    // Check if enough time has passed since last mail
+    const timeSinceLastMail = Date.now() - gameState.lastMailTime;
+    const minInterval = 120000; // 2 minutes minimum between messages
+
+    if (timeSinceLastMail > minInterval) {
+        // Random chance to receive mail
+        if (Math.random() < 0.3) { // 30% chance each check
+            sendRandomMail();
+            gameState.lastMailTime = Date.now();
+        }
+    }
+}
+
+function sendRandomMail() {
+    const messages = [
+        {
+            from: 'PROJECT OVERSIGHT - CLASSIFIED',
+            subject: 'RE: Budget Concerns',
+            body: `Dr. ${gameState.playerName},\n\nWe've reviewed your latest requisition requests. While we understand the need for continued deep space monitoring, budgetary constraints require justification.\n\nPlease provide evidence of signal anomalies or potential contact scenarios to support continued funding.\n\n- Oversight Committee\nSector 7 Administration`
+        },
+        {
+            from: 'Dr. Eleanor Chen - Radio Astronomy',
+            subject: 'Interference Patterns',
+            body: `${gameState.playerName},\n\nI've been reviewing some of the frequency data from your array. There are some unusual interference patterns that don't match known sources.\n\nHave you ruled out terrestrial interference? Some of these signatures are... peculiar.\n\nLet me know if you need a second opinion.\n\n- Eleanor`
+        },
+        {
+            from: 'SYSTEM ADMINISTRATOR',
+            subject: 'Array Maintenance Schedule',
+            body: `NOTICE TO ALL PERSONNEL:\n\nScheduled maintenance on Deep Space Array components will occur:\nDATE: Next week\nDURATION: 4-6 hours\nAFFECTED SYSTEMS: Receivers 3, 7, 12\n\nPlease plan signal acquisition accordingly.\n\n- Technical Services`
+        },
+        {
+            from: 'Dr. James Whitmore - SETI Director',
+            subject: 'Keep Up The Work',
+            body: `${gameState.playerName},\n\nI know the isolation of deep space monitoring can be challenging. Remember, every signal analyzed, every frequency scanned, brings us closer to answering humanity's greatest question.\n\nYour work matters. Even if we don't find anything today, your dedication is noted and appreciated.\n\n- James`
+        },
+        {
+            from: 'SECURITY CLEARANCE - LEVEL 5',
+            subject: '[CLASSIFIED] Unusual Activity',
+            body: `[ENCRYPTED COMMUNICATION]\n\nDr. ${gameState.playerName},\n\nYour clearance has been elevated for this communication.\n\nWe've detected coordinated signal patterns across multiple listening posts. Your sector is of particular interest.\n\nReport any anomalies immediately. Do not discuss findings outside secure channels.\n\nProtocol Sigma is in effect.\n\n[END TRANSMISSION]`
+        }
+    ];
+
+    const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+    addMailMessage(randomMsg.from, randomMsg.subject, randomMsg.body);
 }
 
 // Start the game
 function startGame() {
     updateClock();
     setInterval(updateClock, 1000);
+
+    // Load saved color scheme
+    loadColorScheme();
 
     // Initialize audio on first user interaction
     document.addEventListener('click', () => {
@@ -2955,6 +3216,9 @@ function startGame() {
     setupStarMapCanvas();
     startStarMapAnimation();
     setupBootSequence();
+
+    // Check for new mail periodically (every 60 seconds)
+    setInterval(checkForNewMail, 60000);
 }
 
 startGame();

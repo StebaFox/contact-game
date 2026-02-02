@@ -24,6 +24,13 @@
                     <span style="margin-left: 30px;">VOLUME:</span>
                     <input type="range" id="volume-slider" min="0" max="100" value="50" style="width: 100px; vertical-align: middle; margin-left: 10px;">
                     <span id="volume-value" style="margin-left: 5px;">50%</span>
+                    <button class="color-scheme-btn" id="color-scheme-btn" title="Toggle Color Scheme">
+                        <span id="scheme-label">GREEN</span>
+                    </button>
+                    <button class="mailbox-btn" id="mailbox-btn" style="display: none;">
+                        <span class="mailbox-icon">[✉]</span> MAILBOX
+                        <span class="mail-indicator" id="mail-indicator" style="display: none;">●</span>
+                    </button>
                 </div>
             </div>
 
@@ -191,6 +198,22 @@
                         <!-- Contact messages will appear here -->
                     </div>
                     <button class="btn" id="continue-btn">CONTINUE SEARCH</button>
+                </div>
+
+                <!-- Mailbox Section -->
+                <div id="mailbox-view" class="view">
+                    <h2>═══ SECURE MAILBOX ═══</h2>
+                    <div class="mailbox-header">
+                        <div class="mailbox-info">CLASSIFIED COMMUNICATIONS - EYES ONLY</div>
+                        <div class="mailbox-status" id="mailbox-status">NO NEW MESSAGES</div>
+                    </div>
+                    <div class="mailbox-content" id="mailbox-content">
+                        <div class="no-messages" id="no-messages">MAILBOX EMPTY</div>
+                        <div class="message-list" id="message-list">
+                            <!-- Messages will appear here -->
+                        </div>
+                    </div>
+                    <button class="btn" id="mailbox-back-btn">RETURN</button>
                 </div>
             </div>
 

@@ -96,7 +96,7 @@ body {
     z-index: 1;
     padding: 20px;
     color: #0f0;
-    text-shadow: 0 0 5px #0f0;
+    text-shadow: 0 0 3px #0f0;
     height: 100vh;
     display: flex;
     flex-direction: column;
@@ -121,7 +121,7 @@ body {
     padding: 10px;
     background: rgba(0, 255, 0, 0.03);
     color: #0f0;
-    text-shadow: 0 0 5px #0f0;
+    text-shadow: 0 0 3px #0f0;
     min-width: 220px;
 }
 
@@ -129,6 +129,64 @@ body {
     text-align: right;
     font-size: 18px;
     margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 20px;
+}
+
+.color-scheme-btn {
+    background: rgba(0, 255, 0, 0.1);
+    border: 2px solid #0f0;
+    color: #0f0;
+    padding: 8px 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-shadow: 0 0 3px #0f0;
+}
+
+.color-scheme-btn:hover {
+    background: rgba(0, 255, 0, 0.2);
+    box-shadow: 0 0 10px #0f0;
+    transform: scale(1.05);
+}
+
+.mailbox-btn {
+    background: rgba(0, 255, 255, 0.1);
+    border: 2px solid #0ff;
+    color: #0ff;
+    padding: 8px 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-shadow: 0 0 5px #0ff;
+    position: relative;
+}
+
+.mailbox-btn:hover {
+    background: rgba(0, 255, 255, 0.2);
+    box-shadow: 0 0 10px #0ff;
+    transform: scale(1.05);
+}
+
+.mailbox-icon {
+    font-size: 16px;
+    margin-right: 5px;
+}
+
+.mail-indicator {
+    color: #ff0;
+    font-size: 20px;
+    animation: mailBlink 1s infinite;
+    margin-left: 5px;
+}
+
+@keyframes mailBlink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
 }
 
 /* Main Content */
@@ -161,7 +219,7 @@ body {
     font-size: 11px;
     line-height: 1.2;
     color: #0f0;
-    text-shadow: 0 0 5px #0f0;
+    text-shadow: 0 0 3px #0f0;
     margin-bottom: 30px;
 }
 
@@ -469,7 +527,7 @@ h2 {
 .canvas-label {
     font-size: 16px;
     color: #0f0;
-    text-shadow: 0 0 5px #0f0;
+    text-shadow: 0 0 3px #0f0;
     margin-bottom: 5px;
     letter-spacing: 2px;
     opacity: 0.8;
@@ -669,7 +727,7 @@ canvas.active {
     padding: 10px 20px;
     margin: 0 10px;
     cursor: pointer;
-    text-shadow: 0 0 5px #0f0;
+    text-shadow: 0 0 3px #0f0;
     transition: all 0.2s;
 }
 
@@ -725,6 +783,126 @@ canvas.active {
 
 @keyframes fadeIn {
     to { opacity: 1; }
+}
+
+/* Mailbox */
+.mailbox-header {
+    border: 2px solid #0ff;
+    background: rgba(0, 255, 255, 0.05);
+    padding: 15px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.mailbox-info {
+    color: #ff0;
+    font-size: 16px;
+    margin-bottom: 10px;
+    text-shadow: 0 0 5px #ff0;
+}
+
+.mailbox-status {
+    color: #0ff;
+    font-size: 14px;
+    text-shadow: 0 0 5px #0ff;
+}
+
+.mailbox-content {
+    min-height: 400px;
+    max-height: 500px;
+    overflow-y: auto;
+    border: 2px solid #0ff;
+    background: rgba(0, 255, 255, 0.03);
+    padding: 20px;
+}
+
+.no-messages {
+    text-align: center;
+    color: #666;
+    font-size: 18px;
+    padding: 50px;
+}
+
+.message-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.mail-item {
+    border: 2px solid #0f0;
+    background: rgba(0, 255, 0, 0.05);
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.mail-item:hover {
+    background: rgba(0, 255, 0, 0.1);
+    box-shadow: 0 0 10px #0f0;
+}
+
+.mail-item.unread {
+    border-color: #ff0;
+    background: rgba(255, 255, 0, 0.05);
+}
+
+.mail-item.unread .mail-subject {
+    color: #ff0;
+    text-shadow: 0 0 2px #ff0;
+}
+
+.mail-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #0f0;
+    padding-bottom: 8px;
+}
+
+.mail-from {
+    color: #0ff;
+    font-weight: bold;
+    text-shadow: 0 0 2px #0ff;
+    font-size: 18px;
+}
+
+.mail-date {
+    color: #aaa;
+    font-size: 15px;
+}
+
+.mail-subject {
+    color: #0f0;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-shadow: 0 0 2px #0f0;
+}
+
+.mail-preview {
+    color: #bbb;
+    font-size: 18px;
+    line-height: 1.6;
+}
+
+.mail-body {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #0f0;
+    color: #0f0;
+    font-size: 20px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    display: none;
+}
+
+.mail-item.expanded .mail-body {
+    display: block;
+}
+
+.mail-item.expanded .mail-preview {
+    display: none;
 }
 
 /* Terminal Log */
@@ -870,7 +1048,7 @@ canvas.active {
 .band-label {
     font-size: 14px;
     color: #0f0;
-    text-shadow: 0 0 5px #0f0;
+    text-shadow: 0 0 3px #0f0;
     margin-bottom: 8px;
     letter-spacing: 1px;
 }
@@ -908,4 +1086,145 @@ canvas.active {
 ::-webkit-scrollbar-thumb {
     background: #0f0;
     box-shadow: 0 0 5px #0f0;
+}
+
+/* White Mode Color Scheme */
+body.white-mode .container,
+body.white-mode .ascii-art,
+body.white-mode .observatory-map,
+body.white-mode .boot-output,
+body.white-mode .boot-line:not(.error):not(.warning):not(.success) {
+    color: #fff;
+    text-shadow: none;
+}
+
+body.white-mode .header,
+body.white-mode .terminal-log {
+    border-color: #fff;
+}
+
+body.white-mode .name-input,
+body.white-mode .btn {
+    color: #fff;
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+body.white-mode .btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 10px #fff;
+}
+
+body.white-mode .color-scheme-btn {
+    color: #fff;
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    text-shadow: none;
+}
+
+body.white-mode .color-scheme-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 10px #fff;
+}
+
+body.white-mode .name-input {
+    background: rgba(255, 255, 255, 0.1);
+    text-shadow: none;
+}
+
+body.white-mode .name-input:focus {
+    box-shadow: 0 0 15px #fff;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+body.white-mode .name-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+body.white-mode .instruction,
+body.white-mode .status-bar,
+body.white-mode .star-item,
+body.white-mode .target-info,
+body.white-mode .analysis-output {
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+body.white-mode .star-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 10px #fff;
+}
+
+body.white-mode .star-item.selected {
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 15px #fff;
+}
+
+body.white-mode .canvas-label,
+body.white-mode .start-ascii,
+body.white-mode .start-info {
+    color: #fff;
+    text-shadow: none;
+}
+
+body.white-mode .mail-item {
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+body.white-mode .mail-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 10px #fff;
+}
+
+body.white-mode .mail-subject,
+body.white-mode .mail-body {
+    color: #fff;
+    text-shadow: none;
+}
+
+body.white-mode .mail-header {
+    border-bottom-color: #fff;
+}
+
+body.white-mode .frequency-band {
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+body.white-mode .frequency-band:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+body.white-mode .frequency-band.correct {
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+body.white-mode .frequency-band.correct {
+    animation: correctPulseWhite 1s ease-out;
+}
+
+@keyframes correctPulseWhite {
+    0%, 100% {
+        box-shadow: 0 0 15px #fff;
+    }
+    50% {
+        box-shadow: 0 0 30px #fff;
+    }
+}
+
+body.white-mode .band-label {
+    color: #fff;
+    text-shadow: none;
+}
+
+body.white-mode .band-canvas,
+body.white-mode canvas {
+    border-color: #fff;
+}
+
+body.white-mode ::-webkit-scrollbar-thumb {
+    background: #fff;
+    box-shadow: 0 0 5px #fff;
 }
