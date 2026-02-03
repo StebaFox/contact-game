@@ -376,6 +376,281 @@ const gameState = {
     previousView: 'starmap-view'
 };
 
+// Developer Mode
+let devMode = false;
+let devPanelCollapsed = false;
+
+function initDevMode() {
+    // Check URL parameter for dev mode
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('dev') === 'true') {
+        devMode = true;
+        showDevPanel();
+    }
+
+    // Keyboard shortcut: F2
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'F2') {
+            e.preventDefault();
+            toggleDevMode();
+        }
+    });
+
+    console.log('%c[DEV MODE AVAILABLE] Press F2 or add ?dev=true to URL', 'color: #f0f;');
+}
+
+function toggleDevMode() {
+    devMode = !devMode;
+    if (devMode) {
+        showDevPanel();
+    } else {
+        hideDevPanel();
+    }
+}
+
+function toggleDevPanelCollapse() {
+    devPanelCollapsed = !devPanelCollapsed;
+    const content = document.querySelector('.dev-panel-content');
+    const toggle = document.querySelector('.dev-toggle');
+    if (content) {
+        content.style.display = devPanelCollapsed ? 'none' : 'block';
+        toggle.textContent = devPanelCollapsed ? '+' : '−';
+    }
+}
+
+function showDevPanel() {
+    if (document.getElementById('dev-panel')) return;
+
+    const panel = document.createElement('div');
+    panel.id = 'dev-panel';
+    panel.innerHTML = `
+        <div class="dev-panel-header" onclick="toggleDevPanelCollapse()" style="cursor: pointer;">
+            DEV MODE <span class="dev-toggle">−</span>
+        </div>
+        <div class="dev-panel-content">
+            <div class="dev-section">NAVIGATION</div>
+            <button onclick="devSkipToStarmap()">Skip to Starmap</button>
+            <button onclick="devShowSignalScan()">Signal Scan View</button>
+            <button onclick="devShowTuningGame()">Tuning Mini-game</button>
+            <button onclick="devShowPatternGame()">Pattern Mini-game</button>
+            <button onclick="devShowMailbox()">Mailbox</button>
+
+            <div class="dev-section">STAR ACTIONS</div>
+            <button onclick="devMarkAllScanned()">Mark All Scanned</button>
+            <button onclick="devMarkAllAnalyzed()">Mark All Analyzed</button>
+            <button onclick="devTriggerContact()">Trigger Contact</button>
+            <button onclick="devResetProgress()">Reset All Progress</button>
+
+            <div class="dev-section">MISC</div>
+            <button onclick="devAddRandomMail()">Add Random Email</button>
+            <button onclick="devLogState()">Log Game State</button>
+        </div>
+    `;
+
+    // Add styles
+    const style = document.createElement('style');
+    style.id = 'dev-panel-styles';
+    style.textContent = `
+        #dev-panel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 200px;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #f0f;
+            color: #f0f;
+            font-family: 'VT323', monospace;
+            font-size: 14px;
+            z-index: 10000;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+        }
+        .dev-panel-header {
+            background: #f0f;
+            color: #000;
+            padding: 5px 10px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .dev-toggle {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .dev-panel-content {
+            padding: 10px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .dev-section {
+            color: #0ff;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #0ff;
+            padding-bottom: 3px;
+            font-size: 12px;
+        }
+        #dev-panel button {
+            width: 100%;
+            background: transparent;
+            border: 1px solid #f0f;
+            color: #f0f;
+            padding: 5px;
+            margin: 3px 0;
+            cursor: pointer;
+            font-family: 'VT323', monospace;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        #dev-panel button:hover {
+            background: #f0f;
+            color: #000;
+        }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(panel);
+    console.log('%c[DEV MODE ENABLED]', 'color: #f0f; font-weight: bold;');
+}
+
+function hideDevPanel() {
+    const panel = document.getElementById('dev-panel');
+    const style = document.getElementById('dev-panel-styles');
+    if (panel) panel.remove();
+    if (style) style.remove();
+    console.log('%c[DEV MODE DISABLED]', 'color: #888;');
+}
+
+// Dev functions
+function devSkipToStarmap() {
+    // Set player name if not set
+    if (!gameState.playerName) {
+        gameState.playerName = 'DEV_USER';
+        localStorage.setItem('setiPlayerName', gameState.playerName);
+    }
+    showView('starmap-view');
+    log('DEV: Skipped to starmap', 'highlight');
+}
+
+function devShowSignalScan() {
+    if (gameState.stars.length === 0) {
+        devSkipToStarmap();
+    }
+    // Select first star with intelligence if available
+    const intelligentStar = gameState.stars.find(s => s.hasIntelligence);
+    const starId = intelligentStar ? intelligentStar.id : 0;
+    selectStar(starId);
+    initiateScan();
+    log('DEV: Started signal scan', 'highlight');
+}
+
+function devShowTuningGame() {
+    if (gameState.stars.length === 0) {
+        devSkipToStarmap();
+    }
+    selectStar(0);
+    showView('tuning-view');
+    startTuningMinigame();
+    log('DEV: Started tuning mini-game', 'highlight');
+}
+
+function devShowPatternGame() {
+    if (gameState.stars.length === 0) {
+        devSkipToStarmap();
+    }
+    selectStar(0);
+    showView('pattern-view');
+    startPatternMinigame();
+    log('DEV: Started pattern mini-game', 'highlight');
+}
+
+function devShowMailbox() {
+    if (gameState.stars.length === 0) {
+        devSkipToStarmap();
+    }
+    showView('mailbox-view');
+    log('DEV: Opened mailbox', 'highlight');
+}
+
+function devMarkAllScanned() {
+    gameState.stars.forEach((star, index) => {
+        gameState.scannedSignals.set(index, {
+            hasIntelligence: star.hasIntelligence,
+            signalStrength: Math.random() * 100
+        });
+        updateStarStatus(index, 'scanned');
+    });
+    log('DEV: All stars marked as scanned', 'highlight');
+}
+
+function devMarkAllAnalyzed() {
+    devMarkAllScanned();
+    gameState.stars.forEach((star, index) => {
+        gameState.analyzedStars.add(index);
+        updateStarStatus(index, 'analyzed');
+    });
+    saveProgress();
+    log('DEV: All stars marked as analyzed', 'highlight');
+}
+
+function devTriggerContact() {
+    // Find a star with intelligence that hasn't been contacted
+    const intelligentStars = gameState.stars.filter(s => s.hasIntelligence);
+    const uncontacted = intelligentStars.find(s => !gameState.contactedStars.has(s.id));
+
+    if (uncontacted) {
+        selectStar(uncontacted.id);
+        gameState.analyzedStars.add(uncontacted.id);
+        // Trigger contact sequence
+        showView('starmap-view');
+        setTimeout(() => {
+            initiateContact(uncontacted);
+        }, 500);
+        log(`DEV: Triggering contact with ${uncontacted.name}`, 'highlight');
+    } else {
+        log('DEV: No uncontacted intelligent stars available', 'warning');
+    }
+}
+
+function devResetProgress() {
+    localStorage.removeItem('setiScannedSignals');
+    localStorage.removeItem('setiAnalyzedStars');
+    localStorage.removeItem('setiContactedStars');
+    localStorage.removeItem('setiDiscoveredMessages');
+    localStorage.removeItem('setiPlayerName');
+    localStorage.removeItem('setiReadEmails');
+    gameState.scannedSignals.clear();
+    gameState.analyzedStars.clear();
+    gameState.contactedStars.clear();
+    gameState.discoveredMessages = [];
+    gameState.playerName = '';
+
+    // Reset star status in UI
+    document.querySelectorAll('.star-status').forEach(el => {
+        el.dataset.status = '';
+    });
+
+    log('DEV: All progress reset', 'warning');
+}
+
+function devAddRandomMail() {
+    addRandomMail();
+    log('DEV: Added random email', 'highlight');
+}
+
+function devLogState() {
+    console.log('=== GAME STATE ===');
+    console.log('Player Name:', gameState.playerName);
+    console.log('Current Star:', gameState.currentStar);
+    console.log('Selected Star ID:', gameState.selectedStarId);
+    console.log('Scanned Signals:', [...gameState.scannedSignals.keys()]);
+    console.log('Analyzed Stars:', [...gameState.analyzedStars]);
+    console.log('Contacted Stars:', [...gameState.contactedStars]);
+    console.log('Mailbox Messages:', gameState.mailboxMessages.length);
+    console.log('Unread Mail:', gameState.unreadMailCount);
+    console.log('==================');
+    log('DEV: State logged to console', 'highlight');
+}
+
 // Audio System
 let audioContext = null;
 let tuningOscillator = null;
@@ -604,8 +879,8 @@ function playStaticBurst() {
 
     // Quick attack, hold, then sharp cutoff
     gainNode.gain.setValueAtTime(0, now);
-    gainNode.gain.linearRampToValueAtTime(0.15 * masterVolume, now + 0.01); // Fast attack
-    gainNode.gain.setValueAtTime(0.15 * masterVolume, now + 0.48); // Hold at full volume
+    gainNode.gain.linearRampToValueAtTime(0.05 * masterVolume, now + 0.01); // Fast attack
+    gainNode.gain.setValueAtTime(0.05 * masterVolume, now + 0.48); // Hold at full volume
     gainNode.gain.linearRampToValueAtTime(0, now + 0.5); // Very quick cutoff
 
     // Connect: noise -> filter -> gain -> destination
@@ -952,7 +1227,8 @@ const starNames = [
     "ALPHA-CENTAURI", "PROXIMA-B", "KEPLER-442", "TRAPPIST-1E",
     "GLIESE-667C", "HD-40307G", "KEPLER-62F", "ROSS-128B",
     "WOLF-1061C", "LHS-1140B", "KEPLER-186F", "TEEGARDEN-B",
-    "KAPTEYN-B", "TAU-CETI-E", "KEPLER-452B", "GLIESE-832C"
+    "KAPTEYN-B", "TAU-CETI-E", "KEPLER-452B", "GLIESE-832C",
+    "TOI-700D", "K2-18B", "KEPLER-1649C", "GJ-1061D", "LP-890-9C"
 ];
 
 // Star type information (real astronomical data)
@@ -972,7 +1248,12 @@ const starTypes = [
     { type: "M-TYPE", class: "Red Dwarf", temp: "3,600K" },         // KAPTEYN-B
     { type: "G-TYPE", class: "Yellow Dwarf", temp: "5,300K" },      // TAU-CETI-E
     { type: "G-TYPE", class: "Yellow Dwarf", temp: "5,750K" },      // KEPLER-452B
-    { type: "M-TYPE", class: "Red Dwarf", temp: "3,400K" }          // GLIESE-832C
+    { type: "M-TYPE", class: "Red Dwarf", temp: "3,400K" },         // GLIESE-832C
+    { type: "M-TYPE", class: "Red Dwarf", temp: "3,480K" },         // TOI-700D
+    { type: "M-TYPE", class: "Red Dwarf", temp: "3,500K" },         // K2-18B
+    { type: "M-TYPE", class: "Red Dwarf", temp: "3,240K" },         // KEPLER-1649C
+    { type: "M-TYPE", class: "Red Dwarf", temp: "2,950K" },         // GJ-1061D
+    { type: "M-TYPE", class: "Red Dwarf", temp: "2,850K" }          // LP-890-9C
 ];
 
 // Discovery/registration dates
@@ -992,7 +1273,12 @@ const discoveryDates = [
     "2014",     // KAPTEYN-B
     "2012",     // TAU-CETI-E
     "2015",     // KEPLER-452B
-    "2014"      // GLIESE-832C
+    "2014",     // GLIESE-832C
+    "2020",     // TOI-700D
+    "2015",     // K2-18B
+    "2020",     // KEPLER-1649C
+    "2020",     // GJ-1061D
+    "2022"      // LP-890-9C
 ];
 
 // Reference to narrative messages (now organized in NARRATIVE object at top of file)
@@ -1014,6 +1300,7 @@ function init() {
     setupStarMapCanvas();
     startStarMapAnimation();
     clearStarVisualization(); // Initialize star visual canvas
+    initDevMode(); // Initialize developer mode
 
     log("All systems operational", "highlight");
 }
@@ -1028,9 +1315,9 @@ function generateBackgroundStars() {
         gameState.backgroundStars.push({
             x: Math.random() * width,
             y: Math.random() * height,
-            size: Math.random() * 1.5 + 0.3,
-            brightness: Math.floor(Math.random() * 105 + 150), // Brighter: 150-255 range
-            alpha: Math.random() * 0.5 + 0.2, // More visible: 0.2-0.7 range
+            size: Math.random() * 1.5 + 0.5,
+            brightness: Math.floor(Math.random() * 80 + 175), // 175-255 range
+            alpha: Math.random() * 0.4 + 0.3, // 0.3-0.7 range
             twinkleSpeed: Math.random() * 0.02 + 0.01,
             twinkleOffset: Math.random() * Math.PI * 2
         });
@@ -1074,8 +1361,8 @@ function generateStarCatalog() {
             temperature: starInfo.temp,
             discovered: discoveryDates[index],
             hasIntelligence: narrativeMessages.some(m => m.starIndex === index),
-            x: Math.random() * 800 + 50, // Position for visual map (50-850)
-            y: Math.random() * 400 + 50  // Position for visual map (50-450)
+            x: Math.random() * 940 + 30, // Position for visual map (30-970)
+            y: Math.random() * 500 + 25  // Position for visual map (25-525)
         };
 
         gameState.stars.push(star);
@@ -1099,8 +1386,8 @@ function generateStarCatalog() {
 }
 
 // Draw star visualization
-function drawStarVisualization(star) {
-    const canvas = document.getElementById('star-visual');
+function drawStarVisualization(star, canvasId = 'star-visual') {
+    const canvas = document.getElementById(canvasId);
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
@@ -1276,6 +1563,9 @@ function startScanSequence() {
     document.getElementById('target-type').textContent = star.starType;
     document.getElementById('target-class').textContent = star.starClass;
     document.getElementById('target-temp').textContent = star.temperature;
+
+    // Draw star visualization in analysis view
+    drawStarVisualization(star, 'analysis-star-visual');
 
     showView('analysis-view');
 
@@ -2140,21 +2430,56 @@ function calculateScanBoxPosition(star, canvasWidth) {
 function setupStarMapCanvas() {
     const canvas = document.getElementById('starmap-canvas');
 
-    // Mouse move for parallax effect
+    // Parallax state
+    let parallaxResetTimer = null;
+    let lastMouseX = null;
+    let lastMouseY = null;
+
+    // Mouse move for parallax effect - uses delta (movement) not absolute position
     canvas.addEventListener('mousemove', (e) => {
         const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
-        // Convert mouse position to -1 to 1 range (center is 0)
-        gameState.targetMouseX = (x / canvas.width) * 2 - 1;
-        gameState.targetMouseY = (y / canvas.height) * 2 - 1;
+        // Clear any pending reset timer
+        if (parallaxResetTimer) {
+            clearTimeout(parallaxResetTimer);
+            parallaxResetTimer = null;
+        }
+
+        // If we have a previous position, calculate delta and apply it
+        if (lastMouseX !== null && lastMouseY !== null) {
+            const deltaX = (x - lastMouseX) / canvas.width * 2;
+            const deltaY = (y - lastMouseY) / canvas.height * 2;
+
+            // Apply delta to target, clamped to -1 to 1 range
+            gameState.targetMouseX = Math.max(-1, Math.min(1, gameState.targetMouseX + deltaX));
+            gameState.targetMouseY = Math.max(-1, Math.min(1, gameState.targetMouseY + deltaY));
+        }
+
+        // Store current position for next frame
+        lastMouseX = x;
+        lastMouseY = y;
     });
 
-    // Reset parallax when mouse leaves
+    // Start reset timer when mouse leaves (5 second delay)
     canvas.addEventListener('mouseleave', () => {
-        gameState.targetMouseX = 0;
-        gameState.targetMouseY = 0;
+        lastMouseX = null;
+        lastMouseY = null;
+        parallaxResetTimer = setTimeout(() => {
+            gameState.targetMouseX = 0;
+            gameState.targetMouseY = 0;
+            parallaxResetTimer = null;
+        }, 5000);
+    });
+
+    // Cancel reset timer if mouse enters again
+    canvas.addEventListener('mouseenter', () => {
+        if (parallaxResetTimer) {
+            clearTimeout(parallaxResetTimer);
+            parallaxResetTimer = null;
+        }
+        // lastMouseX/Y stay null until first mousemove, so no snap
     });
 
     canvas.addEventListener('click', (e) => {
@@ -2368,9 +2693,12 @@ function renderStarMap() {
         ctx.shadowBlur = 5;
         ctx.fillText(star.name, boxX + boxWidth / 2, boxY + 20);
 
-        // "SCAN?" text
+        // "SCAN?" text with slow flash effect
+        const flashAlpha = (Math.sin(Date.now() * 0.003) + 1) / 2 * 0.6 + 0.4; // Oscillates between 0.4 and 1.0
         ctx.font = '18px VT323';
+        ctx.globalAlpha = flashAlpha;
         ctx.fillText('SCAN?', boxX + boxWidth / 2, boxY + 40);
+        ctx.globalAlpha = 1;
 
         ctx.shadowBlur = 0;
         ctx.textAlign = 'left';
@@ -2988,13 +3316,59 @@ function completePatternGame(star) {
         // Start natural phenomena sound
         startNaturalPhenomenaSound();
 
+        // Variety of natural phenomena descriptions
+        const naturalPhenomena = [
+            {
+                type: 'Pulsar radiation',
+                source: 'Rotating neutron star',
+                details: ['Regular periodic oscillations detected', 'Consistent with magnetar emissions']
+            },
+            {
+                type: 'Solar flare activity',
+                source: 'Stellar chromosphere',
+                details: ['Irregular burst patterns detected', 'High-energy particle emissions']
+            },
+            {
+                type: 'Magnetospheric emissions',
+                source: 'Planetary magnetic field',
+                details: ['Cyclotron radiation detected', 'Consistent with gas giant aurora']
+            },
+            {
+                type: 'Quasar background noise',
+                source: 'Distant active galactic nucleus',
+                details: ['Broadband radio emissions', 'Redshifted spectrum detected']
+            },
+            {
+                type: 'Stellar wind interference',
+                source: 'Coronal mass ejection',
+                details: ['Plasma wave modulation detected', 'Solar cycle correlation confirmed']
+            },
+            {
+                type: 'Interstellar medium scatter',
+                source: 'Ionized hydrogen cloud',
+                details: ['Signal dispersion measured', 'Consistent with H-II region']
+            },
+            {
+                type: 'Binary star oscillation',
+                source: 'Eclipsing binary system',
+                details: ['Periodic dimming pattern detected', 'Orbital mechanics confirmed']
+            },
+            {
+                type: 'Brown dwarf emissions',
+                source: 'Sub-stellar object',
+                details: ['Low-frequency radio bursts', 'Atmospheric electrical activity']
+            }
+        ];
+
+        const phenomenon = naturalPhenomena[Math.floor(Math.random() * naturalPhenomena.length)];
+
         const lines = [
             'ANALYSIS COMPLETE',
             '════════════════════════════',
-            'Signal characteristics: Pulsar radiation',
-            'Source: Natural stellar emissions',
-            'Regular periodic oscillations detected',
-            'Consistent with rotating neutron star',
+            `Signal characteristics: ${phenomenon.type}`,
+            `Source: ${phenomenon.source}`,
+            phenomenon.details[0],
+            phenomenon.details[1],
             '════════════════════════════',
             'CLASSIFICATION: NATURAL PHENOMENON'
         ];
@@ -3152,13 +3526,21 @@ function setupBootSequence() {
         }
     });
 
+    // Typing sounds for name input
+    const nameInput = document.getElementById('name-input');
+    nameInput.addEventListener('input', (e) => {
+        playTypingSound();
+    });
+
     // Proceed to array button
     document.getElementById('proceed-btn').addEventListener('click', () => {
         playClick();
         showView('starmap-view');
         // Show mailbox button now that user has entered the system
         document.getElementById('mailbox-btn').style.display = 'block';
-        log(`Dr. ${gameState.playerName} logged in - System ready`, 'highlight');
+
+        // Run starmap initialization sequence
+        initializeStarmapSequence();
 
         // Send welcome message after entering the starmap
         setTimeout(() => {
@@ -3166,6 +3548,209 @@ function setupBootSequence() {
             addMailMessage(welcome.from, welcome.subject, welcome.body);
         }, 3000);
     });
+}
+
+// Starmap initialization sequence
+function initializeStarmapSequence() {
+    const starmapSection = document.querySelector('.starmap-section');
+    const starGrid = document.getElementById('star-grid');
+    const canvas = document.getElementById('starmap-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Hide elements initially
+    starmapSection.style.opacity = '0';
+    starGrid.style.opacity = '0';
+
+    // Create initialization overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'starmap-init-overlay';
+    overlay.innerHTML = `
+        <div class="init-text" id="init-status">INITIALIZING DEEP SPACE ARRAY...</div>
+        <div class="init-progress">
+            <div class="init-bar" id="init-bar"></div>
+        </div>
+    `;
+
+    // Add overlay styles
+    const style = document.createElement('style');
+    style.id = 'starmap-init-styles';
+    style.textContent = `
+        #starmap-init-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .init-text {
+            color: #0f0;
+            font-family: 'VT323', monospace;
+            font-size: 24px;
+            text-shadow: 0 0 10px #0f0;
+            margin-bottom: 30px;
+            letter-spacing: 3px;
+        }
+        .init-progress {
+            width: 400px;
+            height: 20px;
+            border: 2px solid #0f0;
+            background: transparent;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+        .init-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #0f0, #0ff);
+            box-shadow: 0 0 20px #0f0;
+            transition: width 0.1s linear;
+        }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(overlay);
+
+    const initBar = document.getElementById('init-bar');
+    const initStatus = document.getElementById('init-status');
+
+    const initSteps = [
+        { progress: 10, text: 'CALIBRATING SENSORS...', delay: 300 },
+        { progress: 25, text: 'ESTABLISHING UPLINK...', delay: 400 },
+        { progress: 40, text: 'SYNCHRONIZING ARRAY...', delay: 350 },
+        { progress: 55, text: 'LOADING STELLAR CATALOG...', delay: 400 },
+        { progress: 70, text: 'MAPPING COORDINATES...', delay: 300 },
+        { progress: 85, text: 'SCANNING SECTOR 7...', delay: 450 },
+        { progress: 100, text: 'ARRAY ONLINE', delay: 300 }
+    ];
+
+    let stepIndex = 0;
+
+    function runInitStep() {
+        if (stepIndex < initSteps.length) {
+            const step = initSteps[stepIndex];
+            initBar.style.width = step.progress + '%';
+            initStatus.textContent = step.text;
+            playTypingSound();
+
+            stepIndex++;
+            setTimeout(runInitStep, step.delay);
+        } else {
+            // Initialization complete
+            setTimeout(() => {
+                // Fade out overlay
+                overlay.style.transition = 'opacity 0.5s';
+                overlay.style.opacity = '0';
+
+                // Fade in starmap
+                starmapSection.style.transition = 'opacity 1s';
+                starmapSection.style.opacity = '1';
+
+                // Animate stars appearing on canvas
+                animateStarsAppearing();
+
+                // Fade in star catalog
+                setTimeout(() => {
+                    starGrid.style.transition = 'opacity 0.8s';
+                    starGrid.style.opacity = '1';
+                }, 500);
+
+                // Clean up
+                setTimeout(() => {
+                    overlay.remove();
+                    style.remove();
+                    log(`Dr. ${gameState.playerName} logged in - System ready`, 'highlight');
+                }, 1000);
+            }, 500);
+        }
+    }
+
+    // Start initialization
+    setTimeout(runInitStep, 500);
+}
+
+// Animate stars appearing on the starmap canvas
+function animateStarsAppearing() {
+    const canvas = document.getElementById('starmap-canvas');
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+
+    // Store original star positions
+    const stars = [...gameState.stars];
+    let revealedStars = 0;
+    const totalStars = stars.length;
+
+    // Scan line effect
+    let scanY = 0;
+    const scanSpeed = 15;
+
+    function drawScanEffect() {
+        // Clear canvas
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, width, height);
+
+        // Draw grid lines (subtle)
+        ctx.strokeStyle = 'rgba(0, 255, 0, 0.1)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < width; x += 50) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, Math.min(scanY, height));
+            ctx.stroke();
+        }
+        for (let y = 0; y < Math.min(scanY, height); y += 50) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(width, y);
+            ctx.stroke();
+        }
+
+        // Draw scan line
+        ctx.strokeStyle = '#0f0';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = '#0f0';
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.moveTo(0, scanY);
+        ctx.lineTo(width, scanY);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Reveal stars as scan passes them
+        stars.forEach((star, index) => {
+            if (star.y <= scanY) {
+                // Draw revealed star
+                const isIntelligent = star.hasIntelligence;
+                ctx.fillStyle = isIntelligent ? '#0ff' : '#0f0';
+                ctx.shadowColor = isIntelligent ? '#0ff' : '#0f0';
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, isIntelligent ? 6 : 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Draw star label
+                ctx.fillStyle = '#0f0';
+                ctx.font = '10px VT323';
+                ctx.fillText(star.name, star.x + 10, star.y + 3);
+            }
+        });
+
+        scanY += scanSpeed;
+
+        if (scanY < height + 50) {
+            requestAnimationFrame(drawScanEffect);
+        } else {
+            // Scan complete, draw final state
+            renderStarMap();
+        }
+    }
+
+    drawScanEffect();
 }
 
 // Color Scheme Toggle
@@ -3362,6 +3947,7 @@ function startGame() {
     setupStarMapCanvas();
     startStarMapAnimation();
     setupBootSequence();
+    initDevMode(); // Initialize developer mode
 
     // Check for new mail periodically (every 60 seconds)
     setInterval(checkForNewMail, 60000);
