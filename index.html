@@ -42,12 +42,12 @@
                         <pre class="start-ascii">
 ╔═══════════════════════════════════════════════════════════════╗
 ║                                                               ║
-║     ░█████╗░░█████╗░███╗░░██╗████████╗░█████╗░░█████╗░████████╗    ║
-║     ██╔══██╗██╔══██╗████╗░██║╚══██╔══╝██╔══██╗██╔══██╗╚══██╔══╝    ║
-║     ██║░░╚═╝██║░░██║██╔██╗██║░░░██║░░░███████║██║░░╚═╝░░░██║░░░    ║
-║     ██║░░██╗██║░░██║██║╚████║░░░██║░░░██╔══██║██║░░██╗░░░██║░░░    ║
-║     ╚█████╔╝╚█████╔╝██║░╚███║░░░██║░░░██║░░██║╚█████╔╝░░░██║░░░    ║
-║     ░╚════╝░░╚════╝░╚═╝░░╚══╝░░░╚═╝░░░╚═╝░░╚═╝░╚════╝░░░░╚═╝░░░    ║
+║       ░██████╗██╗░██████╗░███╗░░██╗░█████╗░██╗░░░░░           ║
+║       ██╔════╝██║██╔════╝░████╗░██║██╔══██╗██║░░░░░           ║
+║       ╚█████╗░██║██║░░██╗░██╔██╗██║███████║██║░░░░░           ║
+║       ░╚═══██╗██║██║░░██║░██║╚████║██╔══██║██║░░░░░           ║
+║       ██████╔╝██║╚██████╔╝██║░╚███║██║░░██║███████╗           ║
+║       ╚═════╝░╚═╝░╚═════╝░╚═╝░░╚══╝╚═╝░░╚═╝╚══════╝           ║
 ║                                                               ║
 ║              DEEP SPACE SIGNAL ANALYSIS SYSTEM                ║
 ║                        Version 1.3.7                          ║
@@ -257,6 +257,29 @@
                         <div class="array-target" id="array-target-display">TARGET: NONE SELECTED</div>
                     </div>
 
+                    <!-- Tutorial Section -->
+                    <div class="array-tutorial">
+                        <div class="tutorial-title">ALIGNMENT PROTOCOL</div>
+                        <div class="tutorial-steps">
+                            <div class="tutorial-step">
+                                <span class="step-icon" style="color: #f00;">✕</span>
+                                <span class="step-text">Click dishes marked with <span style="color:#f00">X</span> to clear interference</span>
+                            </div>
+                            <div class="tutorial-step">
+                                <span class="step-icon" style="color: #ffa500;">○</span>
+                                <span class="step-text">Click unpowered dishes to bring them online (max 5)</span>
+                            </div>
+                            <div class="tutorial-step">
+                                <span class="step-icon" style="color: #0ff;">◐</span>
+                                <span class="step-text">Click powered dishes to rotate and align to target</span>
+                            </div>
+                            <div class="tutorial-step">
+                                <span class="step-icon" style="color: #0f0;">●</span>
+                                <span class="step-text">Right-click aligned dishes to power off if needed</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="array-container">
                         <!-- Y-Configuration Visual -->
                         <div class="array-visual" id="array-visual">
@@ -300,7 +323,10 @@
                         SELECT A WEAK SIGNAL TARGET TO CONFIGURE ARRAY
                     </div>
 
-                    <button class="btn" id="array-back-btn">RETURN TO CATALOG</button>
+                    <div class="array-button-row">
+                        <button class="btn" id="array-back-btn">RETURN TO CATALOG</button>
+                        <button class="btn array-scan-btn" id="array-scan-btn" style="display: none;">BEGIN SIGNAL ANALYSIS</button>
+                    </div>
                 </div>
 
                 <!-- Final Report Section -->
@@ -364,6 +390,22 @@
                         <div class="end-text end-continued">TO BE CONTINUED...</div>
                         <button class="btn end-restart-btn" id="restart-btn">NEW SHIFT</button>
                     </div>
+                </div>
+            </div>
+
+            <!-- Survey Complete Popup -->
+            <div id="survey-complete-popup" class="survey-complete-popup" style="display: none;">
+                <div class="survey-complete-content">
+                    <div class="survey-complete-icon">★</div>
+                    <div class="survey-complete-title">SURVEY COMPLETE</div>
+                    <div class="survey-complete-stats">
+                        <div class="survey-stat">100% OF TARGETS ANALYZED</div>
+                        <div class="survey-stat-detail" id="survey-summary-text"></div>
+                    </div>
+                    <div class="survey-complete-message">
+                        PREPARE FINAL SHIFT REPORT FOR TRANSMISSION
+                    </div>
+                    <button class="btn survey-submit-btn" id="survey-submit-btn">SUBMIT REPORT</button>
                 </div>
             </div>
 

@@ -738,13 +738,28 @@ function devLogState() {
 }
 
 function devTriggerEndState() {
+    console.log('devTriggerEndState called');
+    console.log('Stars count:', gameState.stars.length);
+
+    // Check if stars are initialized
+    if (!gameState.stars || gameState.stars.length === 0) {
+        console.error('Stars not initialized yet! Start the game first.');
+        return;
+    }
+
     // Mark all stars as analyzed for the report
     gameState.stars.forEach(star => {
         gameState.analyzedStars.add(star.id);
     });
+    console.log('Analyzed stars:', gameState.analyzedStars.size);
+
     showFinalReport();
     log('DEV: Triggered end state', 'highlight');
 }
+
+// Expose dev functions to window for console access
+window.devLogState = devLogState;
+window.devTriggerEndState = devTriggerEndState;
 
 // === END STATE FUNCTIONS ===
 
@@ -753,22 +768,52 @@ function checkForEndState() {
     if (gameState.analyzedStars.size >= gameState.stars.length) {
         // Delay a bit to let the last analysis complete
         setTimeout(() => {
-            log('ALL TARGETS ANALYZED - PREPARING FINAL REPORT', 'highlight');
-            setTimeout(showFinalReport, 2000);
+            showSurveyCompletePopup();
         }, 1500);
     }
 }
 
+function showSurveyCompletePopup() {
+    // Calculate stats for the popup
+    const contactCount = gameState.stars.filter(s => {
+        const scanResult = gameState.scanResults.get(s.id);
+        if (scanResult && scanResult.type === 'verified_signal') return true;
+        if (gameState.analyzedStars.has(s.id) && s.hasIntelligence) return true;
+        return false;
+    }).length;
+
+    const summaryText = contactCount > 0
+        ? `${contactCount} VERIFIED CONTACT${contactCount > 1 ? 'S' : ''} DETECTED`
+        : 'NO VERIFIED CONTACTS DETECTED';
+
+    document.getElementById('survey-summary-text').textContent = summaryText;
+
+    // Show the popup
+    const popup = document.getElementById('survey-complete-popup');
+    popup.style.display = 'flex';
+
+    log('ALL TARGETS ANALYZED - SURVEY COMPLETE', 'highlight');
+    playClick();
+}
+
 function showFinalReport() {
+    console.log('showFinalReport called');
+
     // Stop all sounds
     stopNaturalPhenomenaSound();
     stopAlienSignalSound();
     stopStaticHiss();
 
     // Generate report content
-    generateReportContent();
+    try {
+        generateReportContent();
+        console.log('Report content generated');
+    } catch (e) {
+        console.error('Error generating report:', e);
+    }
 
     // Show the report view
+    console.log('Showing report-view');
     showView('report-view');
 
     log('FINAL REPORT READY FOR SUBMISSION');
@@ -785,7 +830,13 @@ function generateReportContent() {
 
     // Survey summary
     const totalStars = gameState.stars.length;
-    const contactCount = gameState.contactedStars.size;
+    // Count contacts from analyzed stars that have intelligence OR from scanResults with verified_signal
+    const contactCount = gameState.stars.filter(s => {
+        const scanResult = gameState.scanResults.get(s.id);
+        if (scanResult && scanResult.type === 'verified_signal') return true;
+        if (gameState.analyzedStars.has(s.id) && s.hasIntelligence) return true;
+        return false;
+    }).length;
     const falsePositiveCount = gameState.stars.filter(s => s.isFalsePositive && gameState.analyzedStars.has(s.id)).length;
     const naturalCount = gameState.stars.filter(s =>
         !s.hasIntelligence && !s.isFalsePositive && gameState.analyzedStars.has(s.id)
@@ -843,8 +894,13 @@ function generateReportContent() {
     });
     document.getElementById('report-signal-log').innerHTML = signalLog;
 
-    // Classified section - alien contacts
-    const contactedStars = gameState.stars.filter(s => s.hasIntelligence);
+    // Classified section - alien contacts (only those actually analyzed/contacted)
+    const contactedStars = gameState.stars.filter(s => {
+        const scanResult = gameState.scanResults.get(s.id);
+        if (scanResult && scanResult.type === 'verified_signal') return true;
+        if (gameState.analyzedStars.has(s.id) && s.hasIntelligence) return true;
+        return false;
+    });
     let classifiedContent = '';
 
     if (contactCount > 0) {
@@ -856,12 +912,21 @@ function generateReportContent() {
 
         contactedStars.forEach(star => {
             const message = narrativeMessages.find(m => m.starIndex === star.id);
+            // Handle both regular messages and image-based messages
+            let messageText = 'Signal patterns indicate artificial origin.';
+            if (message) {
+                if (message.messages) {
+                    messageText = message.messages.slice(0, 3).join('<br>');
+                } else if (message.beforeImage) {
+                    messageText = message.beforeImage.slice(0, 3).join('<br>');
+                }
+            }
             classifiedContent += `
                 <div style="margin: 15px 0; padding: 10px; border: 1px solid #f00; background: rgba(100, 0, 0, 0.3);">
                     <div style="color: #ff0; font-size: 15px;">${star.name}</div>
                     <div style="color: #f00; font-size: 12px; margin-top: 5px;">SIGNAL ORIGIN: ${star.distance} LIGHT YEARS</div>
                     <div style="color: #fff; margin-top: 10px; font-size: 13px;">
-                        ${message ? message.messages.slice(0, 3).join('<br>') : 'Signal patterns indicate artificial origin.'}
+                        ${messageText}
                     </div>
                 </div>
             `;
@@ -1250,6 +1315,11 @@ function playLockAchieved() {
 
 // Start continuous tuning tone (changes with signal quality)
 function startTuningTone(quality) {
+    // Ensure audio context exists
+    if (!audioContext) {
+        initAudio();
+    }
+
     if (!audioContext || masterVolume === 0) {
         stopTuningTone();
         return;
@@ -1316,6 +1386,11 @@ function createWhiteNoiseBuffer() {
 
 // Start static hiss (loud at start, diminishes with signal quality)
 function startStaticHiss() {
+    // Ensure audio context exists
+    if (!audioContext) {
+        initAudio();
+    }
+
     if (!audioContext || masterVolume === 0) {
         stopStaticHiss();
         return;
@@ -1944,7 +2019,10 @@ function selectStar(starId) {
     const arrayBtn = document.getElementById('array-status-btn');
     if (star.signalStrength === 'weak') {
         arrayBtn.style.display = 'inline-block';
-        setArrayTarget(star);
+        // Only reset array if this is a different target star
+        if (!gameState.dishArray.currentTargetStar || gameState.dishArray.currentTargetStar.id !== star.id) {
+            setArrayTarget(star);
+        }
     } else {
         arrayBtn.style.display = 'none';
     }
@@ -2131,9 +2209,22 @@ function setupEventListeners() {
         showView(gameState.previousView || 'starmap-view');
     });
 
+    document.getElementById('array-scan-btn').addEventListener('click', () => {
+        playClick();
+        // Go directly to scan from array view
+        initiateScan();
+    });
+
     // End state event listeners
     document.getElementById('submit-report-btn').addEventListener('click', submitReport);
     document.getElementById('restart-btn').addEventListener('click', restartGame);
+
+    // Survey complete popup button
+    document.getElementById('survey-submit-btn').addEventListener('click', () => {
+        playClick();
+        document.getElementById('survey-complete-popup').style.display = 'none';
+        showFinalReport();
+    });
 }
 
 // Initiate scan
@@ -2181,10 +2272,10 @@ function initiateScan() {
 
     // Update target info in analysis view
     document.getElementById('target-name').textContent = star.name;
-    document.getElementById('target-coords').textContent = `RA ${star.coordinates.ra} / DEC ${star.coordinates.dec}`;
+    document.getElementById('target-coords').textContent = star.coordinates;
     document.getElementById('target-distance').textContent = star.distance;
-    document.getElementById('target-type').textContent = star.type;
-    document.getElementById('target-class').textContent = star.type.split(' ')[0];
+    document.getElementById('target-type').textContent = star.starType;
+    document.getElementById('target-class').textContent = star.starClass;
     document.getElementById('target-temp').textContent = star.temperature;
 
     // Draw star visualization in analysis view
@@ -3459,6 +3550,9 @@ function startStarMapAnimation() {
 // === TUNING MINIGAME ===
 
 function startTuningMinigame(star) {
+    // Ensure audio context is initialized
+    initAudio();
+
     // Generate random target values for this star
     gameState.targetFrequency = Math.floor(Math.random() * 60) + 20; // 20-80
     gameState.targetGain = Math.floor(Math.random() * 60) + 20; // 20-80
@@ -3531,7 +3625,7 @@ function tuningFeedbackLoop() {
     }
 
     // If we just became able to tune (dishes aligned), start the hiss
-    if (isWeakSignal && !staticNode) {
+    if (isWeakSignal && !staticNoiseNode) {
         startStaticHiss();
     }
 
@@ -3604,7 +3698,15 @@ function tuningFeedbackLoop() {
 
 function drawTuningWaveform(quality) {
     const waveCanvas = document.getElementById('waveform-canvas');
+    if (!waveCanvas) {
+        console.error('Waveform canvas not found');
+        return;
+    }
     const waveCtx = waveCanvas.getContext('2d');
+    if (!waveCtx) {
+        console.error('Could not get 2d context');
+        return;
+    }
     const width = waveCanvas.width;
     const height = waveCanvas.height;
 
@@ -4610,6 +4712,16 @@ function updateArrayStatus() {
     const alignBtn = document.getElementById('align-all-btn');
     if (alignBtn) {
         alignBtn.disabled = !gameState.dishArray.currentTargetStar;
+    }
+
+    // Show/hide scan button based on alignment status
+    const scanBtn = document.getElementById('array-scan-btn');
+    if (scanBtn) {
+        if (gameState.dishArray.currentTargetStar && poweredAndAligned >= required) {
+            scanBtn.style.display = 'inline-block';
+        } else {
+            scanBtn.style.display = 'none';
+        }
     }
 }
 
