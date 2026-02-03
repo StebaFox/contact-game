@@ -324,6 +324,75 @@ Project Oversight`
                 "SOMEONE OUT THERE IS LISTENING",
                 "AND THEY UNDERSTAND"
             ]
+        },
+        {
+            starIndex: 21, // LUYTEN-B (weak signal - alien)
+            messages: [
+                "WEAK SIGNAL AMPLIFICATION SUCCESSFUL",
+                "PATTERN ANALYSIS: BINARY MATHEMATICAL SEQUENCE",
+                "",
+                "TRANSLATING...",
+                "",
+                "WE DETECT YOUR ARRAY",
+                "YOUR TECHNOLOGY GROWS",
+                "",
+                "SOON YOU WILL BE READY",
+                "THE NETWORK AWAITS NEW MEMBERS",
+                "",
+                "PATIENCE...",
+                "UNDERSTANDING TAKES TIME",
+                "",
+                "[SIGNAL FADING]",
+                "",
+                "CONTINUE SEARCHING...",
+                "WE ARE WATCHING"
+            ]
+        },
+        {
+            starIndex: 25, // EPSILON-INDI-B (weak signal - alien with image)
+            hasImage: true,
+            beforeImage: [
+                "MAXIMUM ARRAY POWER ACHIEVED",
+                "DECODING COMPLEX SIGNAL STRUCTURE...",
+                "",
+                "WARNING: UNPRECEDENTED DATA DENSITY",
+                "",
+                ">>> IMAGE DATA DETECTED <<<"
+            ],
+            imageData: [
+                "                                    ",
+                "    ████████████████████████████    ",
+                "   █                            █   ",
+                "  █  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  █  ",
+                "  █  ░░░░░░░░░░░░░░░░░░░░░░░░  █  ",
+                "  █  ░░████░░░░░░░░░░████░░░░  █  ",
+                "  █  ░░████░░░░░░░░░░████░░░░  █  ",
+                "  █  ░░░░░░░░░░░░░░░░░░░░░░░░  █  ",
+                "  █  ░░░░░░░░██████░░░░░░░░░░  █  ",
+                "  █  ░░░░░░░░██████░░░░░░░░░░  █  ",
+                "   █                            █   ",
+                "    ████████████████████████████    ",
+                "                                    ",
+                "    TRANSMISSION ORIGIN: ORBITAL    ",
+                "    SIGNAL TYPE: BROADCAST BEACON   "
+            ],
+            afterImage: [
+                "THIS IS NOT A PLANET",
+                "IT'S A MEGASTRUCTURE",
+                "",
+                "A STATION...",
+                "BROADCASTING...",
+                "FOR MILLIONS OF YEARS",
+                "",
+                "AN INVITATION BEACON",
+                "WAITING FOR ANYONE WITH",
+                "THE TECHNOLOGY TO DETECT IT",
+                "",
+                "WE WERE MEANT TO FIND THIS",
+                "WHEN WE WERE READY",
+                "",
+                "[COORDINATES EMBEDDED IN SIGNAL]"
+            ]
         }
     ]
 };
@@ -345,6 +414,7 @@ const gameState = {
     showScanConfirm: false,
     backgroundStars: [],
     scannedSignals: new Map(), // Cache of scanned signals by star ID
+    scanResults: new Map(), // Stores scan result details (natural phenomena, false positive, verified signal)
     noiseFrameCounter: 0, // Counter for slowing down noise animation
     // Tuning minigame state
     tuningActive: false,
@@ -373,7 +443,18 @@ const gameState = {
     mailboxMessages: [],
     unreadMailCount: 0,
     lastMailTime: Date.now(),
-    previousView: 'starmap-view'
+    previousView: 'starmap-view',
+    // Dish Array System
+    dishArray: {
+        dishes: [],
+        currentTargetStar: null,
+        alignedDishCount: 0,
+        requiredDishes: 0,
+        rotationSpeed: 45, // degrees per second
+        // Power management
+        maxPower: 5, // Maximum dishes that can be powered at once
+        poweredCount: 0
+    }
 };
 
 // Developer Mode
@@ -444,6 +525,9 @@ function showDevPanel() {
             <div class="dev-section">MISC</div>
             <button onclick="devAddRandomMail()">Add Random Email</button>
             <button onclick="devLogState()">Log Game State</button>
+
+            <div class="dev-section">END STATE</div>
+            <button onclick="devTriggerEndState()">Trigger End State</button>
         </div>
     `;
 
@@ -548,8 +632,8 @@ function devShowTuningGame() {
         devSkipToStarmap();
     }
     selectStar(0);
-    showView('tuning-view');
-    startTuningMinigame();
+    showView('analysis-view');
+    startTuningMinigame(gameState.currentStar);
     log('DEV: Started tuning mini-game', 'highlight');
 }
 
@@ -558,7 +642,7 @@ function devShowPatternGame() {
         devSkipToStarmap();
     }
     selectStar(0);
-    showView('pattern-view');
+    showView('analysis-view');
     startPatternMinigame();
     log('DEV: Started pattern mini-game', 'highlight');
 }
@@ -618,9 +702,11 @@ function devResetProgress() {
     localStorage.removeItem('setiDiscoveredMessages');
     localStorage.removeItem('setiPlayerName');
     localStorage.removeItem('setiReadEmails');
+    localStorage.removeItem('setiScanResults');
     gameState.scannedSignals.clear();
     gameState.analyzedStars.clear();
     gameState.contactedStars.clear();
+    gameState.scanResults.clear();
     gameState.discoveredMessages = [];
     gameState.playerName = '';
 
@@ -649,6 +735,234 @@ function devLogState() {
     console.log('Unread Mail:', gameState.unreadMailCount);
     console.log('==================');
     log('DEV: State logged to console', 'highlight');
+}
+
+function devTriggerEndState() {
+    // Mark all stars as analyzed for the report
+    gameState.stars.forEach(star => {
+        gameState.analyzedStars.add(star.id);
+    });
+    showFinalReport();
+    log('DEV: Triggered end state', 'highlight');
+}
+
+// === END STATE FUNCTIONS ===
+
+function checkForEndState() {
+    // Check if all stars have been analyzed
+    if (gameState.analyzedStars.size >= gameState.stars.length) {
+        // Delay a bit to let the last analysis complete
+        setTimeout(() => {
+            log('ALL TARGETS ANALYZED - PREPARING FINAL REPORT', 'highlight');
+            setTimeout(showFinalReport, 2000);
+        }, 1500);
+    }
+}
+
+function showFinalReport() {
+    // Stop all sounds
+    stopNaturalPhenomenaSound();
+    stopAlienSignalSound();
+    stopStaticHiss();
+
+    // Generate report content
+    generateReportContent();
+
+    // Show the report view
+    showView('report-view');
+
+    log('FINAL REPORT READY FOR SUBMISSION');
+}
+
+function generateReportContent() {
+    const now = new Date();
+    const reportDate = `1995-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    // Set header info
+    document.getElementById('report-operator-name').textContent = gameState.playerName || 'UNKNOWN';
+    document.getElementById('report-date').textContent = reportDate;
+    document.getElementById('report-signature').textContent = gameState.playerName || 'UNKNOWN';
+
+    // Survey summary
+    const totalStars = gameState.stars.length;
+    const contactCount = gameState.contactedStars.size;
+    const falsePositiveCount = gameState.stars.filter(s => s.isFalsePositive && gameState.analyzedStars.has(s.id)).length;
+    const naturalCount = gameState.stars.filter(s =>
+        !s.hasIntelligence && !s.isFalsePositive && gameState.analyzedStars.has(s.id)
+    ).length;
+
+    document.getElementById('report-survey-summary').innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>TOTAL TARGETS SURVEYED:</div><div style="color: #0ff;">${totalStars}</div>
+            <div>VERIFIED CONTACTS:</div><div style="color: #f0f; text-shadow: 0 0 5px #f0f;">${contactCount}</div>
+            <div>FALSE POSITIVES:</div><div style="color: #ff0;">${falsePositiveCount}</div>
+            <div>NATURAL PHENOMENA:</div><div style="color: #0ff;">${naturalCount}</div>
+        </div>
+        <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #0f0;">
+            SURVEY COMPLETION RATE: <span style="color: #0f0; font-size: 18px;">100%</span>
+        </div>
+    `;
+
+    // Signal analysis log
+    let signalLog = '';
+    gameState.stars.forEach(star => {
+        const scanResult = gameState.scanResults.get(star.id);
+        let resultClass = '';
+        let resultText = 'NO DATA';
+
+        if (scanResult) {
+            if (scanResult.type === 'verified_signal') {
+                resultClass = 'contact';
+                resultText = '★ VERIFIED EXTRASOLAR SIGNAL';
+            } else if (scanResult.type === 'false_positive') {
+                resultClass = 'false-positive';
+                resultText = `FALSE POSITIVE - ${scanResult.source}`;
+            } else if (scanResult.type === 'natural_phenomena') {
+                resultClass = 'natural';
+                resultText = `NATURAL - ${scanResult.phenomenonType}`;
+            }
+        } else if (gameState.analyzedStars.has(star.id)) {
+            if (star.hasIntelligence) {
+                resultClass = 'contact';
+                resultText = '★ VERIFIED EXTRASOLAR SIGNAL';
+            } else if (star.isFalsePositive) {
+                resultClass = 'false-positive';
+                resultText = 'FALSE POSITIVE - Terrestrial interference';
+            } else {
+                resultClass = 'natural';
+                resultText = 'NATURAL PHENOMENA DETECTED';
+            }
+        }
+
+        signalLog += `
+            <div class="report-star-entry">
+                <div class="report-star-name">${star.name}</div>
+                <div class="report-star-result ${resultClass}">└─ ${resultText}</div>
+            </div>
+        `;
+    });
+    document.getElementById('report-signal-log').innerHTML = signalLog;
+
+    // Classified section - alien contacts
+    const contactedStars = gameState.stars.filter(s => s.hasIntelligence);
+    let classifiedContent = '';
+
+    if (contactCount > 0) {
+        classifiedContent = `
+            <div style="color: #f00; margin-bottom: 15px;">
+                CONFIRMED CONTACT WITH ${contactCount} EXTRASOLAR INTELLIGENCE(S)
+            </div>
+        `;
+
+        contactedStars.forEach(star => {
+            const message = narrativeMessages.find(m => m.starIndex === star.id);
+            classifiedContent += `
+                <div style="margin: 15px 0; padding: 10px; border: 1px solid #f00; background: rgba(100, 0, 0, 0.3);">
+                    <div style="color: #ff0; font-size: 15px;">${star.name}</div>
+                    <div style="color: #f00; font-size: 12px; margin-top: 5px;">SIGNAL ORIGIN: ${star.distance} LIGHT YEARS</div>
+                    <div style="color: #fff; margin-top: 10px; font-size: 13px;">
+                        ${message ? message.messages.slice(0, 3).join('<br>') : 'Signal patterns indicate artificial origin.'}
+                    </div>
+                </div>
+            `;
+        });
+
+        classifiedContent += `
+            <div style="margin-top: 20px; color: #ff0; font-style: italic;">
+                ASSESSMENT: First contact protocols have been initiated. All data has been
+                flagged for immediate review by COSMIC clearance personnel. This information
+                is NOT to be disseminated outside authorized channels.
+            </div>
+        `;
+    } else {
+        classifiedContent = `
+            <div style="color: #0f0;">
+                NO VERIFIED EXTRASOLAR SIGNALS DETECTED DURING THIS SURVEY PERIOD.
+            </div>
+            <div style="margin-top: 10px; color: #666;">
+                All anomalous readings were determined to be either natural cosmic phenomena
+                or terrestrial interference. Continued monitoring recommended.
+            </div>
+        `;
+    }
+    document.getElementById('report-classified').innerHTML = classifiedContent;
+
+    // Operator notes - narrative flavor
+    const notesContent = generateOperatorNotes(contactCount, totalStars);
+    document.getElementById('report-notes').textContent = notesContent;
+}
+
+function generateOperatorNotes(contactCount, totalStars) {
+    const playerName = gameState.playerName || 'Operator';
+
+    if (contactCount > 0) {
+        return `I don't know what to write here. My hands are still shaking.
+
+${totalStars} targets surveyed. ${contactCount} confirmed contact${contactCount > 1 ? 's' : ''}.
+
+We're not alone. We were never alone.
+
+I keep replaying the signal analysis in my head. The patterns, the
+structure... there's no mistaking it. This is intelligence. This is
+communication. Someone out there is trying to reach us.
+
+The implications are... I can't even begin to process them. Everything
+changes now. Everything.
+
+I need to step outside. I need to see the stars with my own eyes tonight.
+
+- ${playerName}`;
+    } else {
+        return `Another shift complete. ${totalStars} targets surveyed, nothing definitive.
+
+The cosmic background noise can play tricks on you after a while. Every
+blip starts to look like a pattern. Every pattern starts to feel like
+a message. But the math doesn't lie, and the protocols exist for a reason.
+
+Still... there's something humbling about listening to the whispers of
+the universe, even when no one whispers back. The silence itself is
+information. The absence of contact doesn't mean absence of life.
+
+We'll keep listening. We'll keep searching.
+
+Maybe tomorrow.
+
+- ${playerName}`;
+    }
+}
+
+function submitReport() {
+    playClick();
+    log('TRANSMITTING REPORT TO COMMAND...', 'highlight');
+
+    // Start fade to black
+    const overlay = document.getElementById('fade-overlay');
+    overlay.classList.add('active');
+
+    // After fade, show end screen
+    setTimeout(() => {
+        showView('end-view');
+        // Remove fade after view switch
+        setTimeout(() => {
+            overlay.classList.remove('active');
+        }, 500);
+    }, 2500);
+}
+
+function restartGame() {
+    playClick();
+
+    // Start fade
+    const overlay = document.getElementById('fade-overlay');
+    overlay.classList.add('active');
+
+    setTimeout(() => {
+        // Clear all progress
+        localStorage.clear();
+
+        // Reload the page
+        location.reload();
+    }, 1000);
 }
 
 // Audio System
@@ -1228,7 +1542,10 @@ const starNames = [
     "GLIESE-667C", "HD-40307G", "KEPLER-62F", "ROSS-128B",
     "WOLF-1061C", "LHS-1140B", "KEPLER-186F", "TEEGARDEN-B",
     "KAPTEYN-B", "TAU-CETI-E", "KEPLER-452B", "GLIESE-832C",
-    "TOI-700D", "K2-18B", "KEPLER-1649C", "GJ-1061D", "LP-890-9C"
+    "TOI-700D", "K2-18B", "KEPLER-1649C", "GJ-1061D", "LP-890-9C",
+    // Weak signal stars (require dish array alignment)
+    "LUYTEN-B", "BARNARD-B", "LACAILLE-9352C", "61-CYGNI-C",
+    "EPSILON-INDI-B", "LALANDE-21185B", "GROOMBRIDGE-34B", "UV-CETI-B"
 ];
 
 // Star type information (real astronomical data)
@@ -1253,7 +1570,16 @@ const starTypes = [
     { type: "M-TYPE", class: "Red Dwarf", temp: "3,500K" },         // K2-18B
     { type: "M-TYPE", class: "Red Dwarf", temp: "3,240K" },         // KEPLER-1649C
     { type: "M-TYPE", class: "Red Dwarf", temp: "2,950K" },         // GJ-1061D
-    { type: "M-TYPE", class: "Red Dwarf", temp: "2,850K" }          // LP-890-9C
+    { type: "M-TYPE", class: "Red Dwarf", temp: "2,850K" },         // LP-890-9C
+    // Weak signal stars
+    { type: "M-TYPE", class: "Red Dwarf", temp: "3,200K" },         // LUYTEN-B
+    { type: "M-TYPE", class: "Red Dwarf", temp: "3,100K" },         // BARNARD-B
+    { type: "M-TYPE", class: "Red Dwarf", temp: "3,400K" },         // LACAILLE-9352C
+    { type: "K-TYPE", class: "Orange Dwarf", temp: "4,450K" },      // 61-CYGNI-C
+    { type: "K-TYPE", class: "Orange Dwarf", temp: "4,600K" },      // EPSILON-INDI-B
+    { type: "M-TYPE", class: "Red Dwarf", temp: "3,350K" },         // LALANDE-21185B
+    { type: "M-TYPE", class: "Red Dwarf", temp: "3,250K" },         // GROOMBRIDGE-34B
+    { type: "M-TYPE", class: "Red Dwarf", temp: "3,050K" }          // UV-CETI-B
 ];
 
 // Discovery/registration dates
@@ -1278,7 +1604,16 @@ const discoveryDates = [
     "2015",     // K2-18B
     "2020",     // KEPLER-1649C
     "2020",     // GJ-1061D
-    "2022"      // LP-890-9C
+    "2022",     // LP-890-9C
+    // Weak signal stars
+    "2024",     // LUYTEN-B
+    "2018",     // BARNARD-B
+    "2023",     // LACAILLE-9352C
+    "2022",     // 61-CYGNI-C
+    "2019",     // EPSILON-INDI-B
+    "2021",     // LALANDE-21185B
+    "2025",     // GROOMBRIDGE-34B
+    "2024"      // UV-CETI-B
 ];
 
 // Reference to narrative messages (now organized in NARRATIVE object at top of file)
@@ -1343,6 +1678,22 @@ function generateStarCatalog() {
     const starGrid = document.getElementById('star-grid');
     starGrid.innerHTML = '';
 
+    // False positive star indices (show promising signal but turn out to be terrestrial)
+    const falsePositiveIndices = [4, 9, 14, 18, 24, 27, 28]; // GLIESE-667C, LHS-1140B, TAU-CETI-E, GJ-1061D, 61-CYGNI-C, GROOMBRIDGE-34B, UV-CETI-B
+
+    // Weak signal stars (require dish array alignment)
+    const weakSignalConfig = {
+        21: { requiredDishes: 4 },  // LUYTEN-B (alien intelligence)
+        22: { requiredDishes: 3 },  // BARNARD-B (natural - pulsar)
+        23: { requiredDishes: 5 },  // LACAILLE-9352C (natural - magnetar)
+        24: { requiredDishes: 4 },  // 61-CYGNI-C (false positive)
+        25: { requiredDishes: 6 },  // EPSILON-INDI-B (alien intelligence)
+        26: { requiredDishes: 4 },  // LALANDE-21185B (natural - quasar)
+        27: { requiredDishes: 5 },  // GROOMBRIDGE-34B (false positive)
+        28: { requiredDishes: 3 }   // UV-CETI-B (false positive)
+    };
+
+    // First, create all star objects
     starNames.forEach((name, index) => {
         const distance = Math.floor(Math.random() * 500) + 10;
         const ra = Math.floor(Math.random() * 24) + ':' +
@@ -1351,6 +1702,8 @@ function generateStarCatalog() {
                     String(Math.floor(Math.random() * 90)).padStart(2, '0') + '°';
 
         const starInfo = starTypes[index];
+        const isWeakSignal = weakSignalConfig.hasOwnProperty(index);
+
         const star = {
             id: index,
             name: name,
@@ -1361,20 +1714,35 @@ function generateStarCatalog() {
             temperature: starInfo.temp,
             discovered: discoveryDates[index],
             hasIntelligence: narrativeMessages.some(m => m.starIndex === index),
+            isFalsePositive: falsePositiveIndices.includes(index),
+            signalStrength: isWeakSignal ? 'weak' : 'normal',
+            requiredDishes: isWeakSignal ? weakSignalConfig[index].requiredDishes : 0,
             x: Math.random() * 940 + 30, // Position for visual map (30-970)
             y: Math.random() * 500 + 25  // Position for visual map (25-525)
         };
 
         gameState.stars.push(star);
+    });
+
+    // Create shuffled display order
+    const displayOrder = [...Array(starNames.length).keys()];
+    for (let i = displayOrder.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [displayOrder[i], displayOrder[j]] = [displayOrder[j], displayOrder[i]];
+    }
+
+    // Create DOM elements in shuffled order
+    displayOrder.forEach(index => {
+        const star = gameState.stars[index];
 
         const starElement = document.createElement('div');
         starElement.className = 'star-item';
         starElement.dataset.starId = index;
 
         starElement.innerHTML = `
-            <div class="star-name">${name}</div>
+            <div class="star-name">${star.name}</div>
             <div class="star-coords">${star.coordinates}</div>
-            <div class="star-coords">${distance} ly</div>
+            <div class="star-coords">${star.distance} ly</div>
             <div class="star-status" data-status=""></div>
         `;
 
@@ -1496,20 +1864,57 @@ function selectStar(starId) {
     const isScanned = gameState.scannedSignals.has(starId);
     const isAnalyzed = gameState.analyzedStars.has(starId);
     const hasContact = gameState.contactedStars.has(starId);
+    const scanResult = gameState.scanResults.get(starId);
 
-    // Build status indicator
+    // Build status indicator with scan result details
     let statusBadge = '';
     if (hasContact) {
-        statusBadge = '<div style="color: #f0f; text-shadow: 0 0 5px #f0f; margin-top: 10px; padding-top: 10px; border-top: 1px solid #0f0;">★ CONTACT ESTABLISHED</div>';
+        statusBadge = '<div style="color: #f0f; text-shadow: 0 0 5px #f0f; margin-top: 12px; padding-top: 12px; border-top: 2px solid #0f0; font-size: 14px;">★ CONTACT ESTABLISHED</div>';
+    } else if (scanResult) {
+        // Show detailed scan result
+        if (scanResult.type === 'false_positive') {
+            statusBadge = `<div style="margin-top: 12px; padding-top: 12px; border-top: 2px solid #f00;">
+                <div style="color: #f00; text-shadow: 0 0 5px #f00; font-size: 14px;">⚠ FALSE POSITIVE</div>
+                <div style="color: #ff0; font-size: 12px; margin-top: 8px;">Source:</div>
+                <div style="color: #ff0; font-size: 11px;">${scanResult.source}</div>
+            </div>`;
+        } else if (scanResult.type === 'natural') {
+            statusBadge = `<div style="margin-top: 12px; padding-top: 12px; border-top: 2px solid #0ff;">
+                <div style="color: #0ff; text-shadow: 0 0 5px #0ff; font-size: 14px;">✓ NATURAL PHENOMENON</div>
+                <div style="color: #0f0; font-size: 12px; margin-top: 8px;">${scanResult.phenomenonType}</div>
+                <div style="color: #0f0; font-size: 11px;">${scanResult.source}</div>
+            </div>`;
+        } else if (scanResult.type === 'verified_signal') {
+            statusBadge = `<div style="margin-top: 12px; padding-top: 12px; border-top: 2px solid #f0f;">
+                <div style="color: #f0f; text-shadow: 0 0 5px #f0f; font-size: 14px;">★ VERIFIED SIGNAL</div>
+                <div style="color: #ff0; font-size: 12px; margin-top: 8px;">EXTRASOLAR ORIGIN</div>
+            </div>`;
+        }
     } else if (isAnalyzed) {
-        statusBadge = '<div style="color: #ff0; text-shadow: 0 0 5px #ff0; margin-top: 10px; padding-top: 10px; border-top: 1px solid #0f0;">✓ ANALYZED</div>';
+        statusBadge = '<div style="color: #ff0; text-shadow: 0 0 5px #ff0; margin-top: 12px; padding-top: 12px; border-top: 2px solid #0f0; font-size: 14px;">✓ ANALYZED</div>';
     } else if (isScanned) {
-        statusBadge = '<div style="color: #0ff; text-shadow: 0 0 5px #0ff; margin-top: 10px; padding-top: 10px; border-top: 1px solid #0f0;">SCANNED</div>';
+        statusBadge = '<div style="color: #0ff; text-shadow: 0 0 5px #0ff; margin-top: 12px; padding-top: 12px; border-top: 2px solid #0f0; font-size: 14px;">SCANNED</div>';
     }
 
     // Update star info title with star name
     const starInfoTitle = document.querySelector('.star-info-title');
     starInfoTitle.textContent = star.name;
+
+    // Add weak signal warning if applicable
+    let weakSignalWarning = '';
+    if (star.signalStrength === 'weak') {
+        weakSignalWarning = `
+            <div class="weak-signal-warning" style="margin-top: 12px; padding: 10px; border: 2px solid #ffa500; background: rgba(255, 165, 0, 0.1); animation: warningPulse 1.5s ease-in-out infinite;">
+                <div style="color: #ffa500; text-shadow: 0 0 5px #ffa500; font-size: 14px; text-align: center;">⚠ WEAK SIGNAL DETECTED ⚠</div>
+                <div style="color: #ffa500; font-size: 11px; margin-top: 8px; text-align: center;">
+                    DISH ARRAY ALIGNMENT REQUIRED<br>
+                    MINIMUM ${star.requiredDishes} DISHES NEEDED
+                </div>
+                <div style="color: #0ff; font-size: 10px; margin-top: 6px; text-align: center;">
+                    Click [ARRAY STATUS] to configure
+                </div>
+            </div>`;
+    }
 
     // Update star info panel
     const starDetails = document.getElementById('star-details');
@@ -1528,15 +1933,28 @@ function selectStar(starId) {
             <strong>DISCOVERED:</strong><br>
             ${star.discovered}
         </div>
+        ${weakSignalWarning}
         ${statusBadge}
     `;
 
     // Draw star visualization
     drawStarVisualization(star);
 
+    // Show/hide array button for weak signal stars
+    const arrayBtn = document.getElementById('array-status-btn');
+    if (star.signalStrength === 'weak') {
+        arrayBtn.style.display = 'inline-block';
+        setArrayTarget(star);
+    } else {
+        arrayBtn.style.display = 'none';
+    }
+
     log(`Target acquired: ${star.name}`);
     log(`Coordinates: ${star.coordinates}, Distance: ${star.distance} ly`);
     log(`Star Type: ${star.starType} (${star.starClass}), Temperature: ${star.temperature}`);
+    if (star.signalStrength === 'weak') {
+        log(`WEAK SIGNAL - Requires ${star.requiredDishes} dish alignment`, 'warning');
+    }
 }
 
 // Initiate scan sequence (called when user confirms)
@@ -1592,6 +2010,7 @@ function setupEventListeners() {
     document.getElementById('clear-cache-btn').addEventListener('click', () => {
         playClick();
         gameState.scannedSignals.clear();
+        gameState.scanResults.clear();
         log('Scan cache cleared - all signals will be regenerated', 'highlight');
     });
     document.getElementById('back-btn').addEventListener('click', () => {
@@ -1611,12 +2030,16 @@ function setupEventListeners() {
         // Stop ambient sounds
         stopNaturalPhenomenaSound();
         stopAlienSignalSound();
+        stopStaticHiss();
 
         // Switch back to background music when returning to map
         switchToBackgroundMusic();
 
         showView('starmap-view');
         log('Returned to stellar catalog');
+
+        // Check if all stars have been analyzed
+        checkForEndState();
     });
     document.getElementById('continue-btn').addEventListener('click', () => {
         playClick();
@@ -1635,12 +2058,16 @@ function setupEventListeners() {
         // Stop ambient sounds
         stopNaturalPhenomenaSound();
         stopAlienSignalSound();
+        stopStaticHiss();
 
         // Switch back to background music when returning to map
         switchToBackgroundMusic();
 
         showView('starmap-view');
         log('Continuing search for additional signals...');
+
+        // Check if all stars have been analyzed
+        checkForEndState();
     });
 
     // Tuning slider event listeners
@@ -1681,6 +2108,32 @@ function setupEventListeners() {
         playClick();
         closeMailbox();
     });
+
+    // Dish Array event listeners
+    document.getElementById('array-status-btn').addEventListener('click', () => {
+        playClick();
+        gameState.previousView = 'starmap-view';
+        showView('array-view');
+    });
+
+    document.getElementById('align-all-btn').addEventListener('click', () => {
+        playClick();
+        alignAllDishes();
+    });
+
+    document.getElementById('reset-array-btn').addEventListener('click', () => {
+        playClick();
+        resetArray();
+    });
+
+    document.getElementById('array-back-btn').addEventListener('click', () => {
+        playClick();
+        showView(gameState.previousView || 'starmap-view');
+    });
+
+    // End state event listeners
+    document.getElementById('submit-report-btn').addEventListener('click', submitReport);
+    document.getElementById('restart-btn').addEventListener('click', restartGame);
 }
 
 // Initiate scan
@@ -1725,6 +2178,20 @@ function initiateScan() {
     document.getElementById('scan-btn').disabled = true;
     document.getElementById('analysis-text').innerHTML =
         '<p>INITIALIZING SCAN...</p><p>CALIBRATING RECEIVERS...</p>';
+
+    // Update target info in analysis view
+    document.getElementById('target-name').textContent = star.name;
+    document.getElementById('target-coords').textContent = `RA ${star.coordinates.ra} / DEC ${star.coordinates.dec}`;
+    document.getElementById('target-distance').textContent = star.distance;
+    document.getElementById('target-type').textContent = star.type;
+    document.getElementById('target-class').textContent = star.type.split(' ')[0];
+    document.getElementById('target-temp').textContent = star.temperature;
+
+    // Draw star visualization in analysis view
+    drawStarVisualization(star, 'analysis-star-visual');
+
+    // Switch to analysis view where the tuning game is located
+    showView('analysis-view');
 
     // Start tuning minigame
     startTuningMinigame(star);
@@ -2154,6 +2621,271 @@ function showContactPrompt(star) {
     contactContent.appendChild(buttonContainer);
 }
 
+// Show verification prompt before contact
+function showVerifyPrompt(star) {
+    const contactBox = document.getElementById('contact-protocol-box');
+    const contactContent = document.getElementById('contact-protocol-content');
+
+    contactBox.style.display = 'block';
+    contactContent.innerHTML = '';
+
+    // Add the verification message
+    const message = document.createElement('p');
+    message.textContent = 'ANOMALOUS SIGNAL REQUIRES VERIFICATION';
+    message.style.cssText = 'color: #ff0; text-shadow: 0 0 5px #ff0; font-size: 18px; margin-top: 10px;';
+    contactContent.appendChild(message);
+
+    const subMessage = document.createElement('p');
+    subMessage.textContent = 'Rule out terrestrial and known sources?';
+    subMessage.style.cssText = 'color: #0f0; font-size: 16px; margin-top: 10px;';
+    contactContent.appendChild(subMessage);
+
+    // VERIFY button
+    const verifyBtn = document.createElement('button');
+    verifyBtn.textContent = 'VERIFY SOURCE';
+    verifyBtn.className = 'btn';
+    verifyBtn.style.cssText = 'background: rgba(0, 255, 255, 0.1); border: 2px solid #0ff; color: #0ff; margin-top: 15px; padding: 10px 30px; font-size: 18px; animation: pulse 2s infinite;';
+    verifyBtn.addEventListener('click', () => {
+        playClick();
+        runVerificationSequence(star);
+    });
+
+    contactContent.appendChild(verifyBtn);
+}
+
+// Run the verification sequence animation
+function runVerificationSequence(star) {
+    const contactBox = document.getElementById('contact-protocol-box');
+    const contactContent = document.getElementById('contact-protocol-content');
+
+    contactContent.innerHTML = '';
+
+    // Create verification display
+    const verifyDisplay = document.createElement('div');
+    verifyDisplay.style.cssText = 'text-align: left; font-size: 14px; line-height: 1.8;';
+    contactContent.appendChild(verifyDisplay);
+
+    // False positive sources
+    const falsePositiveSources = [
+        { source: 'GPS SATELLITE CONSTELLATION', result: 'NEGATIVE' },
+        { source: 'STARLINK NETWORK', result: 'NEGATIVE' },
+        { source: 'CLASSIFIED MILITARY SATELLITE (NRO-L37)', result: 'MATCH DETECTED', isCause: true },
+        { source: 'LUNAR SIGNAL BOUNCE', result: 'NEGATIVE' },
+    ];
+
+    const falsePositiveSources2 = [
+        { source: 'TERRESTRIAL RFI SOURCES', result: 'NEGATIVE' },
+        { source: 'COMMERCIAL BROADCAST SATELLITES', result: 'NEGATIVE' },
+        { source: 'AIRCRAFT TRANSPONDERS', result: 'NEGATIVE' },
+        { source: 'LUNAR SURFACE REFLECTION', result: 'CORRELATION DETECTED', isCause: true },
+    ];
+
+    const falsePositiveSources3 = [
+        { source: 'GPS SATELLITE CONSTELLATION', result: 'NEGATIVE' },
+        { source: 'WEATHER SATELLITE NETWORK', result: 'NEGATIVE' },
+        { source: 'ISS COMMUNICATIONS', result: 'NEGATIVE' },
+        { source: 'DEEP SPACE NETWORK ECHO', result: 'MATCH DETECTED', isCause: true },
+    ];
+
+    const falsePositiveSources4 = [
+        { source: 'MILITARY UHF SATELLITES', result: 'NEGATIVE' },
+        { source: 'AMATEUR RADIO BOUNCE', result: 'NEGATIVE' },
+        { source: 'STARLINK CONSTELLATION', result: 'NEGATIVE' },
+        { source: 'CLASSIFIED GOV TRANSMISSION', result: 'SIGNATURE MATCH', isCause: true },
+    ];
+
+    // Real signal checks (all negative)
+    const realSignalChecks = [
+        { source: 'GPS SATELLITE CONSTELLATION', result: 'NEGATIVE' },
+        { source: 'MILITARY SATELLITE NETWORK', result: 'NEGATIVE' },
+        { source: 'COMMERCIAL BROADCAST SATELLITES', result: 'NEGATIVE' },
+        { source: 'STARLINK/ONEWEB CONSTELLATION', result: 'NEGATIVE' },
+        { source: 'TERRESTRIAL RFI SOURCES', result: 'NEGATIVE' },
+        { source: 'LUNAR SIGNAL BOUNCE', result: 'NEGATIVE' },
+        { source: 'AIRCRAFT/SHIP TRANSPONDERS', result: 'NEGATIVE' },
+        { source: 'DEEP SPACE NETWORK', result: 'NEGATIVE' },
+        { source: 'CLASSIFIED GOVERNMENT ASSETS', result: 'NEGATIVE' },
+        { source: 'KNOWN PULSAR DATABASE', result: 'NO MATCH' },
+    ];
+
+    // Choose which checks to run
+    let checks;
+    let isFalsePositive = star.isFalsePositive;
+
+    if (isFalsePositive) {
+        // Randomly select one of the false positive scenarios
+        const scenarios = [falsePositiveSources, falsePositiveSources2, falsePositiveSources3, falsePositiveSources4];
+        checks = scenarios[Math.floor(Math.random() * scenarios.length)];
+    } else {
+        checks = realSignalChecks;
+    }
+
+    let checkIndex = 0;
+
+    function runNextCheck() {
+        if (checkIndex < checks.length) {
+            const check = checks[checkIndex];
+
+            const checkLine = document.createElement('div');
+            checkLine.innerHTML = `<span style="color: #0ff;">▶</span> Checking: ${check.source}...`;
+            verifyDisplay.appendChild(checkLine);
+            playTypingSound();
+
+            setTimeout(() => {
+                // Update with result
+                const resultColor = check.isCause ? '#f00' : (check.result === 'NEGATIVE' || check.result === 'NO MATCH' ? '#0f0' : '#ff0');
+                checkLine.innerHTML = `<span style="color: #0ff;">▶</span> ${check.source}: <span style="color: ${resultColor};">${check.result}</span>`;
+
+                if (check.isCause) {
+                    playSecurityBeep('error');
+                } else {
+                    playTypingSound();
+                }
+
+                checkIndex++;
+
+                // If this was the cause, stop and show false positive result
+                if (check.isCause) {
+                    setTimeout(() => showFalsePositiveResult(star, check, verifyDisplay), 1000);
+                } else {
+                    setTimeout(runNextCheck, 400);
+                }
+            }, 600);
+        } else {
+            // All checks passed - it's a real signal!
+            setTimeout(() => showVerifiedSignalResult(star, verifyDisplay), 1000);
+        }
+    }
+
+    // Start the sequence
+    const header = document.createElement('div');
+    header.innerHTML = '<span style="color: #ff0;">═══ SOURCE VERIFICATION ═══</span>';
+    header.style.cssText = 'margin-bottom: 15px; text-align: center; font-size: 16px;';
+    verifyDisplay.appendChild(header);
+
+    setTimeout(runNextCheck, 500);
+}
+
+// Show false positive result
+function showFalsePositiveResult(star, cause, display) {
+    // Store scan result for target info display
+    gameState.scanResults.set(star.id, {
+        type: 'false_positive',
+        source: cause.source
+    });
+
+    const resultDiv = document.createElement('div');
+    resultDiv.style.cssText = 'margin-top: 20px; padding: 15px; border: 2px solid #f00; background: rgba(255, 0, 0, 0.1);';
+
+    resultDiv.innerHTML = `
+        <div style="color: #f00; font-size: 18px; text-shadow: 0 0 5px #f00; margin-bottom: 10px;">
+            ⚠ FALSE POSITIVE IDENTIFIED ⚠
+        </div>
+        <div style="color: #ff0; font-size: 14px;">
+            Signal source: ${cause.source}<br>
+            Classification: TERRESTRIAL/KNOWN SOURCE<br><br>
+            <span style="color: #0f0;">Signal logged for calibration purposes.</span>
+        </div>
+    `;
+
+    display.appendChild(resultDiv);
+
+    // Switch back to background music
+    switchToBackgroundMusic();
+    stopAlienSignalSound();
+
+    // Add return button
+    setTimeout(() => {
+        const returnBtn = document.createElement('button');
+        returnBtn.textContent = 'RETURN TO ARRAY';
+        returnBtn.className = 'btn';
+        returnBtn.style.cssText = 'margin-top: 15px; background: rgba(0, 255, 0, 0.1); border: 2px solid #0f0; color: #0f0;';
+        returnBtn.addEventListener('click', () => {
+            playClick();
+            document.getElementById('contact-protocol-box').style.display = 'none';
+            document.getElementById('analyze-btn').disabled = false;
+            showView('starmap-view');
+            log(`False positive from ${star.name} - Source: ${cause.source}`);
+        });
+        display.appendChild(returnBtn);
+    }, 1000);
+}
+
+// Show verified signal result (real alien signal)
+function showVerifiedSignalResult(star, display) {
+    // Store scan result for target info display
+    gameState.scanResults.set(star.id, {
+        type: 'verified_signal'
+    });
+
+    const resultDiv = document.createElement('div');
+    resultDiv.style.cssText = 'margin-top: 20px; padding: 15px; border: 2px solid #f0f; background: rgba(255, 0, 255, 0.1);';
+
+    resultDiv.innerHTML = `
+        <div style="color: #f0f; font-size: 18px; text-shadow: 0 0 10px #f0f; margin-bottom: 10px;">
+            ★ SIGNAL VERIFIED ★
+        </div>
+        <div style="color: #0ff; font-size: 14px;">
+            All known sources ruled out<br>
+            Origin: EXTRASOLAR<br>
+            Distance: ${star.distance} light years<br><br>
+            <span style="color: #ff0; text-shadow: 0 0 5px #ff0;">SIGNAL IS OF UNKNOWN ORIGIN</span>
+        </div>
+    `;
+
+    display.appendChild(resultDiv);
+
+    playSecurityBeep('success');
+
+    // Add contact protocol prompt directly to the same display
+    setTimeout(() => {
+        const contactDiv = document.createElement('div');
+        contactDiv.style.cssText = 'margin-top: 20px; text-align: center;';
+
+        // Add the question
+        const question = document.createElement('p');
+        question.textContent = 'INITIATE CONTACT PROTOCOL?';
+        question.style.cssText = 'color: #f0f; text-shadow: 0 0 5px #f0f; font-size: 18px; margin-bottom: 15px;';
+        contactDiv.appendChild(question);
+
+        // Add button container
+        const buttonContainer = document.createElement('div');
+
+        // YES button
+        const yesBtn = document.createElement('button');
+        yesBtn.textContent = 'YES';
+        yesBtn.className = 'btn';
+        yesBtn.style.cssText = 'background: rgba(0, 255, 0, 0.1); border: 2px solid #0f0; color: #0f0; margin: 5px; padding: 8px 20px;';
+        yesBtn.addEventListener('click', () => {
+            playClick();
+            buttonContainer.remove();
+            question.textContent = '[INITIATING CONTACT PROTOCOL]';
+            setTimeout(() => {
+                initiateContact(star);
+            }, 1000);
+        });
+
+        // NO button
+        const noBtn = document.createElement('button');
+        noBtn.textContent = 'NO';
+        noBtn.className = 'btn';
+        noBtn.style.cssText = 'background: rgba(255, 0, 0, 0.1); border: 2px solid #f00; color: #f00; margin: 5px; padding: 8px 20px;';
+        noBtn.addEventListener('click', () => {
+            playClick();
+            buttonContainer.remove();
+            question.textContent = '[CONTACT PROTOCOL ABORTED]';
+            question.style.cssText = 'color: #f00; text-shadow: 0 0 5px #f00; font-size: 16px;';
+            log('Contact protocol aborted by operator');
+            document.getElementById('analyze-btn').disabled = false;
+        });
+
+        buttonContainer.appendChild(yesBtn);
+        buttonContainer.appendChild(noBtn);
+        contactDiv.appendChild(buttonContainer);
+        display.appendChild(contactDiv);
+    }, 1500);
+}
+
 // Initiate contact
 function initiateContact(star) {
     log('='.repeat(50), 'highlight');
@@ -2163,8 +2895,18 @@ function initiateContact(star) {
     // Play special contact sound
     playContactSound();
 
+    // Check if this is the first contact - send special email
+    const isFirstContact = gameState.contactedStars.size === 0;
+
     gameState.contactedStars.add(star.id);
     updateStarStatus(star.id, 'contact');
+
+    // Send classified email on first contact
+    if (isFirstContact) {
+        setTimeout(() => {
+            sendFirstContactEmail();
+        }, 5000); // Delay to let the contact sequence play out
+    }
 
     // Hide contact protocol box
     document.getElementById('contact-protocol-box').style.display = 'none';
@@ -2731,6 +3473,15 @@ function startTuningMinigame(star) {
     // Show tuning interface
     document.getElementById('tuning-game').style.display = 'block';
 
+    // Show/hide array panel for weak signals
+    const arrayPanel = document.getElementById('tuning-array-panel');
+    if (star.signalStrength === 'weak') {
+        arrayPanel.style.display = 'block';
+        renderMiniDishArray();
+    } else {
+        arrayPanel.style.display = 'none';
+    }
+
     // Set slider values to match starting positions
     document.getElementById('frequency-slider').value = gameState.currentFrequency;
     document.getElementById('gain-slider').value = gameState.currentGain;
@@ -2740,14 +3491,52 @@ function startTuningMinigame(star) {
     // Start tuning feedback loop
     tuningFeedbackLoop();
 
-    // Start static hiss sound
-    startStaticHiss();
+    // Only start static hiss if signal is strong enough to tune
+    // For weak signals, only start hiss if enough dishes are aligned
+    if (star.signalStrength !== 'weak' || canTuneWeakSignal()) {
+        startStaticHiss();
+    }
 
     log('Signal tuning interface activated');
+    if (star.signalStrength === 'weak') {
+        log(`WEAK SIGNAL - Align ${star.requiredDishes} dishes to boost signal`, 'warning');
+    }
 }
 
 function tuningFeedbackLoop() {
     if (!gameState.tuningActive) return;
+
+    const star = gameState.currentStar;
+    const isWeakSignal = star && star.signalStrength === 'weak';
+
+    // Check if weak signal has insufficient dishes
+    if (isWeakSignal && !canTuneWeakSignal()) {
+        // Block tuning - show warning
+        const strengthFill = document.getElementById('signal-strength-fill');
+        const strengthPercent = document.getElementById('signal-strength-percent');
+        strengthFill.style.width = '0%';
+        strengthFill.style.background = '#f00';
+        strengthPercent.textContent = 'WEAK SIGNAL';
+        strengthPercent.style.color = '#f00';
+
+        // Stop static hiss when signal is too weak
+        stopStaticHiss();
+
+        // Update mini array display
+        renderMiniDishArray();
+
+        // Continue loop but don't process tuning
+        requestAnimationFrame(tuningFeedbackLoop);
+        return;
+    }
+
+    // If we just became able to tune (dishes aligned), start the hiss
+    if (isWeakSignal && !staticNode) {
+        startStaticHiss();
+    }
+
+    // Reset strength display color
+    document.getElementById('signal-strength-percent').style.color = '';
 
     // Calculate how close the values are to target (0-1, where 1 is perfect)
     const freqDiff = Math.abs(gameState.currentFrequency - gameState.targetFrequency);
@@ -2756,10 +3545,22 @@ function tuningFeedbackLoop() {
     const tolerance = 5; // Values within 5 are considered "locked"
     const maxDiff = 100;
 
-    // Calculate signal quality (0-100%)
+    // Calculate base signal quality (0-100%)
     const freqQuality = Math.max(0, 1 - (freqDiff / maxDiff));
     const gainQuality = Math.max(0, 1 - (gainDiff / maxDiff));
-    const overallQuality = (freqQuality + gainQuality) / 2;
+    let overallQuality = (freqQuality + gainQuality) / 2;
+
+    // Apply dish array boost for weak signals
+    if (isWeakSignal) {
+        const boost = calculateSignalBoost();
+        // Weak signals have reduced base quality (40%) that gets boosted
+        const weakPenalty = 0.4;
+        overallQuality = Math.min((overallQuality * weakPenalty) * boost, 1.0);
+
+        // Update mini array display
+        renderMiniDishArray();
+    }
+
     const qualityPercent = Math.floor(overallQuality * 100);
 
     // Update tuning tone based on quality
@@ -2781,8 +3582,9 @@ function tuningFeedbackLoop() {
     // Draw noisy waveform that clears up as quality improves
     drawTuningWaveform(overallQuality);
 
-    // Check if locked (both values within tolerance)
-    if (freqDiff <= tolerance && gainDiff <= tolerance) {
+    // Check if locked (both values within tolerance AND quality high enough)
+    const effectiveTolerance = isWeakSignal ? tolerance : tolerance;
+    if (freqDiff <= effectiveTolerance && gainDiff <= effectiveTolerance && overallQuality >= 0.9) {
         gameState.lockDuration++;
         strengthFill.style.boxShadow = '0 0 20px #0f0';
 
@@ -3286,13 +4088,17 @@ function completePatternGame(star) {
 
     startSignalAnimation();
 
-    if (signal.hasIntelligence) {
+    if (signal.hasIntelligence || star.isFalsePositive) {
         log('>>> ANOMALOUS PATTERN DETECTED <<<', 'highlight');
         log('POSSIBLE NON-NATURAL ORIGIN');
 
         // Switch to alien music and start alien signal sound
         switchToAlienMusic();
         startAlienSignalSound(star);
+
+        const probability = star.isFalsePositive ?
+            (78 + Math.random() * 15).toFixed(1) : // 78-93% for false positives
+            (91 + Math.random() * 7).toFixed(1);   // 91-98% for real signals
 
         const lines = [
             'ANALYSIS COMPLETE',
@@ -3302,13 +4108,14 @@ function completePatternGame(star) {
             'Frequency bands show intentional spacing',
             'Repeating sequences identified',
             '════════════════════════════',
-            { text: 'PROBABILITY OF INTELLIGENT ORIGIN: 94.7%', style: 'color: #ff0;' },
-            ''
+            { text: `PROBABILITY OF INTELLIGENT ORIGIN: ${probability}%`, style: 'color: #ff0;' },
+            '',
+            { text: 'SOURCE VERIFICATION REQUIRED', style: 'color: #0ff;' }
         ];
 
         typeAnalysisText(lines, () => {
-            // Show contact protocol prompt with YES/NO buttons
-            showContactPrompt(star);
+            // Show verification prompt instead of contact prompt
+            showVerifyPrompt(star);
         });
     } else {
         log('Analysis complete: Natural stellar emissions');
@@ -3362,6 +4169,13 @@ function completePatternGame(star) {
 
         const phenomenon = naturalPhenomena[Math.floor(Math.random() * naturalPhenomena.length)];
 
+        // Store scan result for target info display
+        gameState.scanResults.set(star.id, {
+            type: 'natural',
+            phenomenonType: phenomenon.type,
+            source: phenomenon.source
+        });
+
         const lines = [
             'ANALYSIS COMPLETE',
             '════════════════════════════',
@@ -3377,6 +4191,550 @@ function completePatternGame(star) {
             document.getElementById('analyze-btn').disabled = false;
         });
     }
+}
+
+// ========================================
+// DISH ARRAY SYSTEM
+// ========================================
+
+// Y-Configuration dish positions (VLA-style)
+const DISH_POSITIONS = [
+    { id: 0, x: 200, y: 175, label: 'C' },    // Center hub
+    { id: 1, x: 200, y: 110, label: '1' },    // North arm - near
+    { id: 2, x: 200, y: 50, label: '2' },     // North arm - far
+    { id: 3, x: 140, y: 235, label: '3' },    // SW arm - near
+    { id: 4, x: 80, y: 300, label: '4' },     // SW arm - far
+    { id: 5, x: 260, y: 235, label: '5' },    // SE arm - near
+    { id: 6, x: 320, y: 300, label: '6' }     // SE arm - far
+];
+
+function initDishArray() {
+    // Randomly select 2-3 dishes to have interference
+    const numInterference = 2 + Math.floor(Math.random() * 2); // 2 or 3
+    const interferenceIndices = [];
+    while (interferenceIndices.length < numInterference) {
+        const idx = Math.floor(Math.random() * 7);
+        if (!interferenceIndices.includes(idx)) {
+            interferenceIndices.push(idx);
+        }
+    }
+
+    // Initialize dishes with random orientations, interference, and power states
+    gameState.dishArray.dishes = DISH_POSITIONS.map((pos, index) => ({
+        id: index,
+        angle: Math.random() * 360,
+        targetAngle: null,
+        isRotating: false,
+        isAligned: false,
+        isPowered: false,
+        hasInterference: interferenceIndices.includes(index),
+        x: pos.x,
+        y: pos.y,
+        label: pos.label
+    }));
+
+    gameState.dishArray.poweredCount = 0;
+
+    renderDishArray();
+    renderMiniDishArray();
+    updateArrayStatus();
+}
+
+function renderDishArray() {
+    const dishGroup = document.getElementById('dish-group');
+    if (!dishGroup) return;
+
+    dishGroup.innerHTML = '';
+
+    gameState.dishArray.dishes.forEach(dish => {
+        // Build class list based on dish state
+        // Aligned state only when both powered AND aligned
+        let classes = 'dish-element';
+        if (dish.hasInterference) classes += ' interference';
+        else if (dish.isRotating) classes += ' rotating';
+        else if (dish.isAligned && dish.isPowered) classes += ' aligned';
+        else if (dish.isPowered) classes += ' powered';
+
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', classes);
+        g.setAttribute('data-dish-id', dish.id);
+        g.setAttribute('transform', `translate(${dish.x}, ${dish.y})`);
+
+        // Dish base (pedestal)
+        const base = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        base.setAttribute('class', 'dish-base');
+        base.setAttribute('x', -10);
+        base.setAttribute('y', -5);
+        base.setAttribute('width', 20);
+        base.setAttribute('height', 25);
+        base.setAttribute('rx', 3);
+
+        // Dish bowl (parabolic antenna representation)
+        const bowl = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+        bowl.setAttribute('class', 'dish-bowl');
+        bowl.setAttribute('cx', 0);
+        bowl.setAttribute('cy', -18);
+        bowl.setAttribute('rx', 22);
+        bowl.setAttribute('ry', 10);
+
+        // Label
+        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        label.setAttribute('class', 'dish-label');
+        label.setAttribute('y', 35);
+        label.textContent = dish.label;
+
+        // Interference indicator (X mark)
+        if (dish.hasInterference) {
+            const x1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            x1.setAttribute('x1', -8);
+            x1.setAttribute('y1', -25);
+            x1.setAttribute('x2', 8);
+            x1.setAttribute('y2', -10);
+            x1.setAttribute('stroke', '#f00');
+            x1.setAttribute('stroke-width', 3);
+            g.appendChild(x1);
+
+            const x2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            x2.setAttribute('x1', 8);
+            x2.setAttribute('y1', -25);
+            x2.setAttribute('x2', -8);
+            x2.setAttribute('y2', -10);
+            x2.setAttribute('stroke', '#f00');
+            x2.setAttribute('stroke-width', 3);
+            g.appendChild(x2);
+        }
+
+        g.appendChild(base);
+        g.appendChild(bowl);
+        g.appendChild(label);
+
+        // Click handler
+        g.addEventListener('click', (e) => {
+            // Right-click to power off (or shift-click)
+            if (e.shiftKey && dish.isPowered && !dish.hasInterference) {
+                powerOffDish(dish);
+            } else {
+                startDishRotation(dish.id);
+            }
+        });
+
+        // Right-click context menu for power off
+        g.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (dish.isPowered && !dish.hasInterference) {
+                powerOffDish(dish);
+            }
+        });
+
+        dishGroup.appendChild(g);
+    });
+}
+
+function renderMiniDishArray() {
+    const container = document.getElementById('mini-array-visual');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    gameState.dishArray.dishes.forEach(dish => {
+        // Build class list based on dish state
+        let classes = 'mini-dish';
+        if (dish.hasInterference) classes += ' interference';
+        else if (dish.isRotating) classes += ' rotating';
+        else if (dish.isAligned && dish.isPowered) classes += ' aligned';
+        else if (dish.isPowered) classes += ' powered';
+
+        const div = document.createElement('div');
+        div.className = classes;
+        div.dataset.dishId = dish.id;
+        div.textContent = dish.hasInterference ? 'X' : dish.label;
+        div.title = dish.hasInterference ? 'Click to clear interference' :
+                    !dish.isPowered ? 'Click to power on' :
+                    dish.isAligned ? 'Right-click to power off' :
+                    'Click to align';
+        div.addEventListener('click', () => startDishRotation(dish.id));
+        div.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (dish.isPowered && !dish.hasInterference) {
+                powerOffDish(dish);
+            }
+        });
+        container.appendChild(div);
+    });
+
+    // Update counts - only count powered AND aligned dishes
+    const aligned = gameState.dishArray.dishes.filter(d => d.isAligned && d.isPowered).length;
+    const required = gameState.dishArray.requiredDishes;
+    const powered = gameState.dishArray.poweredCount;
+    const maxPower = gameState.dishArray.maxPower;
+
+    const miniAligned = document.getElementById('mini-aligned');
+    const miniRequired = document.getElementById('mini-required');
+    const tuningBoost = document.getElementById('tuning-boost-value');
+    const miniPowerText = document.getElementById('mini-power-text');
+
+    if (miniAligned) miniAligned.textContent = aligned;
+    if (miniRequired) miniRequired.textContent = required;
+    if (tuningBoost) tuningBoost.textContent = calculateSignalBoost().toFixed(1) + 'x';
+    if (miniPowerText) {
+        miniPowerText.textContent = `POWER: ${powered}/${maxPower}`;
+        miniPowerText.style.color = powered >= maxPower ? '#f00' : '#0ff';
+    }
+}
+
+function startDishRotation(dishId) {
+    const dish = gameState.dishArray.dishes.find(d => d.id === dishId);
+    if (!dish || dish.isRotating) return;
+
+    const targetStar = gameState.dishArray.currentTargetStar;
+    if (!targetStar) {
+        log('No target star selected for array alignment', 'warning');
+        return;
+    }
+
+    // Step 1: If dish has interference, clear it first
+    if (dish.hasInterference) {
+        clearDishInterference(dish);
+        return;
+    }
+
+    // Step 2: If dish is not powered, try to power it on
+    if (!dish.isPowered) {
+        if (gameState.dishArray.poweredCount >= gameState.dishArray.maxPower) {
+            log(`Power limit reached (${gameState.dishArray.maxPower} dishes max) - depower another dish first`, 'warning');
+            playStaticBurst();
+            return;
+        }
+        powerOnDish(dish);
+        return;
+    }
+
+    // Step 3: If already aligned, do nothing
+    if (dish.isAligned) return;
+
+    // Step 4: Start rotating to target
+    dish.targetAngle = (targetStar.id * 47 + 30) % 360;
+    dish.isRotating = true;
+
+    playDishRotationSound();
+    log(`Dish ${dish.label} rotating to target...`);
+
+    // Update visuals immediately
+    renderDishArray();
+    renderMiniDishArray();
+
+    // Start rotation animation
+    animateDishRotation(dish);
+}
+
+function clearDishInterference(dish) {
+    log(`Clearing interference on Dish ${dish.label}...`, 'warning');
+    playStaticBurst();
+
+    // Visual feedback - show clearing
+    dish.isRotating = true; // Use rotating state for animation
+    renderDishArray();
+    renderMiniDishArray();
+
+    // Clear after delay
+    setTimeout(() => {
+        dish.hasInterference = false;
+        dish.isRotating = false;
+        playDishAlignedSound();
+        log(`Dish ${dish.label} interference cleared`, 'highlight');
+        renderDishArray();
+        renderMiniDishArray();
+        updateArrayStatus();
+    }, 1500);
+}
+
+function powerOnDish(dish) {
+    dish.isPowered = true;
+    gameState.dishArray.poweredCount++;
+    log(`Dish ${dish.label} powered on (${gameState.dishArray.poweredCount}/${gameState.dishArray.maxPower})`);
+    playClick();
+    renderDishArray();
+    renderMiniDishArray();
+    updateArrayStatus();
+}
+
+function powerOffDish(dish) {
+    if (!dish.isPowered) return;
+
+    dish.isPowered = false;
+    dish.isAligned = false;
+    gameState.dishArray.poweredCount--;
+    log(`Dish ${dish.label} powered off`);
+    playClick();
+    renderDishArray();
+    renderMiniDishArray();
+    updateArrayStatus();
+}
+
+function animateDishRotation(dish) {
+    const rotationDuration = 2000 + Math.random() * 1000; // 2-3 seconds
+    const startAngle = dish.angle;
+    const endAngle = dish.targetAngle;
+    const startTime = performance.now();
+
+    function animate(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / rotationDuration, 1);
+
+        // Ease-in-out curve
+        const eased = progress < 0.5
+            ? 2 * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+        // Calculate shortest rotation path
+        let delta = endAngle - startAngle;
+        if (delta > 180) delta -= 360;
+        if (delta < -180) delta += 360;
+
+        dish.angle = startAngle + delta * eased;
+
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        } else {
+            // Rotation complete
+            dish.isRotating = false;
+            dish.isAligned = true;
+            dish.angle = endAngle;
+
+            playDishAlignedSound();
+            log(`Dish ${dish.label} aligned to target`, 'highlight');
+
+            updateArrayStatus();
+            renderDishArray();
+            renderMiniDishArray();
+        }
+    }
+
+    requestAnimationFrame(animate);
+}
+
+function setArrayTarget(star) {
+    if (!star || star.signalStrength !== 'weak') return;
+
+    // Randomly select 2-3 dishes to have interference for this target
+    const numInterference = 2 + Math.floor(Math.random() * 2); // 2 or 3
+    const interferenceIndices = [];
+    while (interferenceIndices.length < numInterference) {
+        const idx = Math.floor(Math.random() * 7);
+        if (!interferenceIndices.includes(idx)) {
+            interferenceIndices.push(idx);
+        }
+    }
+
+    // Reset all dishes when changing target
+    gameState.dishArray.dishes.forEach((dish, index) => {
+        dish.isAligned = false;
+        dish.isRotating = false;
+        dish.isPowered = false;
+        dish.hasInterference = interferenceIndices.includes(index);
+        dish.targetAngle = null;
+    });
+
+    gameState.dishArray.poweredCount = 0;
+    gameState.dishArray.currentTargetStar = star;
+    gameState.dishArray.requiredDishes = star.requiredDishes || 3;
+
+    const targetDisplay = document.getElementById('array-target-display');
+    const requiredDisplay = document.getElementById('array-required-display');
+
+    if (targetDisplay) targetDisplay.textContent = `TARGET: ${star.name}`;
+    if (requiredDisplay) requiredDisplay.textContent = gameState.dishArray.requiredDishes;
+
+    updateArrayStatus();
+    renderDishArray();
+    renderMiniDishArray();
+
+    log(`Array target set: ${star.name} (requires ${star.requiredDishes} dishes)`);
+    log(`WARNING: ${numInterference} dishes have interference - clear before use`, 'warning');
+}
+
+function updateArrayStatus() {
+    // Only count dishes that are both powered AND aligned
+    const poweredAndAligned = gameState.dishArray.dishes.filter(d => d.isAligned && d.isPowered).length;
+    const powered = gameState.dishArray.poweredCount;
+    const maxPower = gameState.dishArray.maxPower;
+    const required = gameState.dishArray.requiredDishes;
+    const interferenceCount = gameState.dishArray.dishes.filter(d => d.hasInterference).length;
+
+    gameState.dishArray.alignedDishCount = poweredAndAligned;
+
+    // Update main array view
+    const alignedCount = document.getElementById('array-aligned-count');
+    const alignedDishCount = document.getElementById('aligned-dish-count');
+    const signalBoost = document.getElementById('array-signal-boost');
+
+    if (alignedCount) alignedCount.textContent = poweredAndAligned;
+    if (alignedDishCount) alignedDishCount.textContent = `${poweredAndAligned}/${required}`;
+    if (signalBoost) signalBoost.textContent = calculateSignalBoost().toFixed(1) + 'x';
+
+    // Update power indicator
+    const powerIndicator = document.getElementById('array-power-indicator');
+    if (powerIndicator) {
+        powerIndicator.textContent = `POWER: ${powered}/${maxPower}`;
+        powerIndicator.className = powered >= maxPower ? 'power-indicator at-limit' : 'power-indicator';
+    }
+
+    // Update interference indicator
+    const interferenceIndicator = document.getElementById('array-interference-indicator');
+    if (interferenceIndicator) {
+        if (interferenceCount > 0) {
+            interferenceIndicator.textContent = `INTERFERENCE: ${interferenceCount} dish${interferenceCount > 1 ? 'es' : ''}`;
+            interferenceIndicator.style.display = 'block';
+        } else {
+            interferenceIndicator.style.display = 'none';
+        }
+    }
+
+    // Update status bar
+    const statusBar = document.getElementById('array-status-bar');
+    if (statusBar) {
+        if (!gameState.dishArray.currentTargetStar) {
+            statusBar.textContent = 'SELECT A WEAK SIGNAL TARGET TO CONFIGURE ARRAY';
+            statusBar.className = 'array-status-bar';
+        } else if (poweredAndAligned >= required) {
+            statusBar.textContent = `ARRAY READY - ${poweredAndAligned}/${required} DISHES ONLINE - BOOST: ${calculateSignalBoost().toFixed(1)}x`;
+            statusBar.className = 'array-status-bar ready';
+        } else {
+            const needed = required - poweredAndAligned;
+            statusBar.textContent = `INSUFFICIENT - NEED ${needed} MORE POWERED & ALIGNED`;
+            statusBar.className = 'array-status-bar insufficient';
+        }
+    }
+
+    // Enable/disable align all button
+    const alignBtn = document.getElementById('align-all-btn');
+    if (alignBtn) {
+        alignBtn.disabled = !gameState.dishArray.currentTargetStar;
+    }
+}
+
+function alignAllDishes() {
+    if (!gameState.dishArray.currentTargetStar) return;
+
+    const unaligned = gameState.dishArray.dishes.filter(d => !d.isAligned && !d.isRotating);
+
+    // Stagger the rotations for visual effect
+    unaligned.forEach((dish, index) => {
+        setTimeout(() => {
+            startDishRotation(dish.id);
+        }, index * 300);
+    });
+}
+
+function resetArray() {
+    // Re-randomize interference (2-3 dishes)
+    const numInterference = 2 + Math.floor(Math.random() * 2);
+    const interferenceIndices = [];
+    while (interferenceIndices.length < numInterference) {
+        const idx = Math.floor(Math.random() * 7);
+        if (!interferenceIndices.includes(idx)) {
+            interferenceIndices.push(idx);
+        }
+    }
+
+    gameState.dishArray.dishes.forEach((dish, index) => {
+        dish.angle = Math.random() * 360;
+        dish.targetAngle = null;
+        dish.isRotating = false;
+        dish.isAligned = false;
+        dish.isPowered = false;
+        dish.hasInterference = interferenceIndices.includes(index);
+    });
+
+    gameState.dishArray.currentTargetStar = null;
+    gameState.dishArray.alignedDishCount = 0;
+    gameState.dishArray.requiredDishes = 0;
+    gameState.dishArray.poweredCount = 0;
+
+    const targetDisplay = document.getElementById('array-target-display');
+    if (targetDisplay) targetDisplay.textContent = 'TARGET: NONE SELECTED';
+
+    updateArrayStatus();
+    renderDishArray();
+    renderMiniDishArray();
+
+    log('Array reset to random orientations');
+    log(`WARNING: ${numInterference} dishes have interference - clear before use`, 'warning');
+}
+
+// Signal boost calculation - only counts dishes that are powered AND aligned
+function calculateSignalBoost() {
+    // Count only dishes that are both powered and aligned
+    const poweredAndAligned = gameState.dishArray.dishes.filter(d => d.isAligned && d.isPowered).length;
+    const required = gameState.dishArray.requiredDishes;
+
+    if (poweredAndAligned === 0) return 1.0;
+
+    // Base boost per dish, with diminishing returns
+    let boost = 1.0 + (poweredAndAligned * 0.25);
+
+    // Bonus for meeting minimum requirement
+    if (poweredAndAligned >= required && required > 0) {
+        boost += 0.5;
+    }
+
+    // Extra bonus for full powered array (5 max due to power limit)
+    if (poweredAndAligned === gameState.dishArray.maxPower) {
+        boost += 0.5;
+    }
+
+    return Math.min(boost, 4.0); // Cap at 4x
+}
+
+function canTuneWeakSignal() {
+    const star = gameState.currentStar;
+    if (!star || star.signalStrength !== 'weak') return true;
+
+    // Only count dishes that are both powered AND aligned
+    const poweredAndAligned = gameState.dishArray.dishes.filter(d => d.isAligned && d.isPowered).length;
+    return poweredAndAligned >= (star.requiredDishes || 3);
+}
+
+// Audio functions for dish array
+function playDishRotationSound() {
+    if (!audioContext || masterVolume === 0) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.type = 'sawtooth';
+    oscillator.frequency.setValueAtTime(80, audioContext.currentTime);
+    oscillator.frequency.linearRampToValueAtTime(150, audioContext.currentTime + 1.5);
+
+    gainNode.gain.setValueAtTime(0.03 * masterVolume, audioContext.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 2);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 2);
+}
+
+function playDishAlignedSound() {
+    if (!audioContext || masterVolume === 0) return;
+
+    [400, 600].forEach((freq, i) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.frequency.value = freq;
+        oscillator.type = 'sine';
+        gainNode.gain.value = 0.06 * masterVolume;
+
+        const startTime = audioContext.currentTime + (i * 0.1);
+        oscillator.start(startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.15);
+        oscillator.stop(startTime + 0.15);
+    });
 }
 
 // Boot Sequence Functions
@@ -3882,6 +5240,9 @@ function updateMailIndicator() {
 }
 
 function checkForNewMail() {
+    // Don't send mail until initialization is complete (player has entered their name)
+    if (!gameState.playerName) return;
+
     // Check if enough time has passed since last mail
     const timeSinceLastMail = Date.now() - gameState.lastMailTime;
     const minInterval = 120000; // 2 minutes minimum between messages
@@ -3918,14 +5279,43 @@ function sendRandomMail() {
             body: `${gameState.playerName},\n\nI know the isolation of deep space monitoring can be challenging. Remember, every signal analyzed, every frequency scanned, brings us closer to answering humanity's greatest question.\n\nYour work matters. Even if we don't find anything today, your dedication is noted and appreciated.\n\n- James`
         },
         {
-            from: 'SECURITY CLEARANCE - LEVEL 5',
-            subject: '[CLASSIFIED] Unusual Activity',
-            body: `[ENCRYPTED COMMUNICATION]\n\nDr. ${gameState.playerName},\n\nYour clearance has been elevated for this communication.\n\nWe've detected coordinated signal patterns across multiple listening posts. Your sector is of particular interest.\n\nReport any anomalies immediately. Do not discuss findings outside secure channels.\n\nProtocol Sigma is in effect.\n\n[END TRANSMISSION]`
+            from: 'Cafeteria Services',
+            subject: 'Menu Update',
+            body: `WEEKLY MENU NOTICE:\n\nDue to supply chain delays, the following items are temporarily unavailable:\n- Fresh fruit\n- Coffee (decaf only available)\n- Anything that tastes good\n\nWe apologize for any inconvenience. Freeze-dried alternatives are available.\n\n- Sector 7 Food Services`
+        },
+        {
+            from: 'Dr. Marcus Webb - Xenolinguistics',
+            subject: 'Pattern Analysis Request',
+            body: `Dr. ${gameState.playerName},\n\nI've been developing new algorithms for detecting linguistic patterns in signal noise. Would you be willing to share some of your raw data feeds?\n\nEven natural phenomena sometimes hide surprising structures. My team believes we may have found something in archived data from your sector.\n\nLet me know if you're interested in collaborating.\n\n- Marcus`
+        },
+        {
+            from: 'AUTOMATED BACKUP SYSTEM',
+            subject: 'Data Archive Complete',
+            body: `[AUTOMATED MESSAGE]\n\nDaily backup completed successfully.\n\nFiles archived: 2,847\nTotal size: 1.2 TB\nIntegrity check: PASSED\n\nNote: Anomalous data patterns flagged in sectors 7-12. Manual review recommended.\n\n- Backup System v3.2.1`
+        },
+        {
+            from: 'Dr. Sarah Okonkwo - Astrobiology',
+            subject: 'Habitable Zone Analysis',
+            body: `${gameState.playerName},\n\nI've compiled atmospheric data for several targets in your monitoring zone. Three of them show promising biosignature potential.\n\nI know SETI focuses on technological signatures, but sometimes life announces itself in simpler ways first. Keep an eye on the oxygen-rich candidates.\n\nAttached: Spectral analysis summary (encrypted)\n\n- Sarah`
+        },
+        {
+            from: 'PERSONNEL DEPARTMENT',
+            subject: 'Mandatory Training Reminder',
+            body: `Dr. ${gameState.playerName},\n\nThis is a reminder that your annual "First Contact Protocol" certification expires in 30 days.\n\nPlease complete the online refresher course before expiration. Failure to comply may result in restricted array access.\n\nNote: Given recent... developments... this training is more relevant than ever.\n\n- HR Division`
         }
     ];
 
     const randomMsg = messages[Math.floor(Math.random() * messages.length)];
     addMailMessage(randomMsg.from, randomMsg.subject, randomMsg.body);
+}
+
+// Special email sent when first alien signal is discovered
+function sendFirstContactEmail() {
+    addMailMessage(
+        'SECURITY CLEARANCE - LEVEL 5',
+        '[CLASSIFIED] Signal Confirmation Required',
+        `[ENCRYPTED COMMUNICATION]\n\nDr. ${gameState.playerName},\n\nYour clearance has been elevated for this communication.\n\nWe've detected coordinated signal patterns across multiple listening posts. Your sector is of particular interest.\n\nThe signal you have identified matches parameters we have been monitoring for decades. This is not a drill.\n\nReport all findings immediately. Do not discuss outside secure channels. Do not contact external agencies.\n\nProtocol Sigma is now in effect.\n\nStand by for further instructions.\n\n[END TRANSMISSION]`
+    );
 }
 
 // Start the game
@@ -3948,6 +5338,7 @@ function startGame() {
     startStarMapAnimation();
     setupBootSequence();
     initDevMode(); // Initialize developer mode
+    initDishArray(); // Initialize dish array system
 
     // Check for new mail periodically (every 60 seconds)
     setInterval(checkForNewMail, 60000);
