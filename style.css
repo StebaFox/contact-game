@@ -1979,7 +1979,7 @@ body.white-mode .power-indicator {
 }
 
 /* === END SCREEN STYLES === */
-#end-view {
+#end-view.active {
     background: #000;
     display: flex;
     align-items: center;
@@ -1988,8 +1988,6 @@ body.white-mode .power-indicator {
 
 .end-screen {
     text-align: center;
-    opacity: 0;
-    animation: fadeInEnd 3s ease-out forwards;
 }
 
 @keyframes fadeInEnd {
@@ -2007,6 +2005,10 @@ body.white-mode .power-indicator {
     font-size: 72px;
     letter-spacing: 10px;
     margin-bottom: 30px;
+    opacity: 0;
+}
+
+#end-view.active .end-day {
     animation: fadeInEnd 2s ease-out forwards, textGlow 2s ease-in-out infinite;
 }
 
@@ -2014,6 +2016,9 @@ body.white-mode .power-indicator {
     font-size: 36px;
     letter-spacing: 5px;
     opacity: 0;
+}
+
+#end-view.active .end-continued {
     animation: fadeInContinued 2s ease-out 2s forwards;
 }
 
@@ -2030,7 +2035,6 @@ body.white-mode .power-indicator {
 .end-restart-btn {
     margin-top: 50px;
     opacity: 0;
-    animation: fadeInContinued 1s ease-out 4s forwards;
     background: transparent;
     border: 2px solid #0f0;
     color: #0f0;
@@ -2038,6 +2042,10 @@ body.white-mode .power-indicator {
     font-size: 20px;
     cursor: pointer;
     transition: all 0.3s;
+}
+
+#end-view.active .end-restart-btn {
+    animation: fadeInContinued 1s ease-out 4s forwards;
 }
 
 .end-restart-btn:hover {
