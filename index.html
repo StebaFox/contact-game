@@ -91,11 +91,80 @@
                     <h2>═══ DEEP SPACE MONITORING ARRAY ═══</h2>
                     <p class="instruction">SELECT TARGET FOR SIGNAL ANALYSIS</p>
 
-                    <!-- Visual Star Map and Info -->
+                    <!-- Visual Star Map with Array Panel and Info -->
                     <div class="starmap-section">
+                        <!-- Dish Array Panel (Left) -->
+                        <div class="starmap-array-panel" id="starmap-array-panel">
+                            <div class="starmap-array-title">RADIO ARRAY</div>
+                            <div class="starmap-array-visual">
+                                <svg viewBox="0 0 200 200" class="starmap-array-svg" id="starmap-array-svg">
+                                    <!-- Y-arm guidelines -->
+                                    <line x1="100" y1="20" x2="100" y2="90" class="array-arm" />
+                                    <line x1="100" y1="90" x2="40" y2="160" class="array-arm" />
+                                    <line x1="100" y1="90" x2="160" y2="160" class="array-arm" />
+                                    <!-- Dish positions (will be populated by JS) -->
+                                    <g id="starmap-dish-group"></g>
+                                </svg>
+                                <div class="array-aligning-text" id="array-aligning-text" style="display: none;">ALIGNING</div>
+                            </div>
+                            <!-- Telemetry Display -->
+                            <div class="array-telemetry" id="array-telemetry">
+                                <div class="telemetry-row">
+                                    <span class="telemetry-label">TGT:</span>
+                                    <span class="telemetry-value" id="telem-target">--</span>
+                                </div>
+                                <div class="telemetry-row">
+                                    <span class="telemetry-label">RA:</span>
+                                    <span class="telemetry-value" id="telem-ra">--h --m --s</span>
+                                    <span class="telemetry-label">DEC:</span>
+                                    <span class="telemetry-value" id="telem-dec">--° --' --"</span>
+                                </div>
+                                <div class="telemetry-row">
+                                    <span class="telemetry-label">AZ:</span>
+                                    <span class="telemetry-value" id="telem-az">---°</span>
+                                    <span class="telemetry-label">EL:</span>
+                                    <span class="telemetry-value" id="telem-el">--°</span>
+                                    <span class="telemetry-label">GAIN:</span>
+                                    <span class="telemetry-value" id="telem-gain">0.0dB</span>
+                                </div>
+                            </div>
+                            <!-- Alignment Code Display -->
+                            <div class="array-code-section" id="array-code-section" style="display: none;">
+                                <div class="array-code-label">ALIGNMENT CODE:</div>
+                                <div class="array-code-display" id="array-code-display">----</div>
+                                <div class="array-code-label">INPUT:</div>
+                                <div class="array-code-input" id="array-code-input">_</div>
+                                <!-- Keypad -->
+                                <div class="array-keypad" id="array-keypad">
+                                    <button class="keypad-btn" data-key="1">1</button>
+                                    <button class="keypad-btn" data-key="2">2</button>
+                                    <button class="keypad-btn" data-key="3">3</button>
+                                    <button class="keypad-btn" data-key="4">4</button>
+                                    <button class="keypad-btn" data-key="5">5</button>
+                                    <button class="keypad-btn" data-key="6">6</button>
+                                    <button class="keypad-btn keypad-c" data-key="C">C</button>
+                                    <button class="keypad-btn keypad-clear" data-key="CLR">CLR</button>
+                                </div>
+                                <!-- Confirmation and alignment button -->
+                                <div class="array-code-confirmed" id="array-code-confirmed" style="display: none;">
+                                    <div class="code-confirmed-text">✓ CODE ACCEPTED</div>
+                                    <button class="btn begin-alignment-btn" id="begin-alignment-btn">BEGIN ALIGNMENT</button>
+                                </div>
+                            </div>
+                            <div class="starmap-array-status" id="starmap-array-status">
+                                SELECT WEAK SIGNAL TARGET
+                            </div>
+                            <button class="btn starmap-array-scan-btn" id="starmap-array-scan-btn" style="display: none;">
+                                BEGIN ANALYSIS
+                            </button>
+                        </div>
+
+                        <!-- Star Map (Center) -->
                         <div class="starmap-container">
                             <canvas id="starmap-canvas" width="1000" height="550"></canvas>
                         </div>
+
+                        <!-- Target Info (Right) -->
                         <div class="star-info-panel">
                             <div class="star-info-title">TARGET INFORMATION</div>
                             <canvas id="star-visual" width="140" height="140"></canvas>
@@ -107,10 +176,6 @@
 
                     <div class="catalog-header">
                         <h3 style="text-align: center; margin: 20px 0 15px 0; font-size: 20px; letter-spacing: 2px;">STELLAR CATALOG</h3>
-                        <button class="btn array-status-btn" id="array-status-btn" style="display: none;">
-                            <span class="array-icon">[≡]</span> ARRAY STATUS
-                            <span class="aligned-count" id="aligned-dish-count">0/7</span>
-                        </button>
                     </div>
 
                     <div class="star-grid" id="star-grid">
@@ -286,11 +351,11 @@
                     <div class="array-container">
                         <!-- Y-Configuration Visual -->
                         <div class="array-visual" id="array-visual">
-                            <svg viewBox="0 0 400 350" class="array-svg" id="array-svg">
+                            <svg viewBox="0 0 400 380" class="array-svg" id="array-svg">
                                 <!-- Y-arm guidelines -->
-                                <line x1="200" y1="50" x2="200" y2="175" class="array-arm" />
-                                <line x1="200" y1="175" x2="80" y2="320" class="array-arm" />
-                                <line x1="200" y1="175" x2="320" y2="320" class="array-arm" />
+                                <line x1="200" y1="40" x2="200" y2="180" class="array-arm" />
+                                <line x1="200" y1="180" x2="60" y2="320" class="array-arm" />
+                                <line x1="200" y1="180" x2="340" y2="320" class="array-arm" />
 
                                 <!-- Dish positions (will be populated by JS) -->
                                 <g id="dish-group"></g>
@@ -437,6 +502,11 @@
     <!-- Room Tone / Ambient Sound -->
     <audio id="room-tone" loop>
         <source src="room-tone-with-computer-noise-33598.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Machine/Alignment Sound -->
+    <audio id="machine-sound">
+        <source src="heavy-duty-underground-car-elevator-mechanical-lift-327686.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Fade Overlay for End Transition -->

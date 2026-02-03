@@ -423,7 +423,7 @@ const gameState = {
     currentFrequency: 50,
     currentGain: 50,
     lockDuration: 0,
-    lockRequired: 120, // 2 seconds at 60fps
+    lockRequired: 150, // 2.5 seconds at 60fps
     // Parallax effect
     mouseX: 0,
     mouseY: 0,
@@ -444,16 +444,14 @@ const gameState = {
     unreadMailCount: 0,
     lastMailTime: Date.now(),
     previousView: 'starmap-view',
-    // Dish Array System
+    // Dish Array System - Code-based alignment
     dishArray: {
         dishes: [],
         currentTargetStar: null,
-        alignedDishCount: 0,
-        requiredDishes: 0,
-        rotationSpeed: 45, // degrees per second
-        // Power management
-        maxPower: 5, // Maximum dishes that can be powered at once
-        poweredCount: 0
+        alignmentCode: '',    // The code needed to align dishes
+        inputCode: '',        // What the player has entered so far
+        codeRequired: false,  // Whether a code is needed for current star
+        alignedCount: 0       // Number of dishes currently aligned
     }
 };
 
@@ -1040,6 +1038,7 @@ let masterVolume = 0.5; // 0.0 to 1.0
 let backgroundMusic = null;
 let alienMusic = null;
 let roomTone = null;
+let machineSound = null;
 let currentMusic = null; // Track which music is currently playing
 // Signal ambient sounds
 let naturalPhenomenaNode = null;
@@ -1311,6 +1310,47 @@ function playLockAchieved() {
         gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.3);
         oscillator.stop(startTime + 0.3);
     });
+}
+
+// Play machine/alignment sound effect
+function playMachineSound() {
+    if (masterVolume === 0) return;
+
+    if (!machineSound) {
+        machineSound = document.getElementById('machine-sound');
+    }
+
+    if (machineSound) {
+        machineSound.currentTime = 0;
+        machineSound.volume = masterVolume * 0.5;
+        machineSound.play().catch(err => {
+            console.log('Machine sound play prevented:', err);
+        });
+    }
+}
+
+// Stop machine sound with fade out
+function stopMachineSound() {
+    if (machineSound && !machineSound.paused) {
+        // Fade out over 1 second
+        const fadeOutDuration = 1000;
+        const fadeStep = 50;
+        const steps = fadeOutDuration / fadeStep;
+        const initialVolume = machineSound.volume;
+        const volumeStep = initialVolume / steps;
+
+        const fadeInterval = setInterval(() => {
+            if (machineSound.volume > volumeStep) {
+                machineSound.volume -= volumeStep;
+            } else {
+                machineSound.volume = 0;
+                machineSound.pause();
+                machineSound.currentTime = 0;
+                machineSound.volume = initialVolume; // Reset for next play
+                clearInterval(fadeInterval);
+            }
+        }, fadeStep);
+    }
 }
 
 // Start continuous tuning tone (changes with signal quality)
@@ -1691,6 +1731,40 @@ const discoveryDates = [
     "2024"      // UV-CETI-B
 ];
 
+// Real astronomical coordinates (RA in hours/min/sec, DEC in degrees/min/sec)
+const starCoordinates = [
+    { ra: { h: 14, m: 39, s: 36 }, dec: { deg: -60, m: 50, s: 2 } },   // ALPHA-CENTAURI
+    { ra: { h: 14, m: 29, s: 43 }, dec: { deg: -62, m: 40, s: 46 } },  // PROXIMA-B
+    { ra: { h: 4, m: 52, s: 54 }, dec: { deg: 58, m: 51, s: 8 } },     // KEPLER-442
+    { ra: { h: 23, m: 6, s: 30 }, dec: { deg: -5, m: 2, s: 29 } },     // TRAPPIST-1E
+    { ra: { h: 17, m: 18, s: 57 }, dec: { deg: -34, m: 59, s: 23 } },  // GLIESE-667C
+    { ra: { h: 5, m: 54, s: 4 }, dec: { deg: -60, m: 1, s: 24 } },     // HD-40307G
+    { ra: { h: 18, m: 52, s: 51 }, dec: { deg: 45, m: 20, s: 59 } },   // KEPLER-62F
+    { ra: { h: 11, m: 47, s: 44 }, dec: { deg: 0, m: 48, s: 16 } },    // ROSS-128B
+    { ra: { h: 16, m: 30, s: 18 }, dec: { deg: -12, m: 39, s: 45 } },  // WOLF-1061C
+    { ra: { h: 0, m: 44, s: 59 }, dec: { deg: -15, m: 16, s: 17 } },   // LHS-1140B
+    { ra: { h: 19, m: 54, s: 36 }, dec: { deg: 43, m: 57, s: 18 } },   // KEPLER-186F
+    { ra: { h: 2, m: 53, s: 1 }, dec: { deg: 16, m: 52, s: 53 } },     // TEEGARDEN-B
+    { ra: { h: 5, m: 11, s: 41 }, dec: { deg: -45, m: 1, s: 6 } },     // KAPTEYN-B
+    { ra: { h: 1, m: 44, s: 4 }, dec: { deg: -15, m: 56, s: 15 } },    // TAU-CETI-E
+    { ra: { h: 19, m: 44, s: 1 }, dec: { deg: 44, m: 16, s: 39 } },    // KEPLER-452B
+    { ra: { h: 21, m: 33, s: 34 }, dec: { deg: -49, m: 0, s: 32 } },   // GLIESE-832C
+    { ra: { h: 6, m: 28, s: 23 }, dec: { deg: -65, m: 34, s: 46 } },   // TOI-700D
+    { ra: { h: 11, m: 30, s: 14 }, dec: { deg: 7, m: 35, s: 18 } },    // K2-18B
+    { ra: { h: 19, m: 30, s: 1 }, dec: { deg: 41, m: 49, s: 50 } },    // KEPLER-1649C
+    { ra: { h: 3, m: 36, s: 0 }, dec: { deg: -44, m: 30, s: 45 } },    // GJ-1061D
+    { ra: { h: 7, m: 35, s: 32 }, dec: { deg: -83, m: 7, s: 30 } },    // LP-890-9C
+    // Weak signal stars
+    { ra: { h: 7, m: 27, s: 24 }, dec: { deg: 5, m: 13, s: 33 } },     // LUYTEN-B
+    { ra: { h: 17, m: 57, s: 48 }, dec: { deg: 4, m: 41, s: 36 } },    // BARNARD-B
+    { ra: { h: 23, m: 5, s: 52 }, dec: { deg: -35, m: 51, s: 11 } },   // LACAILLE-9352C
+    { ra: { h: 21, m: 6, s: 54 }, dec: { deg: 38, m: 44, s: 58 } },    // 61-CYGNI-C
+    { ra: { h: 22, m: 3, s: 22 }, dec: { deg: -56, m: 47, s: 10 } },   // EPSILON-INDI-B
+    { ra: { h: 11, m: 3, s: 20 }, dec: { deg: 35, m: 58, s: 12 } },    // LALANDE-21185B
+    { ra: { h: 0, m: 18, s: 23 }, dec: { deg: 44, m: 1, s: 23 } },     // GROOMBRIDGE-34B
+    { ra: { h: 1, m: 39, s: 1 }, dec: { deg: -17, m: 57, s: 1 } }      // UV-CETI-B
+];
+
 // Reference to narrative messages (now organized in NARRATIVE object at top of file)
 const narrativeMessages = NARRATIVE.alienContacts;
 
@@ -1756,16 +1830,18 @@ function generateStarCatalog() {
     // False positive star indices (show promising signal but turn out to be terrestrial)
     const falsePositiveIndices = [4, 9, 14, 18, 24, 27, 28]; // GLIESE-667C, LHS-1140B, TAU-CETI-E, GJ-1061D, 61-CYGNI-C, GROOMBRIDGE-34B, UV-CETI-B
 
-    // Weak signal stars (require dish array alignment)
+    // Weak signal stars (require dish array alignment with power budget)
+    // Dish power costs: C=2, 1=1, 2=3, 3=1, 4=3, 5=2, 6=2 (total 14)
+    // Players must select dishes that meet power requirement without exceeding budget
     const weakSignalConfig = {
-        21: { requiredDishes: 4 },  // LUYTEN-B (alien intelligence)
-        22: { requiredDishes: 3 },  // BARNARD-B (natural - pulsar)
-        23: { requiredDishes: 5 },  // LACAILLE-9352C (natural - magnetar)
-        24: { requiredDishes: 4 },  // 61-CYGNI-C (false positive)
-        25: { requiredDishes: 6 },  // EPSILON-INDI-B (alien intelligence)
-        26: { requiredDishes: 4 },  // LALANDE-21185B (natural - quasar)
-        27: { requiredDishes: 5 },  // GROOMBRIDGE-34B (false positive)
-        28: { requiredDishes: 3 }   // UV-CETI-B (false positive)
+        21: { requiredPower: 5 },   // LUYTEN-B (alien intelligence) - easy
+        22: { requiredPower: 4 },   // BARNARD-B (natural - pulsar) - easy
+        23: { requiredPower: 8 },   // LACAILLE-9352C (natural - magnetar) - medium
+        24: { requiredPower: 6 },   // 61-CYGNI-C (false positive) - easy
+        25: { requiredPower: 11 },  // EPSILON-INDI-B (alien intelligence) - hard
+        26: { requiredPower: 7 },   // LALANDE-21185B (natural - quasar) - medium
+        27: { requiredPower: 9 },   // GROOMBRIDGE-34B (false positive) - medium
+        28: { requiredPower: 5 }    // UV-CETI-B (false positive) - easy
     };
 
     // First, create all star objects
@@ -1791,7 +1867,7 @@ function generateStarCatalog() {
             hasIntelligence: narrativeMessages.some(m => m.starIndex === index),
             isFalsePositive: falsePositiveIndices.includes(index),
             signalStrength: isWeakSignal ? 'weak' : 'normal',
-            requiredDishes: isWeakSignal ? weakSignalConfig[index].requiredDishes : 0,
+            requiredPower: isWeakSignal ? weakSignalConfig[index].requiredPower : 0,
             x: Math.random() * 940 + 30, // Position for visual map (30-970)
             y: Math.random() * 500 + 25  // Position for visual map (25-525)
         };
@@ -1983,10 +2059,10 @@ function selectStar(starId) {
                 <div style="color: #ffa500; text-shadow: 0 0 5px #ffa500; font-size: 14px; text-align: center;">⚠ WEAK SIGNAL DETECTED ⚠</div>
                 <div style="color: #ffa500; font-size: 11px; margin-top: 8px; text-align: center;">
                     DISH ARRAY ALIGNMENT REQUIRED<br>
-                    MINIMUM ${star.requiredDishes} DISHES NEEDED
+                    ENTER CODE TO ALIGN DISHES
                 </div>
                 <div style="color: #0ff; font-size: 10px; margin-top: 6px; text-align: center;">
-                    Click [ARRAY STATUS] to configure
+                    Use keypad in [ARRAY STATUS] panel
                 </div>
             </div>`;
     }
@@ -2015,23 +2091,34 @@ function selectStar(starId) {
     // Draw star visualization
     drawStarVisualization(star);
 
-    // Show/hide array button for weak signal stars
+    // Show/hide array button for weak signal stars (if it exists)
     const arrayBtn = document.getElementById('array-status-btn');
     if (star.signalStrength === 'weak') {
-        arrayBtn.style.display = 'inline-block';
+        if (arrayBtn) arrayBtn.style.display = 'inline-block';
         // Only reset array if this is a different target star
         if (!gameState.dishArray.currentTargetStar || gameState.dishArray.currentTargetStar.id !== star.id) {
             setArrayTarget(star);
+        } else {
+            // Same star selected again - just update the display
+            renderStarmapArray();
+            updateStarmapArrayStats();
         }
     } else {
-        arrayBtn.style.display = 'none';
+        if (arrayBtn) arrayBtn.style.display = 'none';
+        // Clear array target when selecting non-weak signal star
+        if (gameState.dishArray.currentTargetStar) {
+            gameState.dishArray.currentTargetStar = null;
+            gameState.dishArray.requiredPower = 0;
+            renderStarmapArray();
+            updateStarmapArrayStats();
+        }
     }
 
     log(`Target acquired: ${star.name}`);
     log(`Coordinates: ${star.coordinates}, Distance: ${star.distance} ly`);
     log(`Star Type: ${star.starType} (${star.starClass}), Temperature: ${star.temperature}`);
     if (star.signalStrength === 'weak') {
-        log(`WEAK SIGNAL - Requires ${star.requiredDishes} dish alignment`, 'warning');
+        log(`WEAK SIGNAL - Array alignment required`, 'warning');
     }
 }
 
@@ -2194,43 +2281,98 @@ function setupEventListeners() {
     });
 
     // Dish Array event listeners
-    document.getElementById('array-status-btn').addEventListener('click', () => {
-        playClick();
-        gameState.previousView = 'starmap-view';
-        showView('array-view');
-    });
+    const arrayStatusBtn = document.getElementById('array-status-btn');
+    if (arrayStatusBtn) {
+        arrayStatusBtn.addEventListener('click', () => {
+            playClick();
+            gameState.previousView = 'starmap-view';
+            showView('array-view');
+        });
+    }
 
-    document.getElementById('align-all-btn').addEventListener('click', () => {
-        playClick();
-        alignAllDishes();
-    });
+    const alignAllBtn = document.getElementById('align-all-btn');
+    if (alignAllBtn) {
+        alignAllBtn.addEventListener('click', () => {
+            playClick();
+            alignAllDishes();
+        });
+    }
 
-    document.getElementById('reset-array-btn').addEventListener('click', () => {
-        playClick();
-        resetArray();
-    });
+    const resetArrayBtn = document.getElementById('reset-array-btn');
+    if (resetArrayBtn) {
+        resetArrayBtn.addEventListener('click', () => {
+            playClick();
+            resetArray();
+        });
+    }
 
-    document.getElementById('array-back-btn').addEventListener('click', () => {
-        playClick();
-        showView(gameState.previousView || 'starmap-view');
-    });
+    const arrayBackBtn = document.getElementById('array-back-btn');
+    if (arrayBackBtn) {
+        arrayBackBtn.addEventListener('click', () => {
+            playClick();
+            showView(gameState.previousView || 'starmap-view');
+        });
+    }
 
-    document.getElementById('array-scan-btn').addEventListener('click', () => {
-        playClick();
-        // Go directly to scan from array view
-        initiateScan();
-    });
+    const arrayScanBtn = document.getElementById('array-scan-btn');
+    if (arrayScanBtn) {
+        arrayScanBtn.addEventListener('click', () => {
+            playClick();
+            // Go directly to scan from array view
+            initiateScan();
+        });
+    }
+
+    // Starmap array scan button (on left panel)
+    const starmapArrayScanBtn = document.getElementById('starmap-array-scan-btn');
+    if (starmapArrayScanBtn) {
+        starmapArrayScanBtn.addEventListener('click', () => {
+            playClick();
+            // Go directly to scan from starmap view
+            initiateScan();
+        });
+    }
 
     // End state event listeners
-    document.getElementById('submit-report-btn').addEventListener('click', submitReport);
-    document.getElementById('restart-btn').addEventListener('click', restartGame);
+    const submitReportBtn = document.getElementById('submit-report-btn');
+    if (submitReportBtn) {
+        submitReportBtn.addEventListener('click', submitReport);
+    }
+
+    const restartBtn = document.getElementById('restart-btn');
+    if (restartBtn) {
+        restartBtn.addEventListener('click', restartGame);
+    }
 
     // Survey complete popup button
-    document.getElementById('survey-submit-btn').addEventListener('click', () => {
-        playClick();
-        document.getElementById('survey-complete-popup').style.display = 'none';
-        showFinalReport();
+    const surveySubmitBtn = document.getElementById('survey-submit-btn');
+    if (surveySubmitBtn) {
+        surveySubmitBtn.addEventListener('click', () => {
+            playClick();
+            document.getElementById('survey-complete-popup').style.display = 'none';
+            showFinalReport();
+        });
+    }
+
+    // Keypad event listeners for alignment code input
+    const keypadBtns = document.querySelectorAll('.keypad-btn');
+    keypadBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const key = btn.dataset.key;
+            handleKeypadPress(key);
+        });
     });
+
+    // BEGIN ALIGNMENT button event listener
+    const beginAlignmentBtn = document.getElementById('begin-alignment-btn');
+    if (beginAlignmentBtn) {
+        beginAlignmentBtn.addEventListener('click', () => {
+            playClick();
+            // Start the alignment animation
+            const code = gameState.dishArray.alignmentCode;
+            alignDishesFromCode(code);
+        });
+    }
 }
 
 // Initiate scan
@@ -3599,7 +3741,7 @@ function startTuningMinigame(star) {
 
     log('Signal tuning interface activated');
     if (star.signalStrength === 'weak') {
-        log(`WEAK SIGNAL - Align ${star.requiredDishes} dishes to boost signal`, 'warning');
+        log(`WEAK SIGNAL - Array alignment boosting signal`, 'warning');
     }
 }
 
@@ -3688,6 +3830,12 @@ function tuningFeedbackLoop() {
         gameState.lockDuration++;
         strengthFill.style.boxShadow = '0 0 20px #0f0';
 
+        // Show locking progress
+        const lockProgress = Math.floor((gameState.lockDuration / gameState.lockRequired) * 100);
+        strengthPercent.textContent = `LOCKING... ${lockProgress}%`;
+        strengthPercent.style.color = '#0f0';
+        strengthFill.style.background = 'linear-gradient(90deg, #0f0, #0ff)';
+
         // Success! Complete the scan
         if (gameState.lockDuration >= gameState.lockRequired) {
             completeTuningScan(gameState.currentStar);
@@ -3696,6 +3844,7 @@ function tuningFeedbackLoop() {
     } else {
         gameState.lockDuration = 0;
         strengthFill.style.boxShadow = '0 0 10px rgba(0, 255, 0, 0.5)';
+        strengthFill.style.background = '';
     }
 
     // Continue loop
@@ -4306,46 +4455,397 @@ function completePatternGame(star) {
 // ========================================
 
 // Y-Configuration dish positions (VLA-style)
+// Arms: North (200,40)-(200,180), SW (200,180)-(60,320), SE (200,180)-(340,320)
+// Labels: C (center), 1-6 for other dishes
 const DISH_POSITIONS = [
-    { id: 0, x: 200, y: 175, label: 'C' },    // Center hub
-    { id: 1, x: 200, y: 110, label: '1' },    // North arm - near
-    { id: 2, x: 200, y: 50, label: '2' },     // North arm - far
-    { id: 3, x: 140, y: 235, label: '3' },    // SW arm - near
-    { id: 4, x: 80, y: 300, label: '4' },     // SW arm - far
-    { id: 5, x: 260, y: 235, label: '5' },    // SE arm - near
-    { id: 6, x: 320, y: 300, label: '6' }     // SE arm - far
+    { id: 0, x: 200, y: 180, label: 'C' },    // Center hub - at junction
+    { id: 1, x: 200, y: 110, label: '1' },    // North arm - midpoint
+    { id: 2, x: 200, y: 40, label: '2' },     // North arm - end
+    { id: 3, x: 130, y: 250, label: '3' },    // SW arm - midpoint
+    { id: 4, x: 60, y: 320, label: '4' },     // SW arm - end
+    { id: 5, x: 270, y: 250, label: '5' },    // SE arm - midpoint
+    { id: 6, x: 340, y: 320, label: '6' }     // SE arm - end
 ];
 
-function initDishArray() {
-    // Randomly select 2-3 dishes to have interference
-    const numInterference = 2 + Math.floor(Math.random() * 2); // 2 or 3
-    const interferenceIndices = [];
-    while (interferenceIndices.length < numInterference) {
-        const idx = Math.floor(Math.random() * 7);
-        if (!interferenceIndices.includes(idx)) {
-            interferenceIndices.push(idx);
-        }
-    }
+// Valid dish labels for alignment codes
+const DISH_LABELS = ['C', '1', '2', '3', '4', '5', '6'];
 
-    // Initialize dishes with random orientations, interference, and power states
+function initDishArray() {
+    // Initialize dishes - all start unaligned
     gameState.dishArray.dishes = DISH_POSITIONS.map((pos, index) => ({
         id: index,
-        angle: Math.random() * 360,
-        targetAngle: null,
-        isRotating: false,
         isAligned: false,
-        isPowered: false,
-        hasInterference: interferenceIndices.includes(index),
+        isAligning: false,
         x: pos.x,
         y: pos.y,
         label: pos.label
     }));
 
-    gameState.dishArray.poweredCount = 0;
+    // Reset alignment code state
+    gameState.dishArray.alignmentCode = '';
+    gameState.dishArray.inputCode = '';
+    gameState.dishArray.codeRequired = false;
 
     renderDishArray();
-    renderMiniDishArray();
-    updateArrayStatus();
+    renderStarmapArray();
+    updateStarmapArrayStats();
+}
+
+// Generate a random alignment code (4-7 characters using dish labels)
+function generateAlignmentCode() {
+    const codeLength = 4 + Math.floor(Math.random() * 4); // 4-7 digits
+    let code = '';
+    const availableLabels = [...DISH_LABELS];
+
+    for (let i = 0; i < codeLength; i++) {
+        const randomIndex = Math.floor(Math.random() * availableLabels.length);
+        code += availableLabels[randomIndex];
+        // Remove used label to avoid duplicates
+        availableLabels.splice(randomIndex, 1);
+    }
+
+    return code;
+}
+
+// Handle keypad button press
+function handleKeypadPress(key) {
+    if (!gameState.dishArray.codeRequired) return;
+
+    playClick();
+
+    if (key === 'CLR') {
+        // Clear input
+        gameState.dishArray.inputCode = '';
+        updateCodeDisplay();
+        return;
+    }
+
+    // Add key to input (max length = alignment code length)
+    const maxLength = gameState.dishArray.alignmentCode.length;
+    if (gameState.dishArray.inputCode.length < maxLength) {
+        gameState.dishArray.inputCode += key;
+        updateCodeDisplay();
+
+        // Check if code is complete
+        if (gameState.dishArray.inputCode.length === maxLength) {
+            validateAlignmentCode();
+        }
+    }
+}
+
+// Update the code input display
+function updateCodeDisplay() {
+    const inputEl = document.getElementById('array-code-input');
+    if (!inputEl) return;
+
+    const input = gameState.dishArray.inputCode;
+    const maxLength = gameState.dishArray.alignmentCode.length;
+
+    // Show input with underscores for remaining positions
+    let display = input;
+    for (let i = input.length; i < maxLength; i++) {
+        display += '_';
+    }
+
+    inputEl.textContent = display;
+    inputEl.className = 'array-code-input';
+}
+
+// Validate the entered alignment code
+function validateAlignmentCode() {
+    const inputEl = document.getElementById('array-code-input');
+    const keypadEl = document.getElementById('array-keypad');
+    const confirmedEl = document.getElementById('array-code-confirmed');
+    const input = gameState.dishArray.inputCode;
+    const code = gameState.dishArray.alignmentCode;
+
+    if (input === code) {
+        // Correct code!
+        inputEl.className = 'array-code-input success';
+        log('ALIGNMENT CODE ACCEPTED', 'highlight');
+        playLockAchieved();
+
+        // Hide keypad, show confirmation with BEGIN ALIGNMENT button
+        if (keypadEl) keypadEl.style.display = 'none';
+        if (confirmedEl) confirmedEl.style.display = 'block';
+    } else {
+        // Wrong code
+        inputEl.className = 'array-code-input error';
+        log('INVALID ALIGNMENT CODE', 'warning');
+        playStaticBurst();
+
+        // Clear input after a delay
+        setTimeout(() => {
+            gameState.dishArray.inputCode = '';
+            updateCodeDisplay();
+        }, 500);
+    }
+}
+
+// Align dishes based on the code characters
+function alignDishesFromCode(code) {
+    const statusEl = document.getElementById('starmap-array-status');
+    const confirmedEl = document.getElementById('array-code-confirmed');
+    const codeSectionEl = document.getElementById('array-code-section');
+    const aligningTextEl = document.getElementById('array-aligning-text');
+
+    // Hide the confirmation section
+    if (confirmedEl) confirmedEl.style.display = 'none';
+
+    // Update status to show alignment in progress
+    if (statusEl) {
+        statusEl.textContent = 'ALIGNING DISHES...';
+        statusEl.className = 'starmap-array-status';
+    }
+
+    // Show flashing "ALIGNING" text
+    if (aligningTextEl) aligningTextEl.style.display = 'block';
+
+    // Play machine sound
+    playMachineSound();
+    log('Initiating dish array alignment sequence...', 'highlight');
+
+    // Animation lasts 8 seconds total - spread dishes evenly across this time
+    const totalDuration = 8000;
+
+    // Animate telemetry values during alignment
+    animateTelemetryDuringAlignment(totalDuration);
+    const delayPerDish = Math.floor(totalDuration / code.length);
+
+    // Flash each dish in sequence
+    let delay = 0;
+    for (const char of code) {
+        setTimeout(() => {
+            // Find the dish with this label
+            const dish = gameState.dishArray.dishes.find(d => d.label === char);
+            if (dish) {
+                dish.isAligning = true;
+                renderStarmapArray();
+                playClick();
+
+                // After a brief flash, mark as aligned
+                setTimeout(() => {
+                    dish.isAligning = false;
+                    dish.isAligned = true;
+                    renderStarmapArray();
+                    updateStarmapArrayStats();
+                }, 500);
+            }
+        }, delay);
+        delay += delayPerDish;
+    }
+
+    // After all dishes aligned (at 8 seconds), update status
+    setTimeout(() => {
+        stopMachineSound();
+
+        // Hide the flashing text
+        if (aligningTextEl) aligningTextEl.style.display = 'none';
+
+        if (statusEl) {
+            statusEl.textContent = 'ARRAY ALIGNED - READY FOR SCAN';
+            statusEl.className = 'starmap-array-status ready';
+        }
+        // Hide the entire code section since alignment is complete
+        if (codeSectionEl) codeSectionEl.style.display = 'none';
+        updateArrayStatus();
+        log('Dish array alignment complete', 'success');
+
+        // Play acknowledgement sound after fade out completes
+        setTimeout(() => {
+            playLockAchieved();
+        }, 1000);
+    }, totalDuration);
+}
+
+// Set up alignment code for a weak signal star
+function setupAlignmentCode(star) {
+    // Generate new alignment code
+    const code = generateAlignmentCode();
+    gameState.dishArray.alignmentCode = code;
+    gameState.dishArray.inputCode = '';
+    gameState.dishArray.codeRequired = true;
+    gameState.dishArray.currentTargetStar = star;
+
+    // Reset all dishes
+    gameState.dishArray.dishes.forEach(d => {
+        d.isAligned = false;
+        d.isAligning = false;
+    });
+
+    // Show code section and reset UI state
+    const codeSection = document.getElementById('array-code-section');
+    const codeDisplay = document.getElementById('array-code-display');
+    const keypadEl = document.getElementById('array-keypad');
+    const confirmedEl = document.getElementById('array-code-confirmed');
+    const statusEl = document.getElementById('starmap-array-status');
+
+    if (codeSection) codeSection.style.display = 'block';
+    if (codeDisplay) codeDisplay.textContent = code;
+    if (keypadEl) keypadEl.style.display = 'grid';  // Show keypad
+    if (confirmedEl) confirmedEl.style.display = 'none';  // Hide confirmation
+    if (statusEl) {
+        statusEl.textContent = 'ENTER ALIGNMENT CODE';
+        statusEl.className = 'starmap-array-status';
+    }
+
+    updateCodeDisplay();
+    renderStarmapArray();
+    updateTelemetry(star);
+
+    log(`Weak signal detected - alignment code required: ${code}`, 'warning');
+}
+
+// Clear alignment code (for non-weak signal stars)
+function clearAlignmentCode() {
+    gameState.dishArray.alignmentCode = '';
+    gameState.dishArray.inputCode = '';
+    gameState.dishArray.codeRequired = false;
+    gameState.dishArray.currentTargetStar = null;
+
+    // Reset all dishes
+    gameState.dishArray.dishes.forEach(d => {
+        d.isAligned = false;
+        d.isAligning = false;
+    });
+
+    // Hide code section
+    const codeSection = document.getElementById('array-code-section');
+    const statusEl = document.getElementById('starmap-array-status');
+
+    if (codeSection) codeSection.style.display = 'none';
+    if (statusEl) {
+        statusEl.textContent = 'SELECT WEAK SIGNAL TARGET';
+        statusEl.className = 'starmap-array-status';
+    }
+
+    renderStarmapArray();
+    resetTelemetry();
+}
+
+// Update telemetry display for a target star
+function updateTelemetry(star) {
+    const targetEl = document.getElementById('telem-target');
+    const raEl = document.getElementById('telem-ra');
+    const decEl = document.getElementById('telem-dec');
+    const azEl = document.getElementById('telem-az');
+    const elEl = document.getElementById('telem-el');
+    const gainEl = document.getElementById('telem-gain');
+
+    if (!star) {
+        resetTelemetry();
+        return;
+    }
+
+    // Find the star index to get real coordinates
+    const starIndex = starNames.indexOf(star.name);
+    let ra, dec;
+
+    if (starIndex >= 0 && starCoordinates[starIndex]) {
+        // Use real astronomical coordinates
+        ra = starCoordinates[starIndex].ra;
+        dec = starCoordinates[starIndex].dec;
+    } else {
+        // Fallback to generated coordinates if not found
+        const hash = star.name.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0);
+        ra = { h: Math.abs(hash % 24), m: Math.abs((hash >> 4) % 60), s: Math.abs((hash >> 8) % 60) };
+        dec = { deg: (Math.abs(hash % 180) - 90), m: Math.abs((hash >> 6) % 60), s: Math.abs((hash >> 10) % 60) };
+    }
+
+    // Calculate azimuth/elevation based on RA/DEC (simplified approximation)
+    // In reality this depends on observer location and time, but we simulate it
+    const az = Math.abs((ra.h * 15 + ra.m / 4) % 360);
+    const el = Math.max(0, Math.min(90, 90 - Math.abs(dec.deg)));
+
+    if (targetEl) targetEl.textContent = star.name.substring(0, 12);
+    if (raEl) raEl.textContent = `${ra.h.toString().padStart(2, '0')}h ${ra.m.toString().padStart(2, '0')}m ${ra.s.toString().padStart(2, '0')}s`;
+    if (decEl) decEl.textContent = `${dec.deg >= 0 ? '+' : ''}${dec.deg}° ${Math.abs(dec.m)}' ${Math.abs(dec.s)}"`;
+    if (azEl) azEl.textContent = `${Math.round(az)}°`;
+    if (elEl) elEl.textContent = `${Math.round(el)}°`;
+    if (gainEl) gainEl.textContent = '0.0dB';
+}
+
+// Animate telemetry during alignment
+function animateTelemetryDuringAlignment(duration) {
+    const azEl = document.getElementById('telem-az');
+    const elEl = document.getElementById('telem-el');
+    const gainEl = document.getElementById('telem-gain');
+
+    // Add updating class for flicker effect
+    [azEl, elEl, gainEl].forEach(el => {
+        if (el) el.classList.add('updating');
+    });
+
+    // Start with current values and gradually change them
+    const star = gameState.dishArray.currentTargetStar;
+    if (!star) return;
+
+    // Get real coordinates for this star
+    const starIndex = starNames.indexOf(star.name);
+    let targetAz, targetElev;
+
+    if (starIndex >= 0 && starCoordinates[starIndex]) {
+        const ra = starCoordinates[starIndex].ra;
+        const dec = starCoordinates[starIndex].dec;
+        targetAz = Math.abs((ra.h * 15 + ra.m / 4) % 360);
+        targetElev = Math.max(0, Math.min(90, 90 - Math.abs(dec.deg)));
+    } else {
+        const hash = star.name.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0);
+        targetAz = Math.abs(hash % 360);
+        targetElev = Math.abs(hash % 90);
+    }
+
+    const alignedCount = gameState.dishArray.alignmentCode.length;
+
+    let currentAz = targetAz + 30 + Math.random() * 20;
+    let currentElevation = targetElev + 15 + Math.random() * 10;
+    let currentGain = 0;
+
+    const updateInterval = 200;
+    const steps = duration / updateInterval;
+    const azStep = (currentAz - targetAz) / steps;
+    const elStep = (currentElevation - targetElev) / steps;
+    const gainStep = (alignedCount * 2.5) / steps;
+
+    const intervalId = setInterval(() => {
+        currentAz -= azStep + (Math.random() - 0.5) * 2;
+        currentElevation -= elStep + (Math.random() - 0.5) * 1;
+        currentGain += gainStep;
+
+        if (azEl) azEl.textContent = `${Math.round(currentAz)}°`;
+        if (elEl) elEl.textContent = `${Math.round(currentElevation)}°`;
+        if (gainEl) gainEl.textContent = `${currentGain.toFixed(1)}dB`;
+    }, updateInterval);
+
+    // Stop animation after duration
+    setTimeout(() => {
+        clearInterval(intervalId);
+        [azEl, elEl, gainEl].forEach(el => {
+            if (el) el.classList.remove('updating');
+        });
+
+        // Set final values
+        if (azEl) azEl.textContent = `${targetAz}°`;
+        if (elEl) elEl.textContent = `${targetElev}°`;
+        if (gainEl) gainEl.textContent = `${(alignedCount * 2.5).toFixed(1)}dB`;
+    }, duration);
+}
+
+// Reset telemetry to default values
+function resetTelemetry() {
+    const targetEl = document.getElementById('telem-target');
+    const raEl = document.getElementById('telem-ra');
+    const decEl = document.getElementById('telem-dec');
+    const azEl = document.getElementById('telem-az');
+    const elEl = document.getElementById('telem-el');
+    const gainEl = document.getElementById('telem-gain');
+
+    if (targetEl) targetEl.textContent = '--';
+    if (raEl) raEl.textContent = '--h --m --s';
+    if (decEl) decEl.textContent = "--° --' --\"";
+    if (azEl) azEl.textContent = '---°';
+    if (elEl) elEl.textContent = '--°';
+    if (gainEl) gainEl.textContent = '0.0dB';
 }
 
 function renderDishArray() {
@@ -4391,6 +4891,15 @@ function renderDishArray() {
         label.setAttribute('y', 35);
         label.textContent = dish.label;
 
+        // Power cost indicator
+        const powerLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        powerLabel.setAttribute('class', 'dish-power-cost');
+        powerLabel.setAttribute('y', 48);
+        powerLabel.setAttribute('fill', dish.isPowered ? '#0ff' : '#666');
+        powerLabel.setAttribute('font-size', '10');
+        powerLabel.setAttribute('text-anchor', 'middle');
+        powerLabel.textContent = `${dish.powerCost}⚡`;
+
         // Interference indicator (X mark)
         if (dish.hasInterference) {
             const x1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -4415,6 +4924,7 @@ function renderDishArray() {
         g.appendChild(base);
         g.appendChild(bowl);
         g.appendChild(label);
+        g.appendChild(powerLabel);
 
         // Click handler
         g.addEventListener('click', (e) => {
@@ -4436,6 +4946,104 @@ function renderDishArray() {
 
         dishGroup.appendChild(g);
     });
+
+    // Also render the starmap panel version
+    renderStarmapArray();
+}
+
+// Render the compact array in the starmap view (left panel)
+function renderStarmapArray() {
+    const dishGroup = document.getElementById('starmap-dish-group');
+    if (!dishGroup) return;
+
+    dishGroup.innerHTML = '';
+
+    // Scaled positions for the smaller SVG (200x200 viewBox)
+    // Arms: North (100,20)-(100,90), SW (100,90)-(40,160), SE (100,90)-(160,160)
+    const scaledPositions = [
+        { x: 100, y: 90, label: 'C' },   // Center hub - at junction
+        { x: 100, y: 55, label: '1' },   // North arm - midpoint
+        { x: 100, y: 20, label: '2' },   // North arm - end
+        { x: 70, y: 125, label: '3' },   // SW arm - midpoint
+        { x: 40, y: 160, label: '4' },   // SW arm - end
+        { x: 130, y: 125, label: '5' },  // SE arm - midpoint
+        { x: 160, y: 160, label: '6' }   // SE arm - end
+    ];
+
+    gameState.dishArray.dishes.forEach((dish, index) => {
+        const pos = scaledPositions[index];
+
+        let classes = 'dish-element';
+        if (dish.isAligning) classes += ' aligning';
+        else if (dish.isAligned) classes += ' aligned';
+
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', classes);
+        g.setAttribute('data-dish-id', dish.id);
+        g.setAttribute('transform', `translate(${pos.x}, ${pos.y})`);
+
+        // Dish base (smaller)
+        const base = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        base.setAttribute('class', 'dish-base');
+        base.setAttribute('x', -6);
+        base.setAttribute('y', -3);
+        base.setAttribute('width', 12);
+        base.setAttribute('height', 15);
+        base.setAttribute('rx', 2);
+
+        // Dish bowl (smaller)
+        const bowl = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+        bowl.setAttribute('class', 'dish-bowl');
+        bowl.setAttribute('cx', 0);
+        bowl.setAttribute('cy', -10);
+        bowl.setAttribute('rx', 12);
+        bowl.setAttribute('ry', 6);
+
+        // Label (inside the base box)
+        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        label.setAttribute('class', 'dish-label');
+        label.setAttribute('y', 8);
+        label.textContent = dish.label;
+
+        g.appendChild(base);
+        g.appendChild(bowl);
+        g.appendChild(label);
+
+        dishGroup.appendChild(g);
+    });
+
+    // Update starmap array stats
+    updateStarmapArrayStats();
+}
+
+function updateStarmapArrayStats() {
+    const alignedCount = gameState.dishArray.dishes.filter(d => d.isAligned).length;
+    const codeLength = gameState.dishArray.alignmentCode.length;
+    const star = gameState.dishArray.currentTargetStar;
+
+    // Update stats display
+    const boostEl = document.getElementById('starmap-array-boost');
+    const statusEl = document.getElementById('starmap-array-status');
+    const scanBtn = document.getElementById('starmap-array-scan-btn');
+
+    if (boostEl) boostEl.textContent = calculateSignalBoost().toFixed(1) + 'x';
+
+    // Status is managed by code input flow, only update if not in code mode
+    if (statusEl && !gameState.dishArray.codeRequired) {
+        if (!star) {
+            statusEl.textContent = 'SELECT WEAK SIGNAL TARGET';
+            statusEl.className = 'starmap-array-status';
+        }
+    }
+
+    // Show/hide scan button based on alignment
+    if (scanBtn) {
+        if (star && codeLength > 0 && alignedCount >= codeLength) {
+            scanBtn.style.display = 'block';
+        } else {
+            scanBtn.style.display = 'none';
+        }
+    }
 }
 
 function renderMiniDishArray() {
@@ -4455,10 +5063,10 @@ function renderMiniDishArray() {
         const div = document.createElement('div');
         div.className = classes;
         div.dataset.dishId = dish.id;
-        div.textContent = dish.hasInterference ? 'X' : dish.label;
+        div.innerHTML = dish.hasInterference ? 'X' : `${dish.label}<span class="mini-power">${dish.powerCost}</span>`;
         div.title = dish.hasInterference ? 'Click to clear interference' :
-                    !dish.isPowered ? 'Click to power on' :
-                    dish.isAligned ? 'Right-click to power off' :
+                    !dish.isPowered ? `Click to power on (${dish.powerCost} power)` :
+                    dish.isAligned ? `Right-click to power off (-${dish.powerCost} power)` :
                     'Click to align';
         div.addEventListener('click', () => startDishRotation(dish.id));
         div.addEventListener('contextmenu', (e) => {
@@ -4470,10 +5078,10 @@ function renderMiniDishArray() {
         container.appendChild(div);
     });
 
-    // Update counts - only count powered AND aligned dishes
-    const aligned = gameState.dishArray.dishes.filter(d => d.isAligned && d.isPowered).length;
-    const required = gameState.dishArray.requiredDishes;
-    const powered = gameState.dishArray.poweredCount;
+    // Update counts - track power used from powered dishes
+    const alignedCount = gameState.dishArray.dishes.filter(d => d.isAligned && d.isPowered).length;
+    const requiredPower = gameState.dishArray.requiredPower;
+    const powerUsed = gameState.dishArray.powerUsed;
     const maxPower = gameState.dishArray.maxPower;
 
     const miniAligned = document.getElementById('mini-aligned');
@@ -4481,12 +5089,12 @@ function renderMiniDishArray() {
     const tuningBoost = document.getElementById('tuning-boost-value');
     const miniPowerText = document.getElementById('mini-power-text');
 
-    if (miniAligned) miniAligned.textContent = aligned;
-    if (miniRequired) miniRequired.textContent = required;
+    if (miniAligned) miniAligned.textContent = powerUsed; // Show power used
+    if (miniRequired) miniRequired.textContent = requiredPower; // Show power required
     if (tuningBoost) tuningBoost.textContent = calculateSignalBoost().toFixed(1) + 'x';
     if (miniPowerText) {
-        miniPowerText.textContent = `POWER: ${powered}/${maxPower}`;
-        miniPowerText.style.color = powered >= maxPower ? '#f00' : '#0ff';
+        miniPowerText.textContent = `POWER: ${powerUsed}/${maxPower}`;
+        miniPowerText.style.color = powerUsed >= maxPower ? '#f00' : '#0ff';
     }
 }
 
@@ -4508,8 +5116,9 @@ function startDishRotation(dishId) {
 
     // Step 2: If dish is not powered, try to power it on
     if (!dish.isPowered) {
-        if (gameState.dishArray.poweredCount >= gameState.dishArray.maxPower) {
-            log(`Power limit reached (${gameState.dishArray.maxPower} dishes max) - depower another dish first`, 'warning');
+        const newPowerUsed = gameState.dishArray.powerUsed + dish.powerCost;
+        if (newPowerUsed > gameState.dishArray.maxPower) {
+            log(`Power limit exceeded! Need ${dish.powerCost} units but only ${gameState.dishArray.maxPower - gameState.dishArray.powerUsed} available`, 'warning');
             playStaticBurst();
             return;
         }
@@ -4552,17 +5161,21 @@ function clearDishInterference(dish) {
         log(`Dish ${dish.label} interference cleared`, 'highlight');
         renderDishArray();
         renderMiniDishArray();
+        renderStarmapArray();
+        updateStarmapArrayStats();
         updateArrayStatus();
     }, 1500);
 }
 
 function powerOnDish(dish) {
     dish.isPowered = true;
-    gameState.dishArray.poweredCount++;
-    log(`Dish ${dish.label} powered on (${gameState.dishArray.poweredCount}/${gameState.dishArray.maxPower})`);
+    gameState.dishArray.powerUsed += dish.powerCost;
+    log(`Dish ${dish.label} powered on (+${dish.powerCost} power, total: ${gameState.dishArray.powerUsed}/${gameState.dishArray.maxPower})`);
     playClick();
     renderDishArray();
     renderMiniDishArray();
+    renderStarmapArray();
+    updateStarmapArrayStats();
     updateArrayStatus();
 }
 
@@ -4571,11 +5184,13 @@ function powerOffDish(dish) {
 
     dish.isPowered = false;
     dish.isAligned = false;
-    gameState.dishArray.poweredCount--;
-    log(`Dish ${dish.label} powered off`);
+    gameState.dishArray.powerUsed -= dish.powerCost;
+    log(`Dish ${dish.label} powered off (-${dish.powerCost} power, total: ${gameState.dishArray.powerUsed}/${gameState.dishArray.maxPower})`);
     playClick();
     renderDishArray();
     renderMiniDishArray();
+    renderStarmapArray();
+    updateStarmapArrayStats();
     updateArrayStatus();
 }
 
@@ -4615,6 +5230,8 @@ function animateDishRotation(dish) {
             updateArrayStatus();
             renderDishArray();
             renderMiniDishArray();
+            renderStarmapArray();
+            updateStarmapArrayStats();
         }
     }
 
@@ -4624,106 +5241,24 @@ function animateDishRotation(dish) {
 function setArrayTarget(star) {
     if (!star || star.signalStrength !== 'weak') return;
 
-    // Randomly select 2-3 dishes to have interference for this target
-    const numInterference = 2 + Math.floor(Math.random() * 2); // 2 or 3
-    const interferenceIndices = [];
-    while (interferenceIndices.length < numInterference) {
-        const idx = Math.floor(Math.random() * 7);
-        if (!interferenceIndices.includes(idx)) {
-            interferenceIndices.push(idx);
-        }
-    }
-
-    // Reset all dishes when changing target
-    gameState.dishArray.dishes.forEach((dish, index) => {
-        dish.isAligned = false;
-        dish.isRotating = false;
-        dish.isPowered = false;
-        dish.hasInterference = interferenceIndices.includes(index);
-        dish.targetAngle = null;
-    });
-
-    gameState.dishArray.poweredCount = 0;
-    gameState.dishArray.currentTargetStar = star;
-    gameState.dishArray.requiredDishes = star.requiredDishes || 3;
-
-    const targetDisplay = document.getElementById('array-target-display');
-    const requiredDisplay = document.getElementById('array-required-display');
-
-    if (targetDisplay) targetDisplay.textContent = `TARGET: ${star.name}`;
-    if (requiredDisplay) requiredDisplay.textContent = gameState.dishArray.requiredDishes;
-
-    updateArrayStatus();
-    renderDishArray();
-    renderMiniDishArray();
-
-    log(`Array target set: ${star.name} (requires ${star.requiredDishes} dishes)`);
-    log(`WARNING: ${numInterference} dishes have interference - clear before use`, 'warning');
+    // Use the code-based alignment system
+    setupAlignmentCode(star);
 }
 
 function updateArrayStatus() {
-    // Only count dishes that are both powered AND aligned
-    const poweredAndAligned = gameState.dishArray.dishes.filter(d => d.isAligned && d.isPowered).length;
-    const powered = gameState.dishArray.poweredCount;
-    const maxPower = gameState.dishArray.maxPower;
-    const required = gameState.dishArray.requiredDishes;
-    const interferenceCount = gameState.dishArray.dishes.filter(d => d.hasInterference).length;
+    // Count aligned dishes
+    const alignedCount = gameState.dishArray.dishes.filter(d => d.isAligned).length;
+    const codeLength = gameState.dishArray.alignmentCode.length;
 
-    gameState.dishArray.alignedDishCount = poweredAndAligned;
+    gameState.dishArray.alignedCount = alignedCount;
 
-    // Update main array view
-    const alignedCount = document.getElementById('array-aligned-count');
-    const alignedDishCount = document.getElementById('aligned-dish-count');
-    const signalBoost = document.getElementById('array-signal-boost');
-
-    if (alignedCount) alignedCount.textContent = poweredAndAligned;
-    if (alignedDishCount) alignedDishCount.textContent = `${poweredAndAligned}/${required}`;
-    if (signalBoost) signalBoost.textContent = calculateSignalBoost().toFixed(1) + 'x';
-
-    // Update power indicator
-    const powerIndicator = document.getElementById('array-power-indicator');
-    if (powerIndicator) {
-        powerIndicator.textContent = `POWER: ${powered}/${maxPower}`;
-        powerIndicator.className = powered >= maxPower ? 'power-indicator at-limit' : 'power-indicator';
-    }
-
-    // Update interference indicator
-    const interferenceIndicator = document.getElementById('array-interference-indicator');
-    if (interferenceIndicator) {
-        if (interferenceCount > 0) {
-            interferenceIndicator.textContent = `INTERFERENCE: ${interferenceCount} dish${interferenceCount > 1 ? 'es' : ''}`;
-            interferenceIndicator.style.display = 'block';
-        } else {
-            interferenceIndicator.style.display = 'none';
-        }
-    }
-
-    // Update status bar
-    const statusBar = document.getElementById('array-status-bar');
-    if (statusBar) {
-        if (!gameState.dishArray.currentTargetStar) {
-            statusBar.textContent = 'SELECT A WEAK SIGNAL TARGET TO CONFIGURE ARRAY';
-            statusBar.className = 'array-status-bar';
-        } else if (poweredAndAligned >= required) {
-            statusBar.textContent = `ARRAY READY - ${poweredAndAligned}/${required} DISHES ONLINE - BOOST: ${calculateSignalBoost().toFixed(1)}x`;
-            statusBar.className = 'array-status-bar ready';
-        } else {
-            const needed = required - poweredAndAligned;
-            statusBar.textContent = `INSUFFICIENT - NEED ${needed} MORE POWERED & ALIGNED`;
-            statusBar.className = 'array-status-bar insufficient';
-        }
-    }
-
-    // Enable/disable align all button
-    const alignBtn = document.getElementById('align-all-btn');
-    if (alignBtn) {
-        alignBtn.disabled = !gameState.dishArray.currentTargetStar;
-    }
+    // Check if all required dishes are aligned
+    const isFullyAligned = codeLength > 0 && alignedCount >= codeLength;
 
     // Show/hide scan button based on alignment status
     const scanBtn = document.getElementById('array-scan-btn');
     if (scanBtn) {
-        if (gameState.dishArray.currentTargetStar && poweredAndAligned >= required) {
+        if (gameState.dishArray.currentTargetStar && isFullyAligned) {
             scanBtn.style.display = 'inline-block';
         } else {
             scanBtn.style.display = 'none';
@@ -4745,72 +5280,45 @@ function alignAllDishes() {
 }
 
 function resetArray() {
-    // Re-randomize interference (2-3 dishes)
-    const numInterference = 2 + Math.floor(Math.random() * 2);
-    const interferenceIndices = [];
-    while (interferenceIndices.length < numInterference) {
-        const idx = Math.floor(Math.random() * 7);
-        if (!interferenceIndices.includes(idx)) {
-            interferenceIndices.push(idx);
-        }
-    }
-
-    gameState.dishArray.dishes.forEach((dish, index) => {
-        dish.angle = Math.random() * 360;
-        dish.targetAngle = null;
-        dish.isRotating = false;
+    // Reset all dishes
+    gameState.dishArray.dishes.forEach(dish => {
         dish.isAligned = false;
-        dish.isPowered = false;
-        dish.hasInterference = interferenceIndices.includes(index);
+        dish.isAligning = false;
     });
 
-    gameState.dishArray.currentTargetStar = null;
-    gameState.dishArray.alignedDishCount = 0;
-    gameState.dishArray.requiredDishes = 0;
-    gameState.dishArray.poweredCount = 0;
+    clearAlignmentCode();
+    renderStarmapArray();
 
-    const targetDisplay = document.getElementById('array-target-display');
-    if (targetDisplay) targetDisplay.textContent = 'TARGET: NONE SELECTED';
-
-    updateArrayStatus();
-    renderDishArray();
-    renderMiniDishArray();
-
-    log('Array reset to random orientations');
-    log(`WARNING: ${numInterference} dishes have interference - clear before use`, 'warning');
+    log('Array reset');
 }
 
-// Signal boost calculation - only counts dishes that are powered AND aligned
+// Signal boost calculation - based on aligned dishes
 function calculateSignalBoost() {
-    // Count only dishes that are both powered and aligned
-    const poweredAndAligned = gameState.dishArray.dishes.filter(d => d.isAligned && d.isPowered).length;
-    const required = gameState.dishArray.requiredDishes;
+    const alignedCount = gameState.dishArray.dishes.filter(d => d.isAligned).length;
+    const codeLength = gameState.dishArray.alignmentCode.length;
 
-    if (poweredAndAligned === 0) return 1.0;
+    if (alignedCount === 0 || codeLength === 0) return 1.0;
 
-    // Base boost per dish, with diminishing returns
-    let boost = 1.0 + (poweredAndAligned * 0.25);
+    // Base boost based on alignment ratio
+    const ratio = alignedCount / codeLength;
+    let boost = 1.0 + (ratio * 1.5);
 
-    // Bonus for meeting minimum requirement
-    if (poweredAndAligned >= required && required > 0) {
+    // Bonus for full alignment
+    if (alignedCount >= codeLength) {
         boost += 0.5;
     }
 
-    // Extra bonus for full powered array (5 max due to power limit)
-    if (poweredAndAligned === gameState.dishArray.maxPower) {
-        boost += 0.5;
-    }
-
-    return Math.min(boost, 4.0); // Cap at 4x
+    return Math.min(boost, 3.0); // Cap at 3x
 }
 
 function canTuneWeakSignal() {
     const star = gameState.currentStar;
     if (!star || star.signalStrength !== 'weak') return true;
 
-    // Only count dishes that are both powered AND aligned
-    const poweredAndAligned = gameState.dishArray.dishes.filter(d => d.isAligned && d.isPowered).length;
-    return poweredAndAligned >= (star.requiredDishes || 3);
+    // Check if all required dishes are aligned (based on code length)
+    const codeLength = gameState.dishArray.alignmentCode.length;
+    const alignedCount = gameState.dishArray.dishes.filter(d => d.isAligned).length;
+    return alignedCount >= codeLength;
 }
 
 // Audio functions for dish array
