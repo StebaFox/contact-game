@@ -41,7 +41,7 @@ A browser-based SETI (Search for Extraterrestrial Intelligence) signal analysis 
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/contact-seti-game.git
+git clone https://github.com/StebaFox/contact-seti-game.git
 cd contact-seti-game
 ```
 
