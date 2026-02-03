@@ -47,7 +47,7 @@ Play the game directly in your browser at: **[https://yourusername.github.io/con
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/contact-seti-game.git
+git clone https://github.com/StebaFox/contact-seti-game.git
 cd contact-seti-game
 ```
 
