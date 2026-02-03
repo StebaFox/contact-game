@@ -2310,3 +2310,872 @@ body.white-mode .end-restart-btn {
     border-color: #fff;
     color: #fff;
 }
+
+/* ============================================
+   LAYOUT TOGGLE BUTTON
+   ============================================ */
+
+.layout-toggle-btn {
+    background: transparent;
+    border: 1px solid #0f0;
+    color: #0f0;
+    padding: 5px 10px;
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    cursor: pointer;
+    margin-left: 15px;
+    transition: all 0.3s;
+}
+
+.layout-toggle-btn:hover {
+    background: rgba(0, 255, 0, 0.2);
+    box-shadow: 0 0 10px #0f0;
+}
+
+body.white-mode .layout-toggle-btn {
+    border-color: #fff;
+    color: #fff;
+}
+
+body.white-mode .layout-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 10px #fff;
+}
+
+/* ============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================ */
+
+/* Mobile layout applies when:
+   - Screen is ≤768px AND not forcing desktop
+   - OR forcing mobile on any screen size */
+
+/* Base mobile container fixes */
+@media (max-width: 768px) {
+    body:not(.force-desktop) {
+        overflow-x: hidden;
+    }
+
+    body:not(.force-desktop) .crt {
+        width: 100%;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    body:not(.force-desktop) .container {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+        padding: 10px;
+    }
+
+    /* Header mobile */
+    body:not(.force-desktop) .header {
+        padding: 10px;
+    }
+
+    body:not(.force-desktop) .ascii-art {
+        font-size: 8px;
+        line-height: 1.1;
+        display: none;
+    }
+
+    body:not(.force-desktop) .system-time {
+        flex-wrap: wrap;
+        gap: 8px;
+        font-size: 12px;
+        justify-content: center;
+    }
+
+    body:not(.force-desktop) .system-time > span:first-child {
+        display: none;
+    }
+
+    body:not(.force-desktop) #volume-slider {
+        width: 60px !important;
+    }
+
+    body:not(.force-desktop) .color-scheme-btn,
+    body:not(.force-desktop) .mailbox-btn,
+    body:not(.force-desktop) .layout-toggle-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+        margin-left: 5px;
+    }
+
+    /* Main content mobile */
+    body:not(.force-desktop) .main-content {
+        height: auto;
+        min-height: calc(100vh - 150px);
+    }
+
+    /* Start screen mobile */
+    body:not(.force-desktop) .start-screen {
+        padding: 20px 10px;
+    }
+
+    body:not(.force-desktop) .start-ascii {
+        font-size: 6px;
+        line-height: 1.1;
+        transform: scale(0.7);
+        margin: -20px 0;
+    }
+
+    body:not(.force-desktop) .start-info {
+        font-size: 14px;
+    }
+
+    body:not(.force-desktop) .start-info p {
+        margin: 5px 0;
+    }
+
+    body:not(.force-desktop) .start-btn {
+        font-size: 16px;
+        padding: 12px 30px;
+        width: 90%;
+        max-width: 300px;
+    }
+
+    body:not(.force-desktop) .copyright-notice {
+        font-size: 10px;
+        margin-top: 20px;
+    }
+
+    /* Boot view mobile */
+    body:not(.force-desktop) .boot-terminal {
+        max-width: 100%;
+        padding: 15px;
+    }
+
+    body:not(.force-desktop) .boot-content-wrapper {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    body:not(.force-desktop) .boot-left,
+    body:not(.force-desktop) .boot-right {
+        width: 100%;
+    }
+
+    body:not(.force-desktop) .boot-output {
+        min-height: 250px;
+        max-height: 300px;
+        font-size: 12px;
+    }
+
+    body:not(.force-desktop) .name-input {
+        width: 100% !important;
+        max-width: 280px;
+    }
+
+    body:not(.force-desktop) .boot-proceed-btn {
+        width: 100%;
+        max-width: 280px;
+    }
+
+    /* Starmap view mobile */
+    body:not(.force-desktop) .starmap-section {
+        flex-direction: column;
+        gap: 15px;
+        padding: 10px;
+    }
+
+    body:not(.force-desktop) .starmap-canvas-container {
+        width: 100%;
+        height: 250px;
+    }
+
+    body:not(.force-desktop) #starmap {
+        width: 100%;
+        height: 250px;
+    }
+
+    body:not(.force-desktop) .star-info-panel {
+        flex: none;
+        width: 100%;
+        min-width: auto;
+        height: auto;
+        max-height: 400px;
+        padding: 15px;
+    }
+
+    body:not(.force-desktop) .star-info-content h3 {
+        font-size: 20px;
+    }
+
+    body:not(.force-desktop) .star-info-content p {
+        font-size: 14px;
+        margin: 8px 0;
+    }
+
+    body:not(.force-desktop) .star-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 8px;
+        max-height: 180px;
+    }
+
+    body:not(.force-desktop) .star-btn {
+        padding: 10px 8px;
+        font-size: 12px;
+    }
+
+    body:not(.force-desktop) .scan-btn {
+        width: 100%;
+        font-size: 16px;
+        padding: 12px 20px;
+        margin-top: 10px;
+    }
+
+    body:not(.force-desktop) .array-status-btn {
+        width: 100%;
+        font-size: 14px;
+        padding: 10px 15px;
+    }
+
+    /* Star visual mobile */
+    body:not(.force-desktop) .star-visual-container {
+        margin: 10px auto;
+    }
+
+    body:not(.force-desktop) #star-visual {
+        width: 100px;
+        height: 100px;
+    }
+
+    /* Weak signal warning mobile */
+    body:not(.force-desktop) .weak-signal-warning {
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+
+    /* Analysis view mobile */
+    body:not(.force-desktop) .analysis-layout {
+        flex-direction: column;
+        gap: 15px;
+        padding: 10px;
+    }
+
+    body:not(.force-desktop) .target-info {
+        flex: none;
+        width: 100%;
+        min-width: auto;
+        padding: 15px;
+    }
+
+    body:not(.force-desktop) .target-info h3 {
+        font-size: 18px;
+    }
+
+    body:not(.force-desktop) .target-info p {
+        font-size: 13px;
+    }
+
+    body:not(.force-desktop) .waveform-and-contact-container {
+        flex-direction: column;
+        gap: 15px;
+        width: 100%;
+    }
+
+    body:not(.force-desktop) .waveform-container {
+        width: 100%;
+    }
+
+    body:not(.force-desktop) .contact-protocol-box {
+        flex: none;
+        width: 100%;
+        min-width: auto;
+        padding: 15px;
+    }
+
+    body:not(.force-desktop) #waveform {
+        height: 120px;
+    }
+
+    body:not(.force-desktop) #spectrogram {
+        height: 80px;
+    }
+
+    /* Tuning game mobile */
+    body:not(.force-desktop) #tuning-game {
+        padding: 15px;
+    }
+
+    body:not(.force-desktop) .tuning-controls {
+        flex-direction: column;
+        gap: 15px;
+        align-items: center;
+    }
+
+    body:not(.force-desktop) .signal-strength-bar {
+        width: 80%;
+        max-width: 300px;
+    }
+
+    body:not(.force-desktop) .tuning-sliders {
+        width: 100%;
+    }
+
+    body:not(.force-desktop) .tuning-sliders input[type="range"] {
+        width: 100%;
+    }
+
+    body:not(.force-desktop) .tuning-feedback {
+        font-size: 14px;
+    }
+
+    body:not(.force-desktop) .lock-btn {
+        width: 80%;
+        max-width: 250px;
+        font-size: 16px;
+        padding: 12px 20px;
+    }
+
+    /* Tuning array panel mobile */
+    body:not(.force-desktop) .tuning-array-panel {
+        padding: 10px;
+        margin-top: 10px;
+    }
+
+    body:not(.force-desktop) .mini-dish-container {
+        gap: 8px;
+    }
+
+    body:not(.force-desktop) .mini-dish {
+        width: 30px;
+        height: 30px;
+        font-size: 10px;
+    }
+
+    /* Pattern game mobile */
+    body:not(.force-desktop) .pattern-game {
+        padding: 15px;
+    }
+
+    body:not(.force-desktop) .pattern-bands {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px;
+    }
+
+    body:not(.force-desktop) .pattern-band {
+        padding: 10px;
+    }
+
+    body:not(.force-desktop) .band-canvas {
+        max-width: 140px;
+        height: 60px;
+    }
+
+    body:not(.force-desktop) .band-buttons {
+        gap: 5px;
+    }
+
+    body:not(.force-desktop) .band-btn {
+        padding: 8px 12px;
+        font-size: 11px;
+    }
+
+    /* Array view mobile */
+    body:not(.force-desktop) .array-container {
+        flex-direction: column;
+        gap: 20px;
+        padding: 15px;
+    }
+
+    body:not(.force-desktop) .array-visual {
+        flex: none;
+        width: 100%;
+        max-width: 320px;
+        margin: 0 auto;
+    }
+
+    body:not(.force-desktop) .array-visual svg {
+        width: 100%;
+        height: auto;
+    }
+
+    body:not(.force-desktop) .array-controls {
+        flex: none;
+        width: 100%;
+        padding: 15px;
+    }
+
+    body:not(.force-desktop) .array-controls h3 {
+        font-size: 18px;
+    }
+
+    body:not(.force-desktop) .array-stat {
+        font-size: 14px;
+    }
+
+    body:not(.force-desktop) .array-btn {
+        width: 100%;
+        font-size: 14px;
+        padding: 12px 20px;
+    }
+
+    /* Array tutorial mobile */
+    body:not(.force-desktop) .array-tutorial {
+        padding: 10px;
+        font-size: 12px;
+    }
+
+    body:not(.force-desktop) .tutorial-step {
+        padding: 8px 10px;
+        font-size: 11px;
+    }
+
+    /* Message display mobile */
+    body:not(.force-desktop) .message-display {
+        min-height: 200px;
+        max-height: 350px;
+        padding: 15px;
+        font-size: 14px;
+    }
+
+    body:not(.force-desktop) .analysis-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    body:not(.force-desktop) .analysis-buttons .btn {
+        width: 100%;
+    }
+
+    /* Mailbox mobile */
+    body:not(.force-desktop) .mailbox-container {
+        padding: 15px;
+    }
+
+    body:not(.force-desktop) .mailbox-content {
+        min-height: 300px;
+        max-height: 400px;
+    }
+
+    body:not(.force-desktop) .mail-item {
+        padding: 10px;
+        font-size: 13px;
+    }
+
+    body:not(.force-desktop) .mail-body {
+        font-size: 12px;
+        padding: 10px;
+    }
+
+    /* Report view mobile */
+    body:not(.force-desktop) .report-container {
+        max-width: 100%;
+        padding: 15px;
+        margin: 10px;
+    }
+
+    body:not(.force-desktop) .report-header h2 {
+        font-size: 20px;
+    }
+
+    body:not(.force-desktop) .report-classification {
+        font-size: 12px;
+    }
+
+    body:not(.force-desktop) .report-meta {
+        font-size: 12px;
+    }
+
+    body:not(.force-desktop) .report-section-title {
+        font-size: 16px;
+    }
+
+    body:not(.force-desktop) .report-content {
+        font-size: 13px;
+        padding: 10px;
+    }
+
+    body:not(.force-desktop) .report-scrollable {
+        max-height: 200px;
+    }
+
+    body:not(.force-desktop) .report-submit-btn {
+        width: 100%;
+        font-size: 16px;
+        padding: 12px 20px;
+    }
+
+    /* End screen mobile */
+    body:not(.force-desktop) .end-day {
+        font-size: 40px;
+        letter-spacing: 5px;
+    }
+
+    body:not(.force-desktop) .end-continued {
+        font-size: 24px;
+        letter-spacing: 3px;
+    }
+
+    body:not(.force-desktop) .end-restart-btn {
+        padding: 12px 30px;
+        font-size: 16px;
+    }
+
+    /* Survey complete popup mobile */
+    body:not(.force-desktop) .survey-complete-content {
+        padding: 25px 20px;
+        margin: 15px;
+        max-width: calc(100% - 30px);
+    }
+
+    body:not(.force-desktop) .survey-complete-icon {
+        font-size: 40px;
+    }
+
+    body:not(.force-desktop) .survey-complete-title {
+        font-size: 28px;
+        letter-spacing: 3px;
+    }
+
+    body:not(.force-desktop) .survey-stat {
+        font-size: 18px;
+    }
+
+    body:not(.force-desktop) .survey-stat-detail {
+        font-size: 14px;
+    }
+
+    body:not(.force-desktop) .survey-complete-message {
+        font-size: 14px;
+    }
+
+    body:not(.force-desktop) .survey-submit-btn {
+        width: 100%;
+        font-size: 16px;
+        padding: 12px 30px;
+    }
+
+    /* Terminal log mobile */
+    body:not(.force-desktop) .terminal-log {
+        max-height: 100px;
+        font-size: 11px;
+    }
+
+    body:not(.force-desktop) .log-entry {
+        font-size: 11px;
+    }
+}
+
+/* Extra small screens (375px and below) */
+@media (max-width: 375px) {
+    body:not(.force-desktop) .start-ascii {
+        transform: scale(0.5);
+        margin: -40px 0;
+    }
+
+    body:not(.force-desktop) .star-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+
+    body:not(.force-desktop) .pattern-bands {
+        grid-template-columns: 1fr;
+    }
+
+    body:not(.force-desktop) .survey-complete-title {
+        font-size: 22px;
+    }
+}
+
+/* Force mobile layout on any screen */
+body.force-mobile {
+    overflow-x: hidden;
+}
+
+body.force-mobile .crt {
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+body.force-mobile .container {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+    padding: 10px;
+}
+
+body.force-mobile .header {
+    padding: 10px;
+}
+
+body.force-mobile .ascii-art {
+    display: none;
+}
+
+body.force-mobile .system-time {
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 12px;
+    justify-content: center;
+}
+
+body.force-mobile .system-time > span:first-child {
+    display: none;
+}
+
+body.force-mobile #volume-slider {
+    width: 60px !important;
+}
+
+body.force-mobile .color-scheme-btn,
+body.force-mobile .mailbox-btn,
+body.force-mobile .layout-toggle-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-left: 5px;
+}
+
+body.force-mobile .main-content {
+    height: auto;
+    min-height: calc(100vh - 150px);
+}
+
+body.force-mobile .start-screen {
+    padding: 20px 10px;
+}
+
+body.force-mobile .start-ascii {
+    font-size: 6px;
+    line-height: 1.1;
+    transform: scale(0.7);
+    margin: -20px 0;
+}
+
+body.force-mobile .start-info {
+    font-size: 14px;
+}
+
+body.force-mobile .start-btn {
+    font-size: 16px;
+    padding: 12px 30px;
+    width: 90%;
+    max-width: 300px;
+}
+
+body.force-mobile .boot-terminal {
+    max-width: 100%;
+    padding: 15px;
+}
+
+body.force-mobile .boot-content-wrapper {
+    flex-direction: column;
+    gap: 20px;
+}
+
+body.force-mobile .boot-left,
+body.force-mobile .boot-right {
+    width: 100%;
+}
+
+body.force-mobile .boot-output {
+    min-height: 250px;
+    max-height: 300px;
+    font-size: 12px;
+}
+
+body.force-mobile .name-input {
+    width: 100% !important;
+    max-width: 280px;
+}
+
+body.force-mobile .starmap-section {
+    flex-direction: column;
+    gap: 15px;
+    padding: 10px;
+}
+
+body.force-mobile .starmap-canvas-container {
+    width: 100%;
+    height: 250px;
+}
+
+body.force-mobile #starmap {
+    width: 100%;
+    height: 250px;
+}
+
+body.force-mobile .star-info-panel {
+    flex: none;
+    width: 100%;
+    min-width: auto;
+    height: auto;
+    max-height: 400px;
+    padding: 15px;
+}
+
+body.force-mobile .star-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+    max-height: 180px;
+}
+
+body.force-mobile .star-btn {
+    padding: 10px 8px;
+    font-size: 12px;
+}
+
+body.force-mobile .scan-btn {
+    width: 100%;
+    font-size: 16px;
+    padding: 12px 20px;
+}
+
+body.force-mobile .analysis-layout {
+    flex-direction: column;
+    gap: 15px;
+    padding: 10px;
+}
+
+body.force-mobile .target-info {
+    flex: none;
+    width: 100%;
+    min-width: auto;
+}
+
+body.force-mobile .waveform-and-contact-container {
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+}
+
+body.force-mobile .contact-protocol-box {
+    flex: none;
+    width: 100%;
+    min-width: auto;
+}
+
+body.force-mobile #tuning-game {
+    padding: 15px;
+}
+
+body.force-mobile .tuning-controls {
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+body.force-mobile .signal-strength-bar {
+    width: 80%;
+    max-width: 300px;
+}
+
+body.force-mobile .tuning-sliders {
+    width: 100%;
+}
+
+body.force-mobile .tuning-sliders input[type="range"] {
+    width: 100%;
+}
+
+body.force-mobile .lock-btn {
+    width: 80%;
+    max-width: 250px;
+}
+
+body.force-mobile .pattern-bands {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+body.force-mobile .array-container {
+    flex-direction: column;
+    gap: 20px;
+    padding: 15px;
+}
+
+body.force-mobile .array-visual {
+    flex: none;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+}
+
+body.force-mobile .array-controls {
+    flex: none;
+    width: 100%;
+}
+
+body.force-mobile .message-display {
+    min-height: 200px;
+    max-height: 350px;
+}
+
+body.force-mobile .analysis-buttons {
+    flex-direction: column;
+    gap: 10px;
+}
+
+body.force-mobile .analysis-buttons .btn {
+    width: 100%;
+}
+
+body.force-mobile .report-container {
+    max-width: 100%;
+    padding: 15px;
+    margin: 10px;
+}
+
+body.force-mobile .report-scrollable {
+    max-height: 200px;
+}
+
+body.force-mobile .report-submit-btn {
+    width: 100%;
+}
+
+body.force-mobile .end-day {
+    font-size: 40px;
+}
+
+body.force-mobile .end-continued {
+    font-size: 24px;
+}
+
+body.force-mobile .survey-complete-content {
+    padding: 25px 20px;
+    margin: 15px;
+    max-width: calc(100% - 30px);
+}
+
+body.force-mobile .terminal-log {
+    max-height: 100px;
+    font-size: 11px;
+}
+
+/* Touch optimization */
+@media (max-width: 768px) {
+    body:not(.force-desktop) .btn,
+    body:not(.force-desktop) .star-btn,
+    body:not(.force-desktop) .band-btn,
+    body:not(.force-desktop) .array-btn {
+        min-height: 44px;
+    }
+
+    body:not(.force-desktop) input[type="range"] {
+        height: 30px;
+    }
+
+    body:not(.force-desktop) input[type="range"]::-webkit-slider-thumb {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+body.force-mobile .btn,
+body.force-mobile .star-btn,
+body.force-mobile .band-btn,
+body.force-mobile .array-btn {
+    min-height: 44px;
+}
+
+body.force-mobile input[type="range"] {
+    height: 30px;
+}
+
+body.force-mobile input[type="range"]::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+}

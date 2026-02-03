@@ -2176,6 +2176,12 @@ function setupEventListeners() {
         toggleColorScheme();
     });
 
+    // Layout toggle
+    document.getElementById('layout-toggle-btn').addEventListener('click', () => {
+        playClick();
+        toggleLayoutMode();
+    });
+
     // Mailbox event listeners
     document.getElementById('mailbox-btn').addEventListener('click', () => {
         playClick();
@@ -5246,6 +5252,57 @@ function loadColorScheme() {
     }
 }
 
+// Layout Mode Functions (Desktop/Mobile toggle)
+let currentLayoutMode = 'auto'; // 'auto', 'desktop', 'mobile'
+
+function toggleLayoutMode() {
+    const body = document.body;
+    const layoutLabel = document.getElementById('layout-label');
+
+    // Cycle through: AUTO -> DESKTOP -> MOBILE -> AUTO
+    if (currentLayoutMode === 'auto') {
+        currentLayoutMode = 'desktop';
+        body.classList.add('force-desktop');
+        body.classList.remove('force-mobile');
+        layoutLabel.textContent = 'DESKTOP';
+    } else if (currentLayoutMode === 'desktop') {
+        currentLayoutMode = 'mobile';
+        body.classList.remove('force-desktop');
+        body.classList.add('force-mobile');
+        layoutLabel.textContent = 'MOBILE';
+    } else {
+        currentLayoutMode = 'auto';
+        body.classList.remove('force-desktop');
+        body.classList.remove('force-mobile');
+        layoutLabel.textContent = 'AUTO';
+    }
+
+    // Save preference
+    localStorage.setItem('layoutMode', currentLayoutMode);
+
+    log(`Layout mode: ${currentLayoutMode.toUpperCase()}`);
+}
+
+function loadLayoutMode() {
+    const savedMode = localStorage.getItem('layoutMode');
+    const body = document.body;
+    const layoutLabel = document.getElementById('layout-label');
+
+    if (savedMode) {
+        currentLayoutMode = savedMode;
+
+        if (savedMode === 'desktop') {
+            body.classList.add('force-desktop');
+            layoutLabel.textContent = 'DESKTOP';
+        } else if (savedMode === 'mobile') {
+            body.classList.add('force-mobile');
+            layoutLabel.textContent = 'MOBILE';
+        } else {
+            layoutLabel.textContent = 'AUTO';
+        }
+    }
+}
+
 // Mailbox Functions
 function openMailbox() {
     // Check if already in mailbox view
@@ -5437,6 +5494,9 @@ function startGame() {
 
     // Load saved color scheme
     loadColorScheme();
+
+    // Load saved layout mode
+    loadLayoutMode();
 
     // Initialize audio on first user interaction
     document.addEventListener('click', () => {
