@@ -39,7 +39,7 @@ A browser-based SETI (Search for Extraterrestrial Intelligence) signal analysis 
 
 ## Play Online
 
-Play the game directly in your browser at: **[https://stebafox.github.io/contact-seti-game/](https://stebafox.github.io/contact-seti-game/)**
+Play the game directly in your browser at: **[https://stebafox.github.io/contact-game/](https://stebafox.github.io/contact-game/)**
 
 ## Installation
 
@@ -47,7 +47,7 @@ Play the game directly in your browser at: **[https://stebafox.github.io/contact
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/stebafox/contact-seti-game.git
+git clone https://github.com/stebafox/contact-game.git
 cd contact-seti-game
 ```
 
