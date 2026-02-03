@@ -442,26 +442,27 @@ h2 {
 .array-telemetry {
     padding: 8px 5px;
     border-top: 1px dashed #ffa500;
-    font-size: 11px;
+    font-size: 14px;
     font-family: 'VT323', monospace;
 }
 
 .telemetry-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px 8px;
-    margin: 3px 0;
+    gap: 4px 6px;
+    margin: 4px 0;
     align-items: center;
 }
 
 .telemetry-label {
-    color: #666;
-    font-size: 10px;
+    color: #888;
+    font-size: 12px;
 }
 
 .telemetry-value {
     color: #0ff;
-    min-width: 50px;
+    min-width: 45px;
+    font-size: 14px;
 }
 
 .telemetry-value.updating {
@@ -526,7 +527,7 @@ h2 {
     margin: 8px auto 0;
     display: block;
     width: 90%;
-    font-size: 12px;
+    font-size: 14px;
     padding: 8px 10px;
     background: linear-gradient(180deg, #553300 0%, #331a00 100%);
     border: 2px solid #ffa500;
@@ -549,9 +550,9 @@ h2 {
 }
 
 .array-code-label {
-    font-size: 10px;
+    font-size: 13px;
     color: #888;
-    margin-bottom: 3px;
+    margin-bottom: 4px;
 }
 
 .array-code-display {
@@ -605,8 +606,8 @@ h2 {
     border: 1px solid #ffa500;
     color: #ffa500;
     font-family: 'VT323', monospace;
-    font-size: 16px;
-    padding: 8px 4px;
+    font-size: 18px;
+    padding: 10px 6px;
     cursor: pointer;
     transition: all 0.1s;
 }
@@ -636,7 +637,7 @@ h2 {
     background: #220000;
     border-color: #f00;
     color: #f00;
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .keypad-btn.keypad-clear:hover {
@@ -706,7 +707,7 @@ h2 {
 .starmap-array-svg .dish-label {
     fill: #ffa500;
     font-family: 'VT323', monospace;
-    font-size: 10px;
+    font-size: 11px;
     text-anchor: middle;
 }
 

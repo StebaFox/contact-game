@@ -4565,8 +4565,16 @@ function validateAlignmentCode() {
         log('ALIGNMENT CODE ACCEPTED', 'highlight');
         playLockAchieved();
 
-        // Hide keypad, show confirmation with BEGIN ALIGNMENT button
+        // Hide keypad and code entry labels, show confirmation with BEGIN ALIGNMENT button
         if (keypadEl) keypadEl.style.display = 'none';
+
+        // Hide the alignment code labels and display
+        const codeLabels = document.querySelectorAll('#array-code-section .array-code-label');
+        codeLabels.forEach(label => label.style.display = 'none');
+        const codeDisplay = document.getElementById('array-code-display');
+        if (codeDisplay) codeDisplay.style.display = 'none';
+        if (inputEl) inputEl.style.display = 'none';
+
         if (confirmedEl) confirmedEl.style.display = 'block';
     } else {
         // Wrong code
@@ -4588,6 +4596,9 @@ function alignDishesFromCode(code) {
     const confirmedEl = document.getElementById('array-code-confirmed');
     const codeSectionEl = document.getElementById('array-code-section');
     const aligningTextEl = document.getElementById('array-aligning-text');
+
+    // Set flag to prevent button from showing during animation
+    gameState.dishArray.alignmentInProgress = true;
 
     // Hide the confirmation section
     if (confirmedEl) confirmedEl.style.display = 'none';
@@ -4642,18 +4653,24 @@ function alignDishesFromCode(code) {
         // Hide the flashing text
         if (aligningTextEl) aligningTextEl.style.display = 'none';
 
-        if (statusEl) {
-            statusEl.textContent = 'ARRAY ALIGNED - READY FOR SCAN';
-            statusEl.className = 'starmap-array-status ready';
-        }
         // Hide the entire code section since alignment is complete
         if (codeSectionEl) codeSectionEl.style.display = 'none';
-        updateArrayStatus();
         log('Dish array alignment complete', 'success');
 
         // Play acknowledgement sound after fade out completes
         setTimeout(() => {
             playLockAchieved();
+
+            // Clear the flag so button can now appear
+            gameState.dishArray.alignmentInProgress = false;
+
+            // Show status and scan button together with the acknowledgement sound
+            if (statusEl) {
+                statusEl.textContent = 'ARRAY ALIGNED - READY FOR SCAN';
+                statusEl.className = 'starmap-array-status ready';
+            }
+            updateArrayStatus();
+            updateStarmapArrayStats();
         }, 1000);
     }, totalDuration);
 }
@@ -4681,9 +4698,18 @@ function setupAlignmentCode(star) {
     const statusEl = document.getElementById('starmap-array-status');
 
     if (codeSection) codeSection.style.display = 'block';
-    if (codeDisplay) codeDisplay.textContent = code;
+    if (codeDisplay) {
+        codeDisplay.textContent = code;
+        codeDisplay.style.display = 'block';  // Show code display
+    }
     if (keypadEl) keypadEl.style.display = 'grid';  // Show keypad
     if (confirmedEl) confirmedEl.style.display = 'none';  // Hide confirmation
+
+    // Show code labels and input display
+    const codeLabels = document.querySelectorAll('#array-code-section .array-code-label');
+    codeLabels.forEach(label => label.style.display = 'block');
+    const codeInput = document.getElementById('array-code-input');
+    if (codeInput) codeInput.style.display = 'block';
     if (statusEl) {
         statusEl.textContent = 'ENTER ALIGNMENT CODE';
         statusEl.className = 'starmap-array-status';
@@ -5036,9 +5062,9 @@ function updateStarmapArrayStats() {
         }
     }
 
-    // Show/hide scan button based on alignment
+    // Show/hide scan button based on alignment (but not during alignment animation)
     if (scanBtn) {
-        if (star && codeLength > 0 && alignedCount >= codeLength) {
+        if (star && codeLength > 0 && alignedCount >= codeLength && !gameState.dishArray.alignmentInProgress) {
             scanBtn.style.display = 'block';
         } else {
             scanBtn.style.display = 'none';
@@ -5255,10 +5281,10 @@ function updateArrayStatus() {
     // Check if all required dishes are aligned
     const isFullyAligned = codeLength > 0 && alignedCount >= codeLength;
 
-    // Show/hide scan button based on alignment status
+    // Show/hide scan button based on alignment status (but not during alignment animation)
     const scanBtn = document.getElementById('array-scan-btn');
     if (scanBtn) {
-        if (gameState.dishArray.currentTargetStar && isFullyAligned) {
+        if (gameState.dishArray.currentTargetStar && isFullyAligned && !gameState.dishArray.alignmentInProgress) {
             scanBtn.style.display = 'inline-block';
         } else {
             scanBtn.style.display = 'none';
