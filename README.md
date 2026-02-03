@@ -37,7 +37,13 @@ A browser-based SETI (Search for Extraterrestrial Intelligence) signal analysis 
 - Unread message indicators
 - Expandable message viewer
 
+## Play Online
+
+Play the game directly in your browser at: **[https://yourusername.github.io/contact-seti-game/](https://yourusername.github.io/contact-seti-game/)**
+
 ## Installation
+
+### Local Setup
 
 1. Clone the repository:
 ```bash
@@ -46,6 +52,15 @@ cd contact-seti-game
 ```
 
 2. Open `index.html` in a modern web browser
+
+### Deploy to GitHub Pages
+
+The repository includes a GitHub Actions workflow for automatic deployment:
+
+1. Go to your repository **Settings** > **Pages**
+2. Under "Build and deployment", set **Source** to "GitHub Actions"
+3. Push to the `main` branch - the site will deploy automatically
+4. Access your game at `https://yourusername.github.io/repository-name/`
 
 **Note:** For audio features to work properly, you'll need to add your own audio files:
 - `Deep in the Quiet Sky.mp3` - Background music
@@ -95,6 +110,9 @@ The game features 16 real exoplanets and star systems:
 
 ```
 contact-seti-game/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml  # GitHub Pages deployment workflow
 ├── index.html          # Main HTML structure
 ├── style.css           # Complete styling and CRT effects
 ├── game.js             # Game logic, mini-games, and narrative
