@@ -248,7 +248,7 @@
 
                                 <!-- Dish Array Panel (shows during tuning for weak signals) -->
                                 <div id="tuning-array-panel" class="tuning-array-panel" style="display: none;">
-                                    <div class="panel-title">ARRAY ALIGNMENT</div>
+                                    <div class="panel-title">ARRAY STATUS</div>
                                     <div class="mini-array-visual" id="mini-array-visual">
                                         <!-- Mini dish indicators populated by JS -->
                                     </div>
@@ -257,7 +257,7 @@
                                         <span class="boost-value" id="tuning-boost-value">1.0x</span>
                                     </div>
                                     <div class="dish-status-text" id="dish-status-text">
-                                        Online: <span id="mini-aligned">0</span>/<span id="mini-required">0</span> | <span id="mini-power-text">POWER: 0/5</span>
+                                        DISHES ALIGNED: <span id="mini-aligned">0</span>/<span id="mini-total">7</span>
                                     </div>
                                 </div>
                             </div>
@@ -330,20 +330,20 @@
                         <div class="tutorial-title">ALIGNMENT PROTOCOL</div>
                         <div class="tutorial-steps">
                             <div class="tutorial-step">
+                                <span class="step-icon" style="color: #0ff;">1</span>
+                                <span class="step-text">Enter alignment code using keypad (digits 1-7 select dishes)</span>
+                            </div>
+                            <div class="tutorial-step">
+                                <span class="step-icon" style="color: #0f0;">▶</span>
+                                <span class="step-text">Press BEGIN ALIGNMENT to rotate selected dishes to target</span>
+                            </div>
+                            <div class="tutorial-step">
                                 <span class="step-icon" style="color: #f00;">✕</span>
-                                <span class="step-text">Click dishes marked with <span style="color:#f00">X</span> to clear interference</span>
+                                <span class="step-text">Click dishes with <span style="color:#f00">X</span> to clear interference first</span>
                             </div>
                             <div class="tutorial-step">
-                                <span class="step-icon" style="color: #ffa500;">○</span>
-                                <span class="step-text">Click unpowered dishes to bring them online (max 5)</span>
-                            </div>
-                            <div class="tutorial-step">
-                                <span class="step-icon" style="color: #0ff;">◐</span>
-                                <span class="step-text">Click powered dishes to rotate and align to target</span>
-                            </div>
-                            <div class="tutorial-step">
-                                <span class="step-icon" style="color: #0f0;">●</span>
-                                <span class="step-text">Right-click aligned dishes to power off if needed</span>
+                                <span class="step-icon" style="color: #ff0;">⟳</span>
+                                <span class="step-text">More aligned dishes = stronger signal boost for weak signals</span>
                             </div>
                         </div>
                     </div>
@@ -490,28 +490,28 @@
     </div>
 
     <!-- Background Music -->
-    <audio id="background-music" loop>
+    <audio id="background-music" loop preload="auto">
         <source src="Deep in the Quiet Sky.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Alien Signal Music -->
-    <audio id="alien-music" loop>
+    <audio id="alien-music" loop preload="auto">
         <source src="Blind 2.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Room Tone / Ambient Sound -->
-    <audio id="room-tone" loop>
+    <audio id="room-tone" loop preload="auto">
         <source src="room-tone-with-computer-noise-33598.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Machine/Alignment Sound -->
-    <audio id="machine-sound">
+    <audio id="machine-sound" preload="auto">
         <source src="heavy-duty-underground-car-elevator-mechanical-lift-327686.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Fade Overlay for End Transition -->
     <div id="fade-overlay" class="fade-overlay"></div>
 
-    <script src="game.js?v=17"></script>
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>
