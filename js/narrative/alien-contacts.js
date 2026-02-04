@@ -5,7 +5,7 @@
 
 export const ALIEN_CONTACTS = [
     {
-        starIndex: 2, // KEPLER-442
+        starIndex: 8, // EPSILON ERIDANI - prime SETI target, sun-like K2V star
         messages: [
             "DECODING SIGNAL PATTERN...",
             "MATHEMATICAL SEQUENCE DETECTED: PRIME NUMBERS",
@@ -23,7 +23,7 @@ export const ALIEN_CONTACTS = [
         ]
     },
     {
-        starIndex: 5, // HD-40307G
+        starIndex: 1, // BARNARD'S STAR - ancient red dwarf, high proper motion
         messages: [
             "PATTERN RECOGNITION: 89.7% CONFIDENCE",
             "ANALYZING FREQUENCY MODULATION...",
@@ -44,7 +44,7 @@ export const ALIEN_CONTACTS = [
         ]
     },
     {
-        starIndex: 10, // KEPLER-186F
+        starIndex: 2, // WOLF 359 - nearby red dwarf
         messages: [
             "COHERENT SIGNAL PATTERN IDENTIFIED",
             "CROSS-REFERENCING KNOWN LANGUAGES...",
@@ -63,11 +63,11 @@ export const ALIEN_CONTACTS = [
             "[AWAITING YOUR REPLY]",
             "",
             "BUT WE HAVE NO WAY TO ANSWER...",
-            "THE SIGNAL IS 500 YEARS OLD"
+            "THE SIGNAL IS 8 YEARS OLD"
         ]
     },
     {
-        starIndex: 7, // ROSS-128B
+        starIndex: 10, // ROSS 128 - quiet red dwarf, good for stable transmission
         hasImage: true,
         beforeImage: [
             "SIGNAL ANALYSIS COMPLETE",
@@ -109,7 +109,7 @@ export const ALIEN_CONTACTS = [
         ]
     },
     {
-        starIndex: 13, // TAU-CETI-E
+        starIndex: 16, // TAU CETI - very sun-like G8V, prime SETI target
         hasImage: true,
         beforeImage: [
             "DETECTING STRUCTURED TRANSMISSION...",
@@ -153,7 +153,7 @@ export const ALIEN_CONTACTS = [
         ]
     },
     {
-        starIndex: 3, // TRAPPIST-1E
+        starIndex: 3, // LALANDE 21185 - nearby red dwarf
         hasImage: true,
         beforeImage: [
             "SIGNAL LOCK ACHIEVED",
@@ -204,7 +204,7 @@ export const ALIEN_CONTACTS = [
         ]
     },
     {
-        starIndex: 11, // TEEGARDEN-B
+        starIndex: 11, // 61 CYGNI - historic binary system, first parallax measurement
         hasImage: true,
         beforeImage: [
             "DETECTING COMPLEX BINARY PATTERN...",
@@ -257,7 +257,7 @@ export const ALIEN_CONTACTS = [
         ]
     },
     {
-        starIndex: 21, // LUYTEN-B (weak signal - alien)
+        starIndex: 21, // VAN MAANEN'S STAR (weak signal) - white dwarf, ancient system
         messages: [
             "WEAK SIGNAL AMPLIFICATION SUCCESSFUL",
             "PATTERN ANALYSIS: BINARY MATHEMATICAL SEQUENCE",
@@ -280,10 +280,10 @@ export const ALIEN_CONTACTS = [
         ]
     },
     {
-        starIndex: 25, // EPSILON-INDI-B (weak signal - alien with image)
+        starIndex: 25, // GLIESE 832 (weak signal) - distant red dwarf
         hasImage: true,
         beforeImage: [
-            "MAXIMUM ARRAY POWER ACHIEVED",
+            "MAXIMUM ARRAY ALIGNMENT ACHIEVED",
             "DECODING COMPLEX SIGNAL STRUCTURE...",
             "",
             "WARNING: UNPRECEDENTED DATA DENSITY",

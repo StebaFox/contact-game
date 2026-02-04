@@ -1299,8 +1299,8 @@ canvas.active {
 }
 
 .mailbox-content {
-    min-height: 400px;
-    max-height: 500px;
+    min-height: 500px;
+    max-height: 650px;
     overflow-y: auto;
     border: 2px solid #0ff;
     background: rgba(0, 255, 255, 0.03);

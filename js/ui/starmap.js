@@ -6,7 +6,7 @@
 import { gameState } from '../core/game-state.js';
 import { showView, log, clearCanvas, calculateScanBoxPosition } from './rendering.js';
 import { playClick, playSelectStar, playStaticBurst, playScanAcknowledge, stopNaturalPhenomenaSound, stopAlienSignalSound, stopStaticHiss, switchToBackgroundMusic } from '../systems/audio.js';
-import { STAR_NAMES, STAR_TYPES, DISCOVERY_DATES, WEAK_SIGNAL_START_INDEX } from '../narrative/stars.js';
+import { STAR_NAMES, STAR_TYPES, DISCOVERY_DATES, STAR_COORDINATES, STAR_DISTANCES, WEAK_SIGNAL_START_INDEX } from '../narrative/stars.js';
 import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
 import { checkForEndState } from '../core/end-game.js';
 
@@ -68,13 +68,13 @@ export function generateStarCatalog() {
     const starGrid = document.getElementById('star-grid');
     starGrid.innerHTML = '';
 
-    // First, create all star objects
+    // First, create all star objects with real astronomical data
     STAR_NAMES.forEach((name, index) => {
-        const distance = Math.floor(Math.random() * 500) + 10;
-        const ra = Math.floor(Math.random() * 24) + ':' +
-                   String(Math.floor(Math.random() * 60)).padStart(2, '0');
-        const dec = (Math.random() > 0.5 ? '+' : '-') +
-                    String(Math.floor(Math.random() * 90)).padStart(2, '0') + '°';
+        // Use real coordinates from stars.js
+        const coords = STAR_COORDINATES[index];
+        const ra = `${coords.ra.h}h ${String(coords.ra.m).padStart(2, '0')}m`;
+        const decSign = coords.dec.deg >= 0 ? '+' : '';
+        const dec = `${decSign}${coords.dec.deg}° ${Math.abs(coords.dec.m)}'`;
 
         const starInfo = STAR_TYPES[index];
         const isWeakSignal = weakSignalConfig.hasOwnProperty(index);
@@ -82,7 +82,7 @@ export function generateStarCatalog() {
         const star = {
             id: index,
             name: name,
-            distance: distance,
+            distance: STAR_DISTANCES[index],  // Real distance in light years
             coordinates: `${ra} ${dec}`,
             starType: starInfo.type,
             starClass: starInfo.class,
@@ -165,20 +165,43 @@ export function drawStarVisualization(star, canvasId = 'star-visual') {
         ctx.fill();
     }
 
-    // Determine star glow color and size based on type
+    // Determine star glow color and size based on spectral type
+    // Spectral types: O, B (blue), A (white), F (yellow-white), G (yellow), K (orange), M (red), D (white dwarf)
     let glowColor, glowSize;
-    switch(star.starType) {
-        case 'G-TYPE': // Yellow dwarf
-            glowColor = '#fdd835';
+    const spectralClass = star.starType.charAt(0).toUpperCase();
+
+    switch(spectralClass) {
+        case 'O': // Blue supergiant
+            glowColor = '#9bb0ff';
+            glowSize = 50;
+            break;
+        case 'B': // Blue-white
+            glowColor = '#aabfff';
+            glowSize = 45;
+            break;
+        case 'A': // White (like Sirius)
+            glowColor = '#cad7ff';
+            glowSize = 42;
+            break;
+        case 'F': // Yellow-white (like Procyon)
+            glowColor = '#f8f7ff';
             glowSize = 40;
             break;
-        case 'M-TYPE': // Red dwarf
-            glowColor = '#ff1744';
+        case 'G': // Yellow dwarf (like our Sun)
+            glowColor = '#fff4ea';
+            glowSize = 38;
+            break;
+        case 'K': // Orange dwarf
+            glowColor = '#ffd2a1';
+            glowSize = 35;
+            break;
+        case 'M': // Red dwarf
+            glowColor = '#ffcc6f';
             glowSize = 32;
             break;
-        case 'K-TYPE': // Orange dwarf
-            glowColor = '#f57c00';
-            glowSize = 36;
+        case 'D': // White dwarf
+            glowColor = '#f0f0ff';
+            glowSize = 28;
             break;
         default:
             glowColor = '#ffffff';
@@ -275,9 +298,9 @@ export function selectStar(starId) {
     const starInfoTitle = document.querySelector('.star-info-title');
     starInfoTitle.textContent = star.name;
 
-    // Add weak signal warning if applicable
+    // Add weak signal warning if applicable (only show if not yet analyzed)
     let weakSignalWarning = '';
-    if (star.signalStrength === 'weak') {
+    if (star.signalStrength === 'weak' && !isAnalyzed) {
         weakSignalWarning = `
             <div class="weak-signal-warning" style="margin-top: 12px; padding: 10px; border: 2px solid #ffa500; background: rgba(255, 165, 0, 0.1); animation: warningPulse 1.5s ease-in-out infinite;">
                 <div style="color: #ffa500; text-shadow: 0 0 5px #ffa500; font-size: 14px; text-align: center;">⚠ WEAK SIGNAL DETECTED ⚠</div>
@@ -341,7 +364,7 @@ export function selectStar(starId) {
     log(`Target acquired: ${star.name}`);
     log(`Coordinates: ${star.coordinates}, Distance: ${star.distance} ly`);
     log(`Star Type: ${star.starType} (${star.starClass}), Temperature: ${star.temperature}`);
-    if (star.signalStrength === 'weak') {
+    if (star.signalStrength === 'weak' && !isAnalyzed) {
         log(`WEAK SIGNAL - Array alignment required`, 'warning');
     }
 }
