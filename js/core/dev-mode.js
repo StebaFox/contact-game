@@ -10,6 +10,7 @@ import { DAY_CONFIG } from './day-system.js';
 import { checkAndShowDayComplete } from '../systems/day-report.js';
 import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
 import { showFinalMessage } from '../narrative/final-message.js';
+import { startRerouteMinigame } from '../systems/reroute-minigame.js';
 
 // Dev mode state
 let devMode = false;
@@ -114,6 +115,7 @@ export function showDevPanel() {
             <button data-action="showAlignmentTutorial">Alignment Tutorial</button>
             <button data-action="showFinalAlignment">Final Alignment</button>
             <button data-action="showTriangulation">Triangulation Game</button>
+            <button data-action="showReroute">Reroute Minigame</button>
             <button data-action="showMailbox">Mailbox</button>
 
             <div class="dev-section">STAR ACTIONS</div>
@@ -214,6 +216,7 @@ export function showDevPanel() {
                 case 'showAlignmentTutorial': devShowAlignmentTutorial(); break;
                 case 'showFinalAlignment': devShowFinalAlignment(); break;
                 case 'showTriangulation': devShowTriangulation(); break;
+                case 'showReroute': devShowReroute(); break;
                 case 'showMailbox': devShowMailbox(); break;
                 case 'markAllScanned': devMarkAllScanned(); break;
                 case 'markAllAnalyzed': devMarkAllAnalyzed(); break;
@@ -431,6 +434,23 @@ function devShowTriangulation() {
         );
     }
     log('DEV: Started triangulation minigame', 'highlight');
+}
+
+function devShowReroute() {
+    // Pick a random dish label for testing
+    const dishLabels = ['C', '1', '2', '3', '4', '5', '6'];
+    const randomDish = dishLabels[Math.floor(Math.random() * dishLabels.length)];
+
+    startRerouteMinigame(
+        randomDish,
+        () => {
+            log('DEV: Reroute SUCCESS! Power restored.', 'highlight');
+        },
+        () => {
+            log('DEV: Reroute aborted/failed', 'warning');
+        }
+    );
+    log(`DEV: Started reroute minigame for Dish ${randomDish}`, 'highlight');
 }
 
 function devShowMailbox() {

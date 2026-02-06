@@ -7,6 +7,10 @@ import { gameState } from '../core/game-state.js';
 import { log } from '../ui/rendering.js';
 import { playClick, playStaticBurst, playLockAchieved, playMachineSound, stopMachineSound, playDishRotationSound, playDishAlignedSound } from './audio.js';
 import { STAR_NAMES, STAR_COORDINATES } from '../narrative/stars.js';
+import { startRerouteMinigame } from './reroute-minigame.js';
+
+// Track if malfunction has occurred this alignment (only trigger once per alignment)
+let malfunctionTriggeredThisAlignment = false;
 
 // Dish positions for full array view
 const DISH_POSITIONS = [
@@ -145,6 +149,21 @@ function validateAlignmentCode() {
 
 // Align dishes based on the code characters
 export function alignDishesFromCode(code) {
+    // Reset malfunction flag for this alignment
+    malfunctionTriggeredThisAlignment = false;
+
+    // Decide if a malfunction will occur (40% chance)
+    const willMalfunction = Math.random() < 0.4;
+    // Pick which dish index will malfunction (somewhere in the middle)
+    const malfunctionIndex = willMalfunction
+        ? 1 + Math.floor(Math.random() * (code.length - 2))
+        : -1;
+
+    startDishAlignmentSequence(code, 0, malfunctionIndex);
+}
+
+// Internal function to run the alignment sequence (can be resumed after malfunction)
+function startDishAlignmentSequence(code, startIndex, malfunctionIndex) {
     const statusEl = document.getElementById('starmap-array-status');
     const confirmedEl = document.getElementById('array-code-confirmed');
     const codeSectionEl = document.getElementById('array-code-section');
@@ -165,21 +184,37 @@ export function alignDishesFromCode(code) {
     // Show flashing "ALIGNING" text
     if (aligningTextEl) aligningTextEl.style.display = 'block';
 
-    // Play machine sound
-    playMachineSound();
-    log('Initiating dish array alignment sequence...', 'highlight');
+    // Play machine sound (only on first start)
+    if (startIndex === 0) {
+        playMachineSound();
+        log('Initiating dish array alignment sequence...', 'highlight');
+    } else {
+        playMachineSound();
+        log('Resuming dish alignment...', 'info');
+    }
 
-    // Animation lasts 8 seconds total - spread dishes evenly across this time
-    const totalDuration = 8000;
+    // Calculate timing for remaining dishes
+    const remainingDishes = code.length - startIndex;
+    const totalDuration = remainingDishes * 1200; // ~1.2s per dish
 
     // Animate telemetry values during alignment
     animateTelemetryDuringAlignment(totalDuration);
-    const delayPerDish = Math.floor(totalDuration / code.length);
+    const delayPerDish = 1200;
 
     // Flash each dish in sequence
     let delay = 0;
-    for (const char of code) {
+    for (let i = startIndex; i < code.length; i++) {
+        const char = code[i];
+        const dishIndex = i;
+
         setTimeout(() => {
+            // Check if this dish should malfunction
+            if (dishIndex === malfunctionIndex && !malfunctionTriggeredThisAlignment) {
+                malfunctionTriggeredThisAlignment = true;
+                triggerDishMalfunction(code, dishIndex, char);
+                return;
+            }
+
             // Find the dish with this label
             const dish = gameState.dishArray.dishes.find(d => d.label === char);
             if (dish) {
@@ -199,33 +234,93 @@ export function alignDishesFromCode(code) {
         delay += delayPerDish;
     }
 
-    // After all dishes aligned (at 8 seconds), update status
-    setTimeout(() => {
-        stopMachineSound();
+    // Calculate when alignment finishes (accounting for potential malfunction)
+    const finishDelay = malfunctionIndex >= startIndex && !malfunctionTriggeredThisAlignment
+        ? (malfunctionIndex - startIndex) * delayPerDish  // Will be interrupted
+        : delay;
 
-        // Hide the flashing text
-        if (aligningTextEl) aligningTextEl.style.display = 'none';
-
-        // Hide the entire code section since alignment is complete
-        if (codeSectionEl) codeSectionEl.style.display = 'none';
-        log('Dish array alignment complete', 'success');
-
-        // Play acknowledgement sound after fade out completes
+    // After all dishes aligned, update status (only if no malfunction pending)
+    if (malfunctionIndex < startIndex || malfunctionIndex === -1) {
         setTimeout(() => {
-            playLockAchieved();
+            finishAlignment();
+        }, delay);
+    }
+}
 
-            // Clear the flag so button can now appear
-            gameState.dishArray.alignmentInProgress = false;
+// Trigger a dish malfunction and show reroute minigame
+function triggerDishMalfunction(code, dishIndex, dishLabel) {
+    stopMachineSound();
+    playStaticBurst();
 
-            // Show status and scan button together with the acknowledgement sound
-            if (statusEl) {
-                statusEl.textContent = 'ARRAY ALIGNED - READY FOR SCAN';
-                statusEl.className = 'starmap-array-status ready';
+    const statusEl = document.getElementById('starmap-array-status');
+    const aligningTextEl = document.getElementById('array-aligning-text');
+
+    // Update status
+    if (statusEl) {
+        statusEl.textContent = `⚠ DISH ${dishLabel} MALFUNCTION`;
+        statusEl.className = 'starmap-array-status';
+        statusEl.style.color = '#f00';
+    }
+
+    // Hide aligning text
+    if (aligningTextEl) aligningTextEl.style.display = 'none';
+
+    log(`CRITICAL: Dish ${dishLabel} power circuit failure!`, 'warning');
+
+    // Brief pause then show reroute minigame
+    setTimeout(() => {
+        startRerouteMinigame(
+            dishLabel,
+            // On success - resume alignment from the malfunctioning dish
+            () => {
+                log(`Dish ${dishLabel} repaired - resuming alignment`, 'highlight');
+                // Reset status color
+                if (statusEl) statusEl.style.color = '';
+                // Resume from the malfunctioning dish (include it in the sequence)
+                startDishAlignmentSequence(code, dishIndex, -1);
+            },
+            // On cancel/fail - still complete but note the issue
+            () => {
+                log(`Dish ${dishLabel} repair aborted - alignment continuing with reduced efficiency`, 'warning');
+                // Reset status color
+                if (statusEl) statusEl.style.color = '';
+                // Skip the malfunctioning dish and continue
+                startDishAlignmentSequence(code, dishIndex + 1, -1);
             }
-            updateArrayStatus();
-            updateStarmapArrayStats();
-        }, 1000);
-    }, totalDuration);
+        );
+    }, 500);
+}
+
+// Finish the alignment sequence
+function finishAlignment() {
+    const statusEl = document.getElementById('starmap-array-status');
+    const codeSectionEl = document.getElementById('array-code-section');
+    const aligningTextEl = document.getElementById('array-aligning-text');
+
+    stopMachineSound();
+
+    // Hide the flashing text
+    if (aligningTextEl) aligningTextEl.style.display = 'none';
+
+    // Hide the entire code section since alignment is complete
+    if (codeSectionEl) codeSectionEl.style.display = 'none';
+    log('Dish array alignment complete', 'success');
+
+    // Play acknowledgement sound after fade out completes
+    setTimeout(() => {
+        playLockAchieved();
+
+        // Clear the flag so button can now appear
+        gameState.dishArray.alignmentInProgress = false;
+
+        // Show status and scan button together with the acknowledgement sound
+        if (statusEl) {
+            statusEl.textContent = 'ARRAY ALIGNED - READY FOR SCAN';
+            statusEl.className = 'starmap-array-status ready';
+        }
+        updateArrayStatus();
+        updateStarmapArrayStats();
+    }, 1000);
 }
 
 // Set up alignment code for a weak signal star
