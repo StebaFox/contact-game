@@ -22,7 +22,7 @@ export const DAY_CONFIG = {
             'Flag any anomalous readings'
         ],
         bootMessages: [
-            'CLEARANCE LEVEL: 3 (STANDARD)',
+            'CLEARANCE LEVEL: 4 (STANDARD)',
             'SURVEY MODE: ACTIVE',
             'ASSIGNED TARGETS: 10'
         ]

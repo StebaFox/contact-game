@@ -9,8 +9,19 @@ import { showView, log, typeAnalysisText } from '../ui/rendering.js';
 import { playClick, playAnalysisSound, playContactSound, playSecurityBeep, playTypingBeep, stopNaturalPhenomenaSound, stopAlienSignalSound, switchToBackgroundMusic } from './audio.js';
 import { startTuningMinigame } from './tuning-minigame.js';
 import { startPatternRecognitionGame } from './pattern-minigame.js';
+import { startDecryptionMinigame } from './decryption-minigame.js';
+import { startAlignmentTutorial } from './alignment-minigame.js';
+import { startTriangulationMinigame } from './triangulation-minigame.js';
 import { sendFirstContactEmail } from './mailbox.js';
+import { checkAndShowDayComplete } from './day-report.js';
 import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
+
+// Ross 128 star index - requires decryption
+const ROSS_128_INDEX = 10;
+
+// Day 3 stars that provide fragments or trigger triangulation
+const GLIESE_832_INDEX = 25;  // Megastructure beacon - gives fragment
+const VAN_MAANENS_INDEX = 21; // The Network - triggers triangulation offer
 
 // External function references
 let drawStarVisualizationFn = null;
@@ -576,6 +587,8 @@ function showFalsePositiveResult(star, cause, display) {
             document.getElementById('analyze-btn').disabled = false;
             showView('starmap-view');
             log(`False positive from ${star.name} - Source: ${cause.source}`);
+            // Check if day is complete after false positive
+            checkAndShowDayComplete();
         });
         display.appendChild(returnBtn);
     }, 1000);
@@ -583,6 +596,12 @@ function showFalsePositiveResult(star, cause, display) {
 
 // Show verified signal result
 function showVerifiedSignalResult(star, display) {
+    // Check if this is Ross 128 and decryption is needed
+    if (star.id === ROSS_128_INDEX && !gameState.decryptionComplete) {
+        showEncryptedSignalResult(star, display);
+        return;
+    }
+
     gameState.scanResults.set(star.id, {
         type: 'verified_signal'
     });
@@ -643,12 +662,126 @@ function showVerifiedSignalResult(star, display) {
             question.style.cssText = 'color: #f00; text-shadow: 0 0 5px #f00; font-size: 16px;';
             log('Contact protocol aborted by operator');
             document.getElementById('analyze-btn').disabled = false;
+            // Check if day is complete
+            checkAndShowDayComplete();
         });
 
         buttonContainer.appendChild(yesBtn);
         buttonContainer.appendChild(noBtn);
         contactDiv.appendChild(buttonContainer);
         display.appendChild(contactDiv);
+    }, 1500);
+}
+
+// Show encrypted signal result (Ross 128 before decryption)
+function showEncryptedSignalResult(star, display) {
+    const resultDiv = document.createElement('div');
+    resultDiv.style.cssText = 'margin-top: 20px; padding: 15px; border: 2px solid #ff0; background: rgba(255, 255, 0, 0.1);';
+
+    resultDiv.innerHTML = `
+        <div style="color: #ff0; font-size: 18px; text-shadow: 0 0 10px #ff0; margin-bottom: 10px;">
+            ⚠ ENCRYPTED SIGNAL DETECTED ⚠
+        </div>
+        <div style="color: #0ff; font-size: 14px;">
+            Signal verified as EXTRASOLAR origin<br>
+            Distance: ${star.distance} light years<br><br>
+            <span style="color: #f0f; text-shadow: 0 0 5px #f0f;">
+                WARNING: Signal contains complex encoding<br>
+                Standard protocols cannot decode content
+            </span><br><br>
+            <span style="color: #0f0;">
+                QUANTUM DECRYPTION SYSTEM: AVAILABLE
+            </span>
+        </div>
+    `;
+
+    display.appendChild(resultDiv);
+    playSecurityBeep('warning');
+
+    setTimeout(() => {
+        const decryptDiv = document.createElement('div');
+        decryptDiv.style.cssText = 'margin-top: 20px; text-align: center;';
+
+        const question = document.createElement('p');
+        question.textContent = 'INITIATE QUANTUM DECRYPTION?';
+        question.style.cssText = 'color: #ff0; text-shadow: 0 0 5px #ff0; font-size: 18px; margin-bottom: 15px;';
+        decryptDiv.appendChild(question);
+
+        const buttonContainer = document.createElement('div');
+
+        const yesBtn = document.createElement('button');
+        yesBtn.textContent = 'DECRYPT';
+        yesBtn.className = 'btn';
+        yesBtn.style.cssText = 'background: rgba(0, 255, 0, 0.1); border: 2px solid #0f0; color: #0f0; margin: 5px; padding: 8px 20px;';
+        yesBtn.addEventListener('click', () => {
+            playClick();
+            buttonContainer.remove();
+            question.textContent = '[INITIALIZING QUANTUM PROCESSOR...]';
+
+            setTimeout(() => {
+                document.getElementById('contact-protocol-box').style.display = 'none';
+                startDecryptionMinigame(
+                    // Success callback
+                    () => {
+                        log('DECRYPTION COMPLETE - Signal decoded!', 'highlight');
+                        // Award first fragment
+                        if (!gameState.fragments.sources.ross128) {
+                            gameState.fragments.collected.push('ross128');
+                            gameState.fragments.sources.ross128 = true;
+                            log('FRAGMENT ACQUIRED: Ross 128 signal data', 'highlight');
+                        }
+
+                        // Launch alignment tutorial if not completed
+                        // Start immediately - alignment has its own full-screen overlay
+                        if (!gameState.tutorialCompleted) {
+                            log('INITIALIZING ALIGNMENT TRAINING...', 'info');
+                            startAlignmentTutorial(
+                                () => {
+                                    log('Training complete! Return to Ross 128 to establish contact.', 'info');
+                                    showView('starmap-view');
+                                    document.getElementById('analyze-btn').disabled = false;
+                                },
+                                () => {
+                                    log('Training skipped. Return to Ross 128 to establish contact.', 'info');
+                                    gameState.tutorialCompleted = true; // Mark as done if skipped
+                                    showView('starmap-view');
+                                    document.getElementById('analyze-btn').disabled = false;
+                                }
+                            );
+                        } else {
+                            // Tutorial already done, just continue
+                            showView('starmap-view');
+                            log('Return to Ross 128 to establish contact.', 'info');
+                            document.getElementById('analyze-btn').disabled = false;
+                        }
+                    },
+                    // Cancel callback
+                    () => {
+                        showView('starmap-view');
+                        log('Decryption aborted.', 'warning');
+                        document.getElementById('analyze-btn').disabled = false;
+                    }
+                );
+            }, 1500);
+        });
+
+        const noBtn = document.createElement('button');
+        noBtn.textContent = 'ABORT';
+        noBtn.className = 'btn';
+        noBtn.style.cssText = 'background: rgba(255, 0, 0, 0.1); border: 2px solid #f00; color: #f00; margin: 5px; padding: 8px 20px;';
+        noBtn.addEventListener('click', () => {
+            playClick();
+            buttonContainer.remove();
+            question.textContent = '[DECRYPTION ABORTED]';
+            question.style.cssText = 'color: #f00; text-shadow: 0 0 5px #f00; font-size: 16px;';
+            log('Quantum decryption aborted by operator');
+            document.getElementById('analyze-btn').disabled = false;
+        });
+
+        buttonContainer.appendChild(yesBtn);
+        buttonContainer.appendChild(noBtn);
+        decryptDiv.appendChild(buttonContainer);
+        display.appendChild(decryptDiv);
     }, 1500);
 }
 
@@ -665,6 +798,9 @@ function initiateContact(star) {
     gameState.contactedStars.add(star.id);
     updateStarStatus(star.id, 'contact');
 
+    // Award fragments for specific Day 3 contacts
+    awardContactFragment(star);
+
     // Auto-save after contact
     autoSave();
 
@@ -678,25 +814,45 @@ function initiateContact(star) {
     showView('contact-view');
 
     const messageData = ALIEN_CONTACTS.find(m => m.starIndex === star.id);
-    displayContactMessage(messageData);
+    displayContactMessage(messageData, star);
+}
+
+// Award fragments for Day 3 contacts
+function awardContactFragment(star) {
+    // Van Maanen's Star - "The Network" - gives hd219134 fragment (shared network data)
+    if (star.id === VAN_MAANENS_INDEX && !gameState.fragments.sources.hd219134) {
+        gameState.fragments.collected.push('hd219134');
+        gameState.fragments.sources.hd219134 = true;
+        log('FRAGMENT ACQUIRED: Network shared intelligence data', 'highlight');
+    }
+
+    // Gliese 832 - Megastructure beacon - gives gliese832 fragment
+    if (star.id === GLIESE_832_INDEX && !gameState.fragments.sources.gliese832) {
+        gameState.fragments.collected.push('gliese832');
+        gameState.fragments.sources.gliese832 = true;
+        log('FRAGMENT ACQUIRED: Gliese 832 megastructure coordinates', 'highlight');
+    }
 }
 
 // Display contact message
-function displayContactMessage(messageData) {
+function displayContactMessage(messageData, star) {
     const messageDisplay = document.getElementById('message-display');
     messageDisplay.innerHTML = '';
 
+    // Store star for post-message actions
+    const currentStar = star;
+
     if (Array.isArray(messageData)) {
-        displayMessages(messageData);
+        displayMessages(messageData, () => showPostContactActions(currentStar));
         return;
     }
 
     if (messageData.hasImage) {
         displayMessages(messageData.beforeImage, () => {
-            showImageGenerationPrompt(messageData);
+            showImageGenerationPrompt(messageData, currentStar);
         });
     } else {
-        displayMessages(messageData.messages || []);
+        displayMessages(messageData.messages || [], () => showPostContactActions(currentStar));
     }
 
     function displayMessages(messages, callback) {
@@ -721,7 +877,7 @@ function displayContactMessage(messageData) {
         displayNextLine();
     }
 
-    function showImageGenerationPrompt(messageData) {
+    function showImageGenerationPrompt(messageData, star) {
         const prompt = document.createElement('div');
         prompt.className = 'message-line';
         prompt.textContent = 'GENERATE IMAGE FROM DATA?';
@@ -740,7 +896,7 @@ function displayContactMessage(messageData) {
             buttonContainer.remove();
             prompt.textContent = 'GENERATING IMAGE...';
             setTimeout(() => {
-                displayImageData(messageData);
+                displayImageData(messageData, star);
             }, 1000);
         });
 
@@ -753,7 +909,7 @@ function displayContactMessage(messageData) {
             buttonContainer.remove();
             prompt.textContent = '[IMAGE GENERATION SKIPPED]';
             setTimeout(() => {
-                displayMessages(messageData.afterImage);
+                displayMessages(messageData.afterImage, () => showPostContactActions(star));
             }, 1000);
         });
 
@@ -762,7 +918,7 @@ function displayContactMessage(messageData) {
         messageDisplay.appendChild(buttonContainer);
     }
 
-    function displayImageData(messageData) {
+    function displayImageData(messageData, star) {
         // Wrapper to center the image box
         const imageWrapper = document.createElement('div');
         imageWrapper.style.cssText = 'text-align: center; margin: 20px 0;';
@@ -787,12 +943,84 @@ function displayContactMessage(messageData) {
                 setTimeout(displayNextImageLine, 50);
             } else {
                 setTimeout(() => {
-                    displayMessages(messageData.afterImage);
+                    displayMessages(messageData.afterImage, () => showPostContactActions(star));
                 }, 1000);
             }
         }
 
         displayNextImageLine();
+    }
+
+    // Show post-contact actions (triangulation offer for Day 3)
+    function showPostContactActions(star) {
+        if (!star) return;
+
+        // Check if this is Gliese 832 (megastructure) - offer triangulation
+        if (star.id === GLIESE_832_INDEX && !gameState.cmbDetected) {
+            setTimeout(() => {
+                showTriangulationOffer();
+            }, 2000);
+        }
+    }
+
+    function showTriangulationOffer() {
+        const prompt = document.createElement('div');
+        prompt.className = 'message-line';
+        prompt.style.cssText = 'color: #0ff; text-shadow: 0 0 10px #0ff; font-size: 18px; margin-top: 30px; text-align: center;';
+        prompt.innerHTML = `
+            <div style="margin-bottom: 15px;">
+                ◆ TRIANGULATION DATA DETECTED ◆
+            </div>
+            <div style="color: #0a0; font-size: 14px; margin-bottom: 15px;">
+                Signal contains coordinate vectors from multiple civilizations.<br>
+                Cross-reference to locate CMB signal origin?
+            </div>
+        `;
+        messageDisplay.appendChild(prompt);
+
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.cssText = 'margin-top: 15px; text-align: center;';
+
+        const yesBtn = document.createElement('button');
+        yesBtn.textContent = 'INITIATE TRIANGULATION';
+        yesBtn.className = 'btn';
+        yesBtn.style.cssText = 'background: rgba(0, 255, 255, 0.1); border: 2px solid #0ff; color: #0ff; margin: 0 10px; padding: 10px 20px;';
+        yesBtn.addEventListener('click', () => {
+            playClick();
+            buttonContainer.remove();
+            prompt.innerHTML = '<div style="color: #0ff;">[INITIALIZING TRIANGULATION ARRAY...]</div>';
+
+            setTimeout(() => {
+                startTriangulationMinigame(
+                    // Success callback
+                    () => {
+                        log('TRIANGULATION COMPLETE - CMB origin located!', 'highlight');
+                        showView('starmap-view');
+                        checkAndShowDayComplete();
+                    },
+                    // Cancel callback
+                    () => {
+                        log('Triangulation aborted.', 'warning');
+                        showView('contact-view');
+                    }
+                );
+            }, 1500);
+        });
+
+        const noBtn = document.createElement('button');
+        noBtn.textContent = 'LATER';
+        noBtn.className = 'btn';
+        noBtn.style.cssText = 'background: rgba(100, 100, 0, 0.1); border: 2px solid #aa0; color: #aa0; margin: 0 10px; padding: 10px 20px;';
+        noBtn.addEventListener('click', () => {
+            playClick();
+            buttonContainer.remove();
+            prompt.innerHTML = '<div style="color: #aa0;">[TRIANGULATION DEFERRED]</div>';
+        });
+
+        buttonContainer.appendChild(yesBtn);
+        buttonContainer.appendChild(noBtn);
+        messageDisplay.appendChild(buttonContainer);
+        messageDisplay.scrollTop = messageDisplay.scrollHeight;
     }
 }
 

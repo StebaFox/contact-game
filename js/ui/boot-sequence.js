@@ -8,6 +8,7 @@ import { showView, log } from './rendering.js';
 import { playClick, playTypingBeep } from '../systems/audio.js';
 import { BOOT_INITIAL, BOOT_CONTINUATION } from '../narrative/boot-messages.js';
 import { WELCOME_EMAIL } from '../narrative/emails.js';
+import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
 import { addMailMessage } from '../systems/mailbox.js';
 import {
     hasSaveFile,
@@ -374,7 +375,31 @@ function loadDayWithProgress() {
     log(`${dayConfig.title}`, 'info');
 }
 
-// Mark all stars from previous days as analyzed
+// False positive star indices (matches starmap.js)
+const falsePositiveIndices = [4, 7, 9, 14, 18, 24, 27];
+
+// Natural phenomena for random assignment
+const naturalPhenomena = [
+    { type: 'Pulsar radiation', source: 'Rotating neutron star' },
+    { type: 'Solar flare activity', source: 'Stellar chromosphere' },
+    { type: 'Magnetospheric emissions', source: 'Planetary magnetic field' },
+    { type: 'Quasar background noise', source: 'Distant active galactic nucleus' },
+    { type: 'Stellar wind interference', source: 'Coronal mass ejection' },
+    { type: 'Interstellar medium scatter', source: 'Ionized hydrogen cloud' },
+    { type: 'Binary star oscillation', source: 'Eclipsing binary system' },
+    { type: 'Brown dwarf emissions', source: 'Sub-stellar object' }
+];
+
+// False positive sources
+const falsePositiveSources = [
+    'CLASSIFIED RECON SATELLITE (KH-11)',
+    'GPS SATELLITE CONSTELLATION',
+    'MICROWAVE TOWER HARMONIC',
+    'AIRPORT RADAR INTERFERENCE',
+    'TELEVISION BROADCAST HARMONIC'
+];
+
+// Mark all stars from previous days as analyzed with appropriate scan results
 function markPreviousDaysAsScanned() {
     // Get all stars from days before the current day
     for (let day = 1; day < gameState.currentDay; day++) {
@@ -382,11 +407,36 @@ function markPreviousDaysAsScanned() {
         if (dayConfig && dayConfig.availableStars) {
             dayConfig.availableStars.forEach(starIndex => {
                 gameState.analyzedStars.add(starIndex);
+
+                // Check if this star has an alien contact
+                const hasContact = ALIEN_CONTACTS.some(m => m.starIndex === starIndex);
+
+                if (hasContact) {
+                    // Verified intelligent signal
+                    gameState.scanResults.set(starIndex, { type: 'verified_signal' });
+                    gameState.contactedStars.add(starIndex);
+                } else if (falsePositiveIndices.includes(starIndex)) {
+                    // False positive
+                    const source = falsePositiveSources[Math.floor(Math.random() * falsePositiveSources.length)];
+                    gameState.scanResults.set(starIndex, {
+                        type: 'false_positive',
+                        source: source
+                    });
+                } else {
+                    // Natural phenomenon
+                    const phenomenon = naturalPhenomena[Math.floor(Math.random() * naturalPhenomena.length)];
+                    gameState.scanResults.set(starIndex, {
+                        type: 'natural',
+                        phenomenonType: phenomenon.type,
+                        source: phenomenon.source
+                    });
+                }
             });
         }
     }
 
     console.log(`SIGNAL: Marked ${gameState.analyzedStars.size} stars as analyzed from previous days`);
+    console.log(`SIGNAL: Generated ${gameState.scanResults.size} scan results, ${gameState.contactedStars.size} contacts`);
 }
 
 // Load demo mode - all content unlocked, no boot sequence
@@ -840,7 +890,7 @@ function animateStarsAppearing() {
 
     // Scan line effect
     let scanY = 0;
-    const scanSpeed = 15;
+    const scanSpeed = 5; // Slower for more visible effect
 
     function drawScanEffect() {
         // Clear canvas

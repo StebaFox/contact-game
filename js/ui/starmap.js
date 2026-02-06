@@ -10,6 +10,7 @@ import { STAR_NAMES, STAR_TYPES, DISCOVERY_DATES, STAR_COORDINATES, STAR_DISTANC
 import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
 import { checkForEndState } from '../core/end-game.js';
 import { isStarLocked, getStarDayRequirement, DAY_CONFIG } from '../core/day-system.js';
+import { checkAndShowDayComplete } from '../systems/day-report.js';
 
 // External function references (set by main.js to avoid circular deps)
 let setArrayTargetFn = null;
@@ -333,7 +334,6 @@ export function selectStar(starId) {
     const star = gameState.stars[starId];
     gameState.currentStar = star;
     gameState.selectedStarId = starId;
-    gameState.showScanConfirm = true;
 
     // Play selection sounds
     playSelectStar();
@@ -344,6 +344,12 @@ export function selectStar(starId) {
     const isAnalyzed = gameState.analyzedStars.has(starId);
     const hasContact = gameState.contactedStars.has(starId);
     const scanResult = gameState.scanResults.get(starId);
+
+    // Determine if this star is "complete" (can't be scanned again)
+    const isComplete = hasContact || (scanResult && (scanResult.type === 'false_positive' || scanResult.type === 'natural' || scanResult.type === 'verified_signal'));
+
+    // Only show scan confirmation if not complete
+    gameState.showScanConfirm = !isComplete;
 
     // Build status indicator with scan result details
     let statusBadge = '';
@@ -379,9 +385,9 @@ export function selectStar(starId) {
     const starInfoTitle = document.querySelector('.star-info-title');
     starInfoTitle.textContent = star.name;
 
-    // Add weak signal warning if applicable (only show if not yet analyzed)
+    // Add weak signal warning if applicable (only show if not yet complete)
     let weakSignalWarning = '';
-    if (star.signalStrength === 'weak' && !isAnalyzed) {
+    if (star.signalStrength === 'weak' && !isComplete) {
         weakSignalWarning = `
             <div class="weak-signal-warning" style="margin-top: 12px; padding: 10px; border: 2px solid #ffa500; background: rgba(255, 165, 0, 0.1); animation: warningPulse 1.5s ease-in-out infinite;">
                 <div style="color: #ffa500; text-shadow: 0 0 5px #ffa500; font-size: 14px; text-align: center;">⚠ WEAK SIGNAL DETECTED ⚠</div>
@@ -420,8 +426,9 @@ export function selectStar(starId) {
     drawStarVisualization(star);
 
     // Show/hide array button for weak signal stars (if it exists)
+    // Only show array controls if star is not yet complete
     const arrayBtn = document.getElementById('array-status-btn');
-    if (star.signalStrength === 'weak') {
+    if (star.signalStrength === 'weak' && !isComplete) {
         if (arrayBtn) arrayBtn.style.display = 'inline-block';
         // Only reset array if this is a different target star
         if (!gameState.dishArray.currentTargetStar || gameState.dishArray.currentTargetStar.id !== star.id) {
@@ -433,7 +440,7 @@ export function selectStar(starId) {
         }
     } else {
         if (arrayBtn) arrayBtn.style.display = 'none';
-        // Clear array target when selecting non-weak signal star
+        // Clear array target when selecting non-weak signal star or complete star
         if (gameState.dishArray.currentTargetStar) {
             gameState.dishArray.currentTargetStar = null;
             gameState.dishArray.requiredPower = 0;
@@ -445,7 +452,7 @@ export function selectStar(starId) {
     log(`Target acquired: ${star.name}`);
     log(`Coordinates: ${star.coordinates}, Distance: ${star.distance} ly`);
     log(`Star Type: ${star.starType} (${star.starClass}), Temperature: ${star.temperature}`);
-    if (star.signalStrength === 'weak' && !isAnalyzed) {
+    if (star.signalStrength === 'weak' && !isComplete) {
         log(`WEAK SIGNAL - Array alignment required`, 'warning');
     }
 }
@@ -854,6 +861,9 @@ export function setupNavigationButtons() {
 
         showView('starmap-view');
         log('Returned to stellar catalog');
+
+        // Check if day is complete
+        checkAndShowDayComplete();
 
         // Check if all stars have been analyzed
         checkForEndState();

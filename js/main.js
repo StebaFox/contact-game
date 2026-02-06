@@ -72,6 +72,9 @@ import {
 } from './systems/scanning.js';
 import { startTuningMinigame, setTuningFunctions, setupTuningSliders } from './systems/tuning-minigame.js';
 import { startPatternRecognitionGame, setPatternFunctions } from './systems/pattern-minigame.js';
+import { startDecryptionMinigame, isDecryptionComplete } from './systems/decryption-minigame.js';
+import { startAlignmentTutorial, startFinalAlignment, isAlignmentTutorialComplete, isFinalPuzzleComplete } from './systems/alignment-minigame.js';
+import { startTriangulationMinigame, isTriangulationActive } from './systems/triangulation-minigame.js';
 
 // Wire up cross-module function references
 function setupModuleConnections() {
@@ -98,6 +101,10 @@ function setupModuleConnections() {
         generateSignal: generateSignal,
         startSignalAnimation: startSignalAnimation,
         startPatternRecognitionGame: startPatternRecognitionGame,
+        startDecryptionMinigame: startDecryptionMinigame,
+        startAlignmentTutorial: startAlignmentTutorial,
+        startFinalAlignment: startFinalAlignment,
+        startTriangulationMinigame: startTriangulationMinigame,
         showFinalReport: showFinalReport
     });
 
@@ -127,14 +134,6 @@ function setupEventListeners() {
     document.getElementById('analyze-btn').addEventListener('click', () => {
         playClick();
         analyzeSignal();
-    });
-
-    // Clear cache button
-    document.getElementById('clear-cache-btn').addEventListener('click', () => {
-        playClick();
-        gameState.scannedSignals.clear();
-        gameState.scanResults.clear();
-        log('Scan cache cleared - all signals will be regenerated', 'highlight');
     });
 
     // Navigation buttons (back and continue)
@@ -334,7 +333,14 @@ export {
     getDayProgress,
     getCurrentDayConfig,
     advanceDay,
-    checkDayComplete
+    checkDayComplete,
+    startDecryptionMinigame,
+    startAlignmentTutorial,
+    startFinalAlignment,
+    isAlignmentTutorialComplete,
+    isFinalPuzzleComplete,
+    startTriangulationMinigame,
+    isTriangulationActive
 };
 
 // Start the game when DOM is ready

@@ -70,6 +70,7 @@ export const gameState = {
     decryptionComplete: false,
     cmbDetected: false,
     finalPuzzleComplete: false,
+    dayReportShown: 0, // Track which day's report has been shown
 
     // Mailbox
     mailboxMessages: [],
@@ -156,6 +157,7 @@ export function resetGameState() {
     gameState.decryptionComplete = false;
     gameState.cmbDetected = false;
     gameState.finalPuzzleComplete = false;
+    gameState.dayReportShown = 0;
 
     // Reset mailbox
     gameState.mailboxMessages = [];

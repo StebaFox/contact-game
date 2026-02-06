@@ -48,7 +48,8 @@ export function autoSave() {
             tutorialCompleted: gameState.tutorialCompleted || false,
             decryptionComplete: gameState.decryptionComplete || false,
             cmbDetected: gameState.cmbDetected || false,
-            finalPuzzleComplete: gameState.finalPuzzleComplete || false
+            finalPuzzleComplete: gameState.finalPuzzleComplete || false,
+            dayReportShown: gameState.dayReportShown || 0
         }
     };
 
@@ -125,6 +126,7 @@ export function applySaveData(data) {
             gameState.decryptionComplete = data.flags.decryptionComplete || false;
             gameState.cmbDetected = data.flags.cmbDetected || false;
             gameState.finalPuzzleComplete = data.flags.finalPuzzleComplete || false;
+            gameState.dayReportShown = data.flags.dayReportShown || 0;
         }
 
         console.log('SIGNAL: Save data applied successfully');

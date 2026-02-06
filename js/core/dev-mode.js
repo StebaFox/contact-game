@@ -5,6 +5,11 @@
 
 import { gameState } from './game-state.js';
 import { showView, log } from '../ui/rendering.js';
+import { applyDayCode, autoSave } from './save-system.js';
+import { DAY_CONFIG } from './day-system.js';
+import { checkAndShowDayComplete } from '../systems/day-report.js';
+import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
+import { showFinalMessage } from '../narrative/final-message.js';
 
 // Dev mode state
 let devMode = false;
@@ -15,6 +20,10 @@ let selectStarFn = null;
 let initiateScanFn = null;
 let startTuningMinigameFn = null;
 let startPatternMinigameFn = null;
+let startDecryptionMinigameFn = null;
+let startAlignmentTutorialFn = null;
+let startFinalAlignmentFn = null;
+let startTriangulationMinigameFn = null;
 let initiateContactFn = null;
 let updateStarStatusFn = null;
 let saveProgressFn = null;
@@ -27,6 +36,10 @@ export function setDevFunctions(fns) {
     initiateScanFn = fns.initiateScan;
     startTuningMinigameFn = fns.startTuningMinigame;
     startPatternMinigameFn = fns.startPatternMinigame;
+    startDecryptionMinigameFn = fns.startDecryptionMinigame;
+    startAlignmentTutorialFn = fns.startAlignmentTutorial;
+    startFinalAlignmentFn = fns.startFinalAlignment;
+    startTriangulationMinigameFn = fns.startTriangulationMinigame;
     initiateContactFn = fns.initiateContact;
     updateStarStatusFn = fns.updateStarStatus;
     saveProgressFn = fns.saveProgress;
@@ -86,11 +99,21 @@ export function showDevPanel() {
             DEV MODE <span class="dev-toggle">−</span>
         </div>
         <div class="dev-panel-content">
+            <div class="dev-section">DAY PROGRESSION</div>
+            <button data-action="skipToDay1">Skip to Day 1</button>
+            <button data-action="skipToDay2">Skip to Day 2</button>
+            <button data-action="skipToDay3">Skip to Day 3</button>
+            <button data-action="completeCurrentDay">Complete Current Day</button>
+
             <div class="dev-section">NAVIGATION</div>
             <button data-action="skipToStarmap">Skip to Starmap</button>
             <button data-action="showSignalScan">Signal Scan View</button>
             <button data-action="showTuningGame">Tuning Mini-game</button>
             <button data-action="showPatternGame">Pattern Mini-game</button>
+            <button data-action="showDecryption">Decryption Game</button>
+            <button data-action="showAlignmentTutorial">Alignment Tutorial</button>
+            <button data-action="showFinalAlignment">Final Alignment</button>
+            <button data-action="showTriangulation">Triangulation Game</button>
             <button data-action="showMailbox">Mailbox</button>
 
             <div class="dev-section">STAR ACTIONS</div>
@@ -104,7 +127,8 @@ export function showDevPanel() {
             <button data-action="logState">Log Game State</button>
 
             <div class="dev-section">END STATE</div>
-            <button data-action="triggerEndState">Trigger End State</button>
+            <button data-action="showFinalMessage">Show Final Message</button>
+            <button data-action="triggerEndState">Show Final Report</button>
         </div>
     `;
 
@@ -178,10 +202,18 @@ export function showDevPanel() {
         btn.addEventListener('click', () => {
             const action = btn.dataset.action;
             switch(action) {
+                case 'skipToDay1': devSkipToDay(1); break;
+                case 'skipToDay2': devSkipToDay(2); break;
+                case 'skipToDay3': devSkipToDay(3); break;
+                case 'completeCurrentDay': devCompleteCurrentDay(); break;
                 case 'skipToStarmap': devSkipToStarmap(); break;
                 case 'showSignalScan': devShowSignalScan(); break;
                 case 'showTuningGame': devShowTuningGame(); break;
                 case 'showPatternGame': devShowPatternGame(); break;
+                case 'showDecryption': devShowDecryption(); break;
+                case 'showAlignmentTutorial': devShowAlignmentTutorial(); break;
+                case 'showFinalAlignment': devShowFinalAlignment(); break;
+                case 'showTriangulation': devShowTriangulation(); break;
                 case 'showMailbox': devShowMailbox(); break;
                 case 'markAllScanned': devMarkAllScanned(); break;
                 case 'markAllAnalyzed': devMarkAllAnalyzed(); break;
@@ -189,6 +221,7 @@ export function showDevPanel() {
                 case 'resetProgress': devResetProgress(); break;
                 case 'addRandomMail': devAddRandomMail(); break;
                 case 'logState': devLogState(); break;
+                case 'showFinalMessage': devShowFinalMessage(); break;
                 case 'triggerEndState': devTriggerEndState(); break;
             }
         });
@@ -206,7 +239,101 @@ export function hideDevPanel() {
     console.log('%c[DEV MODE DISABLED]', 'color: #888;');
 }
 
-// Dev functions
+// False positive star indices (matches starmap.js)
+const falsePositiveIndices = [4, 7, 9, 14, 18, 24, 27];
+
+// Natural phenomena for random assignment
+const naturalPhenomena = [
+    { type: 'Pulsar radiation', source: 'Rotating neutron star' },
+    { type: 'Solar flare activity', source: 'Stellar chromosphere' },
+    { type: 'Magnetospheric emissions', source: 'Planetary magnetic field' },
+    { type: 'Quasar background noise', source: 'Distant active galactic nucleus' },
+    { type: 'Stellar wind interference', source: 'Coronal mass ejection' }
+];
+
+// False positive sources
+const falsePositiveSources = [
+    'CLASSIFIED RECON SATELLITE (KH-11)',
+    'GPS SATELLITE CONSTELLATION',
+    'MICROWAVE TOWER HARMONIC',
+    'AIRPORT RADAR INTERFERENCE',
+    'TELEVISION BROADCAST HARMONIC'
+];
+
+// Dev functions - Day progression
+function devSkipToDay(day) {
+    if (!gameState.playerName) {
+        gameState.playerName = 'DEV_USER';
+    }
+
+    const dayCodes = {
+        1: 'ALPHA-001',
+        2: 'SIGMA-042',
+        3: 'OMEGA-137'
+    };
+
+    const code = dayCodes[day];
+    if (code) {
+        applyDayCode(code);
+        log(`DEV: Skipped to Day ${day} (code: ${code})`, 'highlight');
+        // Reload to apply the new day state
+        setTimeout(() => location.reload(), 500);
+    }
+}
+
+function devCompleteCurrentDay() {
+    if (gameState.demoMode || gameState.currentDay === 0) {
+        log('DEV: Cannot complete day in demo mode', 'warning');
+        return;
+    }
+
+    const dayConfig = DAY_CONFIG[gameState.currentDay];
+    if (!dayConfig) {
+        log('DEV: Invalid day configuration', 'warning');
+        return;
+    }
+
+    // Mark all stars for current day as analyzed with proper scan results
+    dayConfig.availableStars.forEach(starIndex => {
+        gameState.analyzedStars.add(starIndex);
+
+        // Check if this star has an alien contact
+        const hasContact = ALIEN_CONTACTS.some(m => m.starIndex === starIndex);
+
+        if (hasContact) {
+            // Verified intelligent signal
+            gameState.scanResults.set(starIndex, { type: 'verified_signal' });
+            gameState.contactedStars.add(starIndex);
+        } else if (falsePositiveIndices.includes(starIndex)) {
+            // False positive
+            const source = falsePositiveSources[Math.floor(Math.random() * falsePositiveSources.length)];
+            gameState.scanResults.set(starIndex, {
+                type: 'false_positive',
+                source: source
+            });
+        } else {
+            // Natural phenomenon
+            const phenomenon = naturalPhenomena[Math.floor(Math.random() * naturalPhenomena.length)];
+            gameState.scanResults.set(starIndex, {
+                type: 'natural',
+                phenomenonType: phenomenon.type,
+                source: phenomenon.source
+            });
+        }
+    });
+
+    // Save progress
+    autoSave();
+
+    log(`DEV: Completed Day ${gameState.currentDay} - all ${dayConfig.availableStars.length} stars analyzed`, 'highlight');
+
+    // Trigger the day complete check (shows report popup)
+    gameState.dayReportShown = 0; // Reset so report shows
+    setTimeout(() => {
+        checkAndShowDayComplete();
+    }, 500);
+}
+
 function devSkipToStarmap() {
     // Set player name if not set
     if (!gameState.playerName) {
@@ -247,6 +374,63 @@ function devShowPatternGame() {
     showView('analysis-view');
     if (startPatternMinigameFn) startPatternMinigameFn();
     log('DEV: Started pattern mini-game', 'highlight');
+}
+
+function devShowDecryption() {
+    if (startDecryptionMinigameFn) {
+        startDecryptionMinigameFn(
+            () => {
+                log('DEV: Decryption SUCCESS!', 'highlight');
+            },
+            () => {
+                log('DEV: Decryption cancelled', 'warning');
+            }
+        );
+    }
+    log('DEV: Started decryption mini-game', 'highlight');
+}
+
+function devShowAlignmentTutorial() {
+    if (startAlignmentTutorialFn) {
+        startAlignmentTutorialFn(
+            () => {
+                log('DEV: Alignment tutorial SUCCESS!', 'highlight');
+            },
+            () => {
+                log('DEV: Alignment tutorial skipped', 'warning');
+            }
+        );
+    }
+    log('DEV: Started alignment tutorial', 'highlight');
+}
+
+function devShowFinalAlignment() {
+    if (startFinalAlignmentFn) {
+        startFinalAlignmentFn(
+            () => {
+                log('DEV: Final alignment SUCCESS!', 'highlight');
+            },
+            () => {
+                log('DEV: Final alignment aborted', 'warning');
+            }
+        );
+    }
+    log('DEV: Started final alignment puzzle', 'highlight');
+}
+
+function devShowTriangulation() {
+    if (startTriangulationMinigameFn) {
+        startTriangulationMinigameFn(
+            () => {
+                log('DEV: Triangulation SUCCESS!', 'highlight');
+                showView('starmap-view');
+            },
+            () => {
+                log('DEV: Triangulation cancelled', 'warning');
+            }
+        );
+    }
+    log('DEV: Started triangulation minigame', 'highlight');
 }
 
 function devShowMailbox() {
@@ -328,15 +512,36 @@ function devAddRandomMail() {
 export function devLogState() {
     console.log('=== GAME STATE ===');
     console.log('Player Name:', gameState.playerName);
+    console.log('Current Day:', gameState.currentDay);
+    console.log('Demo Mode:', gameState.demoMode);
+    console.log('Days Completed:', gameState.daysCompleted);
+    console.log('Day Report Shown:', gameState.dayReportShown);
     console.log('Current Star:', gameState.currentStar);
     console.log('Selected Star ID:', gameState.selectedStarId);
     console.log('Scanned Signals:', [...gameState.scannedSignals.keys()]);
     console.log('Analyzed Stars:', [...gameState.analyzedStars]);
     console.log('Contacted Stars:', [...gameState.contactedStars]);
+    console.log('Scan Results:', [...gameState.scanResults.entries()]);
+    console.log('Fragments:', gameState.fragments);
+    console.log('Decryption Complete:', gameState.decryptionComplete);
+    console.log('Tutorial Complete:', gameState.tutorialCompleted);
     console.log('Mailbox Messages:', gameState.mailboxMessages.length);
     console.log('Unread Mail:', gameState.unreadMailCount);
     console.log('==================');
-    log('DEV: State logged to console', 'highlight');
+    log('DEV: State logged to console (F12 to view)', 'highlight');
+}
+
+function devShowFinalMessage() {
+    // Set player name if not set
+    if (!gameState.playerName) {
+        gameState.playerName = 'Developer';
+    }
+
+    log('DEV: Showing final message...', 'highlight');
+    showFinalMessage(() => {
+        log('DEV: Final message complete', 'highlight');
+        showView('starmap-view');
+    });
 }
 
 export function devTriggerEndState() {
@@ -346,17 +551,42 @@ export function devTriggerEndState() {
     // Check if stars are initialized
     if (!gameState.stars || gameState.stars.length === 0) {
         console.error('Stars not initialized yet! Start the game first.');
+        log('DEV: Stars not initialized - start game first!', 'warning');
         return;
     }
 
-    // Mark all stars as analyzed for the report
-    gameState.stars.forEach(star => {
-        gameState.analyzedStars.add(star.id);
+    // Mark all stars as analyzed with proper scan results
+    gameState.stars.forEach((star, index) => {
+        gameState.analyzedStars.add(index);
+
+        // Check if this star has an alien contact
+        const hasContact = ALIEN_CONTACTS.some(m => m.starIndex === index);
+
+        if (hasContact) {
+            gameState.scanResults.set(index, { type: 'verified_signal' });
+            gameState.contactedStars.add(index);
+        } else if (falsePositiveIndices.includes(index)) {
+            const source = falsePositiveSources[Math.floor(Math.random() * falsePositiveSources.length)];
+            gameState.scanResults.set(index, {
+                type: 'false_positive',
+                source: source
+            });
+        } else {
+            const phenomenon = naturalPhenomena[Math.floor(Math.random() * naturalPhenomena.length)];
+            gameState.scanResults.set(index, {
+                type: 'natural_phenomena',
+                phenomenonType: phenomenon.type,
+                source: phenomenon.source
+            });
+        }
     });
+
     console.log('Analyzed stars:', gameState.analyzedStars.size);
+    console.log('Scan results:', gameState.scanResults.size);
+    console.log('Contacted stars:', gameState.contactedStars.size);
 
     if (showFinalReportFn) showFinalReportFn();
-    log('DEV: Triggered end state', 'highlight');
+    log('DEV: Triggered final report', 'highlight');
 }
 
 // Expose dev functions to window for console access

@@ -6,6 +6,7 @@
 import { gameState } from '../core/game-state.js';
 import { log, typeAnalysisText } from '../ui/rendering.js';
 import { playClick, playLockAchieved, playStaticBurst, switchToAlienMusic, startAlienSignalSound, startNaturalPhenomenaSound } from './audio.js';
+import { checkAndShowDayComplete } from './day-report.js';
 
 // External function references (set by main.js)
 let stopSignalAnimationFn = null;
@@ -400,6 +401,8 @@ function completePatternGame(star) {
 
         typeAnalysisText(lines, () => {
             document.getElementById('analyze-btn').disabled = false;
+            // Check if day is complete after natural phenomenon analysis
+            checkAndShowDayComplete();
         });
     }
 }
