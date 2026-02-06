@@ -118,9 +118,9 @@ export function updateClock() {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
-    const clockEl = document.getElementById('system-clock');
+    const clockEl = document.getElementById('clock');
     if (clockEl) {
-        clockEl.textContent = `${hours}:${minutes}:${seconds} UTC`;
+        clockEl.textContent = `${hours}:${minutes}:${seconds}`;
     }
 }
 

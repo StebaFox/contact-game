@@ -1257,8 +1257,8 @@ canvas.active {
     border: 2px solid #f0f;
     background: rgba(255, 0, 255, 0.05);
     margin: 20px 0;
-    min-height: 300px;
-    max-height: 500px;
+    min-height: 400px;
+    max-height: 800px;
     overflow-y: auto;
     color: #f0f;
     text-shadow: 0 0 5px #f0f;

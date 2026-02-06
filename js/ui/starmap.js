@@ -9,7 +9,7 @@ import { playClick, playSelectStar, playStaticBurst, playScanAcknowledge, stopNa
 import { STAR_NAMES, STAR_TYPES, DISCOVERY_DATES, STAR_COORDINATES, STAR_DISTANCES, WEAK_SIGNAL_START_INDEX } from '../narrative/stars.js';
 import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
 import { checkForEndState } from '../core/end-game.js';
-import { isStarLocked, getStarDayRequirement } from '../core/day-system.js';
+import { isStarLocked, getStarDayRequirement, DAY_CONFIG } from '../core/day-system.js';
 
 // External function references (set by main.js to avoid circular deps)
 let setArrayTargetFn = null;
@@ -28,19 +28,22 @@ export function setStarmapFunctions(fns) {
     }
 }
 
-// False positive star indices
-const falsePositiveIndices = [4, 9, 14, 18, 24, 27, 28];
+// False positive star indices (Day 1: 4, 7, 9; Day 2: 14, 18; Day 3: 24, 27)
+const falsePositiveIndices = [4, 7, 9, 14, 18, 24, 27];
 
 // Weak signal configurations (power requirements)
 const weakSignalConfig = {
-    21: { requiredPower: 5 },   // LUYTEN-B (alien intelligence) - easy
-    22: { requiredPower: 4 },   // BARNARD-B (natural - pulsar) - easy
-    23: { requiredPower: 8 },   // LACAILLE-9352C (natural - magnetar) - medium
-    24: { requiredPower: 6 },   // 61-CYGNI-C (false positive) - easy
-    25: { requiredPower: 11 },  // EPSILON-INDI-B (alien intelligence) - hard
-    26: { requiredPower: 7 },   // LALANDE-21185B (natural - quasar) - medium
-    27: { requiredPower: 9 },   // GROOMBRIDGE-34B (false positive) - medium
-    28: { requiredPower: 5 }    // UV-CETI-B (false positive) - easy
+    // Day 1 weak signals (2 stars - one is false positive)
+    3: { requiredPower: 4 },    // LALANDE 21185 - easy weak signal
+    7: { requiredPower: 5 },    // ROSS 248 - weak signal FALSE POSITIVE
+    // Day 3 weak signals (7 stars: indices 21-27)
+    21: { requiredPower: 5 },   // VAN MAANEN'S STAR - easy
+    22: { requiredPower: 4 },   // WOLF 424 - easy
+    23: { requiredPower: 8 },   // GLIESE 687 - medium
+    24: { requiredPower: 6 },   // GLIESE 674 (false positive) - easy
+    25: { requiredPower: 11 },  // GLIESE 832 - hard
+    26: { requiredPower: 7 },   // 82 ERIDANI - medium
+    27: { requiredPower: 9 }    // DELTA PAVONIS (false positive) - medium
 };
 
 // Generate background stars for parallax effect
@@ -138,31 +141,61 @@ export function updateStarCatalogDisplay() {
 
     starItems.forEach(item => {
         const starId = parseInt(item.dataset.starId);
-        const locked = isStarLocked(starId);
-        const requiredDay = getStarDayRequirement(starId);
+        const starDay = getStarDayRequirement(starId);
+        const isCurrentDay = starDay === gameState.currentDay;
+        const isPreviousDay = starDay < gameState.currentDay;
+        const isFutureDay = starDay > gameState.currentDay;
+        const isAnalyzed = gameState.analyzedStars.has(starId);
 
-        if (locked) {
-            item.classList.add('star-locked');
-            item.style.opacity = '0.4';
-            item.style.pointerEvents = 'none';
-
-            // Add lock indicator if not already present
-            if (!item.querySelector('.lock-indicator')) {
-                const lockIndicator = document.createElement('div');
-                lockIndicator.className = 'lock-indicator';
-                lockIndicator.style.cssText = 'color: #666; font-size: 10px; margin-top: 4px;';
-                lockIndicator.textContent = `[DAY ${requiredDay}]`;
-                item.appendChild(lockIndicator);
-            }
-        } else {
-            item.classList.remove('star-locked');
+        // In demo mode, show all stars
+        if (gameState.demoMode || gameState.currentDay === 0) {
+            item.style.display = 'block';
             item.style.opacity = '1';
             item.style.pointerEvents = 'auto';
+            return;
+        }
 
-            // Remove lock indicator if present
-            const lockIndicator = item.querySelector('.lock-indicator');
-            if (lockIndicator) {
-                lockIndicator.remove();
+        if (isFutureDay) {
+            // Hide future day stars completely
+            item.style.display = 'none';
+        } else if (isPreviousDay) {
+            // Show previous day stars (dimmed, already analyzed)
+            item.style.display = 'block';
+            item.style.opacity = '0.5';
+            item.style.pointerEvents = 'auto';
+
+            // Add "ANALYZED" indicator if not present
+            if (!item.querySelector('.analyzed-indicator')) {
+                const indicator = document.createElement('div');
+                indicator.className = 'analyzed-indicator';
+                indicator.style.cssText = 'color: #ff0; font-size: 10px; margin-top: 4px;';
+                indicator.textContent = '[ANALYZED - DAY ' + starDay + ']';
+                item.appendChild(indicator);
+            }
+
+            // Update status
+            const statusEl = item.querySelector('.star-status');
+            if (statusEl && !statusEl.dataset.status) {
+                statusEl.dataset.status = 'analyzed';
+                statusEl.textContent = '● COMPLETE';
+                statusEl.style.color = '#ff0';
+            }
+        } else {
+            // Current day stars - show normally
+            item.style.display = 'block';
+            item.style.opacity = isAnalyzed ? '0.7' : '1';
+            item.style.pointerEvents = 'auto';
+
+            // Remove any old indicators
+            const oldIndicator = item.querySelector('.analyzed-indicator');
+            if (oldIndicator) oldIndicator.remove();
+
+            // Update status based on analyzed state
+            const statusEl = item.querySelector('.star-status');
+            if (statusEl && isAnalyzed && !statusEl.dataset.status) {
+                statusEl.dataset.status = 'analyzed';
+                statusEl.textContent = '● COMPLETE';
+                statusEl.style.color = '#ff0';
             }
         }
     });
@@ -518,18 +551,30 @@ export function renderStarMap() {
         const isSelected = gameState.selectedStarId === star.id;
         const isContacted = gameState.contactedStars.has(star.id);
         const isAnalyzed = gameState.analyzedStars.has(star.id);
-        const isLocked = isStarLocked(star.id);
+        const starDay = getStarDayRequirement(star.id);
+        const isPreviousDay = starDay < gameState.currentDay && !gameState.demoMode && gameState.currentDay > 0;
+        const isFutureDay = starDay > gameState.currentDay && !gameState.demoMode && gameState.currentDay > 0;
+
+        // Skip rendering future day stars entirely
+        if (isFutureDay) {
+            return;
+        }
 
         // Apply parallax effect (target stars move less - they're closer)
         const parallaxX = star.x + gameState.parallaxOffsetX * 0.3;
         const parallaxY = star.y + gameState.parallaxOffsetY * 0.3;
 
         // Star color based on status
-        if (isLocked) {
-            // Locked stars are dim and grayed out
-            ctx.fillStyle = '#333';
-            ctx.shadowColor = '#333';
-            ctx.globalAlpha = 0.5;
+        if (isPreviousDay) {
+            // Previous day stars are dimmed
+            ctx.globalAlpha = 0.4;
+            if (isContacted) {
+                ctx.fillStyle = '#808';
+                ctx.shadowColor = '#808';
+            } else {
+                ctx.fillStyle = '#880';
+                ctx.shadowColor = '#880';
+            }
         } else if (isContacted) {
             ctx.fillStyle = '#f0f';
             ctx.shadowColor = '#f0f';
@@ -541,14 +586,14 @@ export function renderStarMap() {
             ctx.shadowColor = '#fff';
         }
 
-        ctx.shadowBlur = isSelected && !isLocked ? 15 : (isLocked ? 0 : 10);
+        ctx.shadowBlur = isSelected && !isPreviousDay ? 15 : (isPreviousDay ? 5 : 10);
 
         // Draw star (pixel art style)
-        const size = isSelected && !isLocked ? 5 : 3;
+        const size = isSelected && !isPreviousDay ? 5 : 3;
         ctx.fillRect(parallaxX - size / 2, parallaxY - size / 2, size, size);
 
-        // Draw cross pattern (not for locked stars)
-        if (!isLocked) {
+        // Draw cross pattern (smaller for previous day)
+        if (!isPreviousDay) {
             ctx.fillRect(parallaxX - size - 2, parallaxY - 1, 2, 2);
             ctx.fillRect(parallaxX + size, parallaxY - 1, 2, 2);
             ctx.fillRect(parallaxX - 1, parallaxY - size - 2, 2, 2);

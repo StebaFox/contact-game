@@ -19,7 +19,7 @@ import {
     getSaveInfo,
     autoSave
 } from '../core/save-system.js';
-import { getCurrentDayConfig, getDayBootMessages } from '../core/day-system.js';
+import { getCurrentDayConfig, getDayBootMessages, DAY_CONFIG } from '../core/day-system.js';
 import { updateStarCatalogDisplay } from './starmap.js';
 
 // External function references (set by main.js to avoid circular deps)
@@ -140,69 +140,192 @@ function continueBootSequence(playerName) {
 // Update start screen based on save file existence
 function updateStartScreen() {
     const saveInfo = getSaveInfo();
-    const startBtnContainer = document.querySelector('.start-btn-container') ||
-                              document.getElementById('start-btn')?.parentElement;
+    const startBtnContainer = document.getElementById('start-btn-container');
 
     if (!startBtnContainer) return;
 
+    // Style for all menu buttons
+    const menuButtonStyle = `
+        display: block;
+        width: 280px;
+        margin: 10px auto;
+        padding: 12px 20px;
+        background: transparent;
+        border: 2px solid #0f0;
+        color: #0f0;
+        font-family: 'VT323', monospace;
+        font-size: 18px;
+        cursor: pointer;
+        text-shadow: 0 0 5px #0f0;
+        box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        transition: all 0.2s;
+    `;
+
+    const secondaryButtonStyle = `
+        display: block;
+        width: 280px;
+        margin: 10px auto;
+        padding: 10px 20px;
+        background: transparent;
+        border: 1px solid #0a0;
+        color: #0a0;
+        font-family: 'VT323', monospace;
+        font-size: 14px;
+        cursor: pointer;
+        text-shadow: 0 0 3px #0a0;
+        transition: all 0.2s;
+    `;
+
+    // Update existing start button
+    const startBtn = document.getElementById('start-btn');
+    startBtn.style.cssText = menuButtonStyle;
+    startBtn.textContent = 'NEW GAME';
+
     // Create additional buttons if save exists
     if (saveInfo) {
-        // Check if resume button already exists
         if (!document.getElementById('resume-btn')) {
             const resumeBtn = document.createElement('button');
             resumeBtn.id = 'resume-btn';
-            resumeBtn.className = 'start-btn';
-            resumeBtn.innerHTML = `RESUME (Day ${saveInfo.currentDay} - ${saveInfo.progress}%)`;
-            resumeBtn.style.marginTop = '10px';
+            resumeBtn.className = 'btn';
+            resumeBtn.innerHTML = `CONTINUE (Day ${saveInfo.currentDay} - ${saveInfo.progress}%)`;
+            resumeBtn.style.cssText = menuButtonStyle;
 
             // Insert before start button
-            const startBtn = document.getElementById('start-btn');
             startBtnContainer.insertBefore(resumeBtn, startBtn);
-
-            // Change start button text
-            startBtn.textContent = 'NEW GAME';
 
             resumeBtn.addEventListener('click', () => {
                 playClick();
-                resumeGame();
+                fadeToBlackThen(() => resumeGame());
             });
         }
     }
 
-    // Add demo mode and day code buttons if they don't exist
+    // Add demo mode button
     if (!document.getElementById('demo-btn')) {
         const demoBtn = document.createElement('button');
         demoBtn.id = 'demo-btn';
-        demoBtn.className = 'start-btn secondary';
+        demoBtn.className = 'btn';
         demoBtn.textContent = 'DEMO MODE';
-        demoBtn.style.marginTop = '10px';
-        demoBtn.style.fontSize = '14px';
-        demoBtn.style.opacity = '0.7';
+        demoBtn.style.cssText = secondaryButtonStyle;
         startBtnContainer.appendChild(demoBtn);
 
         demoBtn.addEventListener('click', () => {
             playClick();
             applyDayCode('DEMO-000');
-            showView('boot-view');
-            runBootSequence();
+            gameState.playerName = 'RESEARCHER';
+            // Demo mode skips boot, goes straight to starmap
+            fadeToBlackThen(() => {
+                loadDemoMode();
+            }, true);
         });
     }
 
+    // Add security access button (day codes)
     if (!document.getElementById('daycode-btn')) {
         const dayCodeBtn = document.createElement('button');
         dayCodeBtn.id = 'daycode-btn';
-        dayCodeBtn.className = 'start-btn secondary';
-        dayCodeBtn.textContent = 'ENTER DAY CODE';
-        dayCodeBtn.style.marginTop = '10px';
-        dayCodeBtn.style.fontSize = '14px';
-        dayCodeBtn.style.opacity = '0.7';
+        dayCodeBtn.className = 'btn';
+        dayCodeBtn.textContent = 'SECURITY ACCESS';
+        dayCodeBtn.style.cssText = secondaryButtonStyle;
         startBtnContainer.appendChild(dayCodeBtn);
 
         dayCodeBtn.addEventListener('click', () => {
             playClick();
-            showDayCodeInput();
+            showSecurityLogin();
         });
     }
+}
+
+// Fade to black transition
+function fadeToBlackThen(callback, stayBlack = false) {
+    const overlay = document.createElement('div');
+    overlay.id = 'fade-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        opacity: 0;
+        z-index: 9999;
+        transition: opacity 0.5s ease-in;
+    `;
+    document.body.appendChild(overlay);
+
+    // Trigger fade
+    requestAnimationFrame(() => {
+        overlay.style.opacity = '1';
+    });
+
+    // Execute callback after fade
+    setTimeout(() => {
+        callback();
+        // Fade back in (unless stayBlack)
+        if (!stayBlack) {
+            setTimeout(() => {
+                overlay.style.opacity = '0';
+                setTimeout(() => overlay.remove(), 500);
+            }, 100);
+        } else {
+            overlay.remove();
+        }
+    }, 500);
+}
+
+// Show the initialize system screen (black screen with button)
+function showInitializeScreen() {
+    // Hide start view
+    showView('boot-view');
+
+    // Clear boot output and hide name input
+    document.getElementById('boot-output').innerHTML = '';
+    document.getElementById('name-input-container').style.display = 'none';
+    document.getElementById('proceed-btn').style.display = 'none';
+
+    // Create initialize button container
+    const initContainer = document.createElement('div');
+    initContainer.id = 'init-screen';
+    initContainer.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        min-height: 400px;
+    `;
+
+    initContainer.innerHTML = `
+        <button id="initialize-btn" style="
+            background: transparent;
+            border: 2px solid #0f0;
+            color: #0f0;
+            font-family: 'VT323', monospace;
+            font-size: 24px;
+            padding: 20px 50px;
+            cursor: pointer;
+            text-shadow: 0 0 10px #0f0;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            animation: pulse-glow 2s ease-in-out infinite;
+        ">
+            INITIALIZE SYSTEM
+        </button>
+        <style>
+            @keyframes pulse-glow {
+                0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 0, 0.3); }
+                50% { box-shadow: 0 0 40px rgba(0, 255, 0, 0.6); }
+            }
+        </style>
+    `;
+
+    document.getElementById('boot-output').appendChild(initContainer);
+
+    // Add click handler
+    document.getElementById('initialize-btn').addEventListener('click', () => {
+        playClick();
+        initContainer.remove();
+        runBootSequence();
+    });
 }
 
 // Resume from saved game
@@ -230,18 +353,71 @@ function resumeGame() {
     log(`Resuming Day ${gameState.currentDay} operations...`, 'info');
 }
 
-// Show day code input modal
-function showDayCodeInput() {
+// Load a day directly (from day code) - skips boot, shows loading bar
+function loadDayWithProgress() {
+    // Mark previous days' stars as analyzed (they would have been scanned)
+    markPreviousDaysAsScanned();
+
+    // Update star catalog display
+    updateStarCatalogDisplay();
+
+    // Go directly to starmap with loading sequence
+    showView('starmap-view');
+    document.getElementById('mailbox-btn').style.display = 'block';
+
+    // Initialize starmap with loading bar
+    initializeStarmapSequence();
+
+    // Log appropriate message based on day
+    const dayConfig = getCurrentDayConfig();
+    log(`Security clearance verified - ${gameState.playerName}`, 'highlight');
+    log(`${dayConfig.title}`, 'info');
+}
+
+// Mark all stars from previous days as analyzed
+function markPreviousDaysAsScanned() {
+    // Get all stars from days before the current day
+    for (let day = 1; day < gameState.currentDay; day++) {
+        const dayConfig = DAY_CONFIG[day];
+        if (dayConfig && dayConfig.availableStars) {
+            dayConfig.availableStars.forEach(starIndex => {
+                gameState.analyzedStars.add(starIndex);
+            });
+        }
+    }
+
+    console.log(`SIGNAL: Marked ${gameState.analyzedStars.size} stars as analyzed from previous days`);
+}
+
+// Load demo mode - all content unlocked, no boot sequence
+function loadDemoMode() {
+    // Update star catalog display (shows all stars)
+    updateStarCatalogDisplay();
+
+    // Go directly to starmap
+    showView('starmap-view');
+    document.getElementById('mailbox-btn').style.display = 'block';
+
+    // Initialize starmap with loading bar
+    initializeStarmapSequence();
+
+    // Log demo mode message
+    log('DEMO MODE ACTIVE', 'highlight');
+    log('All star systems unlocked - explore freely', 'info');
+}
+
+// Show security login modal (high security access)
+function showSecurityLogin() {
     // Create modal overlay
     const modal = document.createElement('div');
-    modal.id = 'daycode-modal';
+    modal.id = 'security-modal';
     modal.style.cssText = `
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.95);
+        background: rgba(0, 0, 0, 0.98);
         display: flex;
         justify-content: center;
         align-items: center;
@@ -250,78 +426,207 @@ function showDayCodeInput() {
 
     modal.innerHTML = `
         <div style="
-            background: #001100;
-            border: 2px solid #0f0;
-            padding: 30px;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+            background: #000;
+            border: 3px solid #f00;
+            padding: 0;
+            width: 420px;
+            box-shadow: 0 0 50px rgba(255, 0, 0, 0.3), inset 0 0 30px rgba(255, 0, 0, 0.1);
         ">
-            <h2 style="color: #0f0; margin-bottom: 20px; text-shadow: 0 0 10px #0f0;">
-                ENTER DAY CODE
-            </h2>
-            <input type="text" id="daycode-input"
-                placeholder="XXXXX-###"
-                style="
-                    background: #000;
-                    border: 1px solid #0f0;
-                    color: #0f0;
-                    padding: 10px 15px;
-                    font-family: 'VT323', monospace;
-                    font-size: 20px;
-                    text-align: center;
-                    width: 200px;
-                    text-transform: uppercase;
-                "
-            />
-            <div id="daycode-error" style="color: #f00; margin-top: 10px; min-height: 20px;"></div>
-            <div style="margin-top: 20px;">
-                <button id="daycode-submit" class="start-btn" style="margin-right: 10px;">
-                    APPLY
-                </button>
-                <button id="daycode-cancel" class="start-btn" style="opacity: 0.7;">
-                    CANCEL
-                </button>
+            <!-- Header -->
+            <div style="
+                background: linear-gradient(180deg, #300 0%, #100 100%);
+                border-bottom: 2px solid #f00;
+                padding: 15px;
+                text-align: center;
+            ">
+                <div style="color: #f00; font-size: 12px; letter-spacing: 3px; margin-bottom: 5px;">
+                    ◆ RESTRICTED ACCESS ◆
+                </div>
+                <div style="color: #ff0; font-size: 22px; text-shadow: 0 0 10px #ff0; letter-spacing: 2px;">
+                    SECURITY CLEARANCE REQUIRED
+                </div>
             </div>
-            <div style="margin-top: 20px; color: #0a0; font-size: 12px;">
-                Valid codes: ALPHA-001, SIGMA-042, OMEGA-137, FINAL-999, DEMO-000
+
+            <!-- Form -->
+            <div style="padding: 25px;">
+                <!-- Warning -->
+                <div style="
+                    background: rgba(255, 0, 0, 0.1);
+                    border: 1px solid #f00;
+                    padding: 10px;
+                    margin-bottom: 20px;
+                    text-align: center;
+                ">
+                    <div style="color: #f00; font-size: 11px;">
+                        ⚠ UNAUTHORIZED ACCESS IS A FEDERAL OFFENSE ⚠
+                    </div>
+                </div>
+
+                <!-- Name field -->
+                <div style="margin-bottom: 15px;">
+                    <label style="color: #0f0; font-size: 12px; display: block; margin-bottom: 5px;">
+                        OPERATOR ID:
+                    </label>
+                    <input type="text" id="security-name"
+                        placeholder="Enter designation..."
+                        maxlength="20"
+                        style="
+                            background: #001100;
+                            border: 1px solid #0a0;
+                            color: #0f0;
+                            padding: 10px 15px;
+                            font-family: 'VT323', monospace;
+                            font-size: 18px;
+                            width: 100%;
+                            box-sizing: border-box;
+                        "
+                    />
+                </div>
+
+                <!-- Password field -->
+                <div style="margin-bottom: 15px;">
+                    <label style="color: #0f0; font-size: 12px; display: block; margin-bottom: 5px;">
+                        ACCESS CODE:
+                    </label>
+                    <input type="text" id="security-code"
+                        placeholder="XXXXX-###"
+                        style="
+                            background: #001100;
+                            border: 1px solid #0a0;
+                            color: #0f0;
+                            padding: 10px 15px;
+                            font-family: 'VT323', monospace;
+                            font-size: 18px;
+                            width: 100%;
+                            box-sizing: border-box;
+                            text-transform: uppercase;
+                        "
+                    />
+                </div>
+
+                <!-- Error message -->
+                <div id="security-error" style="
+                    color: #f00;
+                    text-align: center;
+                    min-height: 20px;
+                    margin-bottom: 15px;
+                    text-shadow: 0 0 5px #f00;
+                "></div>
+
+                <!-- Buttons -->
+                <div style="display: flex; gap: 10px;">
+                    <button id="security-submit" style="
+                        flex: 1;
+                        background: transparent;
+                        border: 2px solid #0f0;
+                        color: #0f0;
+                        padding: 12px;
+                        font-family: 'VT323', monospace;
+                        font-size: 16px;
+                        cursor: pointer;
+                        text-shadow: 0 0 5px #0f0;
+                    ">
+                        AUTHENTICATE
+                    </button>
+                    <button id="security-cancel" style="
+                        flex: 1;
+                        background: transparent;
+                        border: 1px solid #666;
+                        color: #666;
+                        padding: 12px;
+                        font-family: 'VT323', monospace;
+                        font-size: 16px;
+                        cursor: pointer;
+                    ">
+                        ABORT
+                    </button>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="
+                border-top: 1px solid #333;
+                padding: 10px;
+                text-align: center;
+                background: rgba(0, 0, 0, 0.5);
+            ">
+                <div style="color: #444; font-size: 10px;">
+                    Access codes issued at end of each operational day
+                </div>
             </div>
         </div>
     `;
 
     document.body.appendChild(modal);
 
-    const input = document.getElementById('daycode-input');
-    const errorDiv = document.getElementById('daycode-error');
-    const submitBtn = document.getElementById('daycode-submit');
-    const cancelBtn = document.getElementById('daycode-cancel');
+    const nameInput = document.getElementById('security-name');
+    const codeInput = document.getElementById('security-code');
+    const errorDiv = document.getElementById('security-error');
+    const submitBtn = document.getElementById('security-submit');
+    const cancelBtn = document.getElementById('security-cancel');
 
-    input.focus();
+    nameInput.focus();
 
-    submitBtn.addEventListener('click', () => {
-        const code = input.value.trim();
+    function attemptLogin() {
+        const name = nameInput.value.trim();
+        const code = codeInput.value.trim();
+
+        if (!name) {
+            errorDiv.textContent = 'ERROR: OPERATOR ID REQUIRED';
+            nameInput.focus();
+            return;
+        }
+
+        if (!code) {
+            errorDiv.textContent = 'ERROR: ACCESS CODE REQUIRED';
+            codeInput.focus();
+            return;
+        }
+
         if (isValidDayCode(code)) {
             playClick();
+            // Set the player name from the login
+            gameState.playerName = name;
             const result = applyDayCode(code);
             if (result.success) {
                 modal.remove();
-                showView('boot-view');
-                runBootSequence();
+                // Skip boot sequence, go directly to starmap with loading bar
+                fadeToBlackThen(() => {
+                    loadDayWithProgress();
+                }, true);
             }
         } else {
-            errorDiv.textContent = 'INVALID CODE';
+            errorDiv.textContent = 'ACCESS DENIED: INVALID CREDENTIALS';
             playClick();
         }
-    });
+    }
+
+    submitBtn.addEventListener('click', attemptLogin);
 
     cancelBtn.addEventListener('click', () => {
         playClick();
         modal.remove();
     });
 
-    input.addEventListener('keypress', (e) => {
+    // Typing sounds for inputs
+    nameInput.addEventListener('input', () => {
+        playTypingSound();
+    });
+
+    codeInput.addEventListener('input', () => {
+        playTypingSound();
+    });
+
+    // Tab between fields, Enter to submit
+    nameInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
-            submitBtn.click();
+            codeInput.focus();
+        }
+    });
+
+    codeInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            attemptLogin();
         }
     });
 
@@ -345,38 +650,14 @@ export function setupBootSequence() {
         deleteSave();
         gameState.currentDay = 1;
         gameState.demoMode = false;
-        showView('boot-view');
-        runBootSequence();
+        // Fade to black, then show initialize button
+        fadeToBlackThen(() => {
+            showInitializeScreen();
+        }, true); // stayBlack = true, we handle the view ourselves
     });
 
-    // Resume button (if exists)
-    const resumeBtn = document.getElementById('resume-btn');
-    if (resumeBtn) {
-        resumeBtn.addEventListener('click', () => {
-            playClick();
-            resumeGame();
-        });
-    }
-
-    // Demo button (if exists)
-    const demoBtn = document.getElementById('demo-btn');
-    if (demoBtn) {
-        demoBtn.addEventListener('click', () => {
-            playClick();
-            applyDayCode('DEMO-000');
-            showView('boot-view');
-            runBootSequence();
-        });
-    }
-
-    // Day code button (if exists)
-    const dayCodeBtn = document.getElementById('daycode-btn');
-    if (dayCodeBtn) {
-        dayCodeBtn.addEventListener('click', () => {
-            playClick();
-            showDayCodeInput();
-        });
-    }
+    // Note: Resume, Demo, and Security Access buttons are created dynamically
+    // in updateStartScreen() with their own event listeners attached
 
     // Name input submit
     document.getElementById('name-submit-btn').addEventListener('click', () => {

@@ -763,9 +763,14 @@ function displayContactMessage(messageData) {
     }
 
     function displayImageData(messageData) {
+        // Wrapper to center the image box
+        const imageWrapper = document.createElement('div');
+        imageWrapper.style.cssText = 'text-align: center; margin: 20px 0;';
+        messageDisplay.appendChild(imageWrapper);
+
         const imageBox = document.createElement('div');
-        imageBox.style.cssText = 'border: 2px solid #0ff; background: rgba(0, 255, 255, 0.05); padding: 20px; margin: 20px 0; text-align: center;';
-        messageDisplay.appendChild(imageBox);
+        imageBox.style.cssText = 'border: 2px solid #0ff; background: rgba(0, 255, 255, 0.05); padding: 10px; display: inline-block; text-align: left; overflow-x: auto; max-width: 100%;';
+        imageWrapper.appendChild(imageBox);
 
         let lineIndex = 0;
         function displayNextImageLine() {
@@ -773,13 +778,13 @@ function displayContactMessage(messageData) {
                 const imageLine = document.createElement('div');
                 imageLine.className = 'message-line';
                 imageLine.textContent = messageData.imageData[lineIndex];
-                imageLine.style.cssText = 'color: #0ff; text-shadow: 0 0 5px #0ff; animation: fadeIn 0.2s forwards; margin: 0; line-height: 1.2;';
+                imageLine.style.cssText = 'color: #0ff; text-shadow: 0 0 3px #0ff; animation: fadeIn 0.2s forwards; margin: 0; line-height: 1.0; font-size: 10px; white-space: pre; font-family: "Courier New", monospace;';
                 imageBox.appendChild(imageLine);
 
                 messageDisplay.scrollTop = messageDisplay.scrollHeight;
 
                 lineIndex++;
-                setTimeout(displayNextImageLine, 150);
+                setTimeout(displayNextImageLine, 50);
             } else {
                 setTimeout(() => {
                     displayMessages(messageData.afterImage);
