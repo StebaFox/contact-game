@@ -49,6 +49,28 @@ export const gameState = {
     // Player info
     playerName: '',
 
+    // Day system (3-day narrative)
+    currentDay: 1,
+    daysCompleted: [],
+    demoMode: false, // When true, all content is unlocked
+
+    // Fragment collection for final puzzle
+    fragments: {
+        collected: [],
+        sources: {
+            ross128: null,
+            gliese832: null,
+            hd219134: null,
+            cmbSource: null
+        }
+    },
+
+    // Progress flags
+    tutorialCompleted: false,
+    decryptionComplete: false,
+    cmbDetected: false,
+    finalPuzzleComplete: false,
+
     // Mailbox
     mailboxMessages: [],
     unreadMailCount: 0,
@@ -112,6 +134,28 @@ export function resetGameState() {
 
     // Reset player info
     gameState.playerName = '';
+
+    // Reset day system
+    gameState.currentDay = 1;
+    gameState.daysCompleted = [];
+    gameState.demoMode = false;
+
+    // Reset fragments
+    gameState.fragments = {
+        collected: [],
+        sources: {
+            ross128: null,
+            gliese832: null,
+            hd219134: null,
+            cmbSource: null
+        }
+    };
+
+    // Reset progress flags
+    gameState.tutorialCompleted = false;
+    gameState.decryptionComplete = false;
+    gameState.cmbDetected = false;
+    gameState.finalPuzzleComplete = false;
 
     // Reset mailbox
     gameState.mailboxMessages = [];

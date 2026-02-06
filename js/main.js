@@ -7,6 +7,24 @@
 import { gameState } from './core/game-state.js';
 import { initDevMode, setDevFunctions, showDevPanel } from './core/dev-mode.js';
 import { checkForEndState, showFinalReport, submitReport, restartGame } from './core/end-game.js';
+import {
+    autoSave,
+    loadSave,
+    applySaveData,
+    hasSaveFile,
+    deleteSave,
+    applyDayCode,
+    getSaveInfo
+} from './core/save-system.js';
+import {
+    initDaySystem,
+    canAccessStar,
+    isStarLocked,
+    getDayProgress,
+    getCurrentDayConfig,
+    advanceDay,
+    checkDayComplete
+} from './core/day-system.js';
 
 // UI
 import { showView, log, clearCanvas, updateClock } from './ui/rendering.js';
@@ -255,6 +273,16 @@ function initGame() {
     loadColorScheme();
     loadLayoutMode();
 
+    // Initialize day system
+    initDaySystem();
+
+    // Check for existing save
+    const saveExists = hasSaveFile();
+    if (saveExists) {
+        const saveInfo = getSaveInfo();
+        console.log('SIGNAL: Save file found -', saveInfo?.playerName, 'Day', saveInfo?.currentDay);
+    }
+
     // Setup module connections
     setupModuleConnections();
 
@@ -279,11 +307,35 @@ function initGame() {
     // Start mail check
     setInterval(checkForNewMail, 30000);
 
+    // Auto-save every 2 minutes as backup
+    setInterval(() => {
+        if (gameState.playerName) { // Only save if game has started
+            autoSave();
+        }
+    }, 120000);
+
     // Initialize dev mode
     initDevMode();
 
     console.log('SIGNAL: Game initialized successfully');
 }
+
+// Export save functions for use in other modules
+export {
+    autoSave,
+    loadSave,
+    applySaveData,
+    hasSaveFile,
+    deleteSave,
+    applyDayCode,
+    getSaveInfo,
+    canAccessStar,
+    isStarLocked,
+    getDayProgress,
+    getCurrentDayConfig,
+    advanceDay,
+    checkDayComplete
+};
 
 // Start the game when DOM is ready
 if (document.readyState === 'loading') {

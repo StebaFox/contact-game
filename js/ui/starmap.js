@@ -9,6 +9,7 @@ import { playClick, playSelectStar, playStaticBurst, playScanAcknowledge, stopNa
 import { STAR_NAMES, STAR_TYPES, DISCOVERY_DATES, STAR_COORDINATES, STAR_DISTANCES, WEAK_SIGNAL_START_INDEX } from '../narrative/stars.js';
 import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
 import { checkForEndState } from '../core/end-game.js';
+import { isStarLocked, getStarDayRequirement } from '../core/day-system.js';
 
 // External function references (set by main.js to avoid circular deps)
 let setArrayTargetFn = null;
@@ -126,6 +127,45 @@ export function generateStarCatalog() {
     });
 
     log(`Stellar catalog loaded: ${STAR_NAMES.length} targets available`);
+
+    // Update display for locked stars
+    updateStarCatalogDisplay();
+}
+
+// Update star catalog display based on current day/locked status
+export function updateStarCatalogDisplay() {
+    const starItems = document.querySelectorAll('.star-item');
+
+    starItems.forEach(item => {
+        const starId = parseInt(item.dataset.starId);
+        const locked = isStarLocked(starId);
+        const requiredDay = getStarDayRequirement(starId);
+
+        if (locked) {
+            item.classList.add('star-locked');
+            item.style.opacity = '0.4';
+            item.style.pointerEvents = 'none';
+
+            // Add lock indicator if not already present
+            if (!item.querySelector('.lock-indicator')) {
+                const lockIndicator = document.createElement('div');
+                lockIndicator.className = 'lock-indicator';
+                lockIndicator.style.cssText = 'color: #666; font-size: 10px; margin-top: 4px;';
+                lockIndicator.textContent = `[DAY ${requiredDay}]`;
+                item.appendChild(lockIndicator);
+            }
+        } else {
+            item.classList.remove('star-locked');
+            item.style.opacity = '1';
+            item.style.pointerEvents = 'auto';
+
+            // Remove lock indicator if present
+            const lockIndicator = item.querySelector('.lock-indicator');
+            if (lockIndicator) {
+                lockIndicator.remove();
+            }
+        }
+    });
 }
 
 // Draw star visualization
@@ -249,6 +289,14 @@ export function clearStarVisualization() {
 
 // Star selection
 export function selectStar(starId) {
+    // Check if star is locked
+    if (isStarLocked(starId)) {
+        const requiredDay = getStarDayRequirement(starId);
+        log(`Target locked - requires Day ${requiredDay} clearance`, 'error');
+        playClick();
+        return;
+    }
+
     const star = gameState.stars[starId];
     gameState.currentStar = star;
     gameState.selectedStarId = starId;
@@ -470,13 +518,19 @@ export function renderStarMap() {
         const isSelected = gameState.selectedStarId === star.id;
         const isContacted = gameState.contactedStars.has(star.id);
         const isAnalyzed = gameState.analyzedStars.has(star.id);
+        const isLocked = isStarLocked(star.id);
 
         // Apply parallax effect (target stars move less - they're closer)
         const parallaxX = star.x + gameState.parallaxOffsetX * 0.3;
         const parallaxY = star.y + gameState.parallaxOffsetY * 0.3;
 
         // Star color based on status
-        if (isContacted) {
+        if (isLocked) {
+            // Locked stars are dim and grayed out
+            ctx.fillStyle = '#333';
+            ctx.shadowColor = '#333';
+            ctx.globalAlpha = 0.5;
+        } else if (isContacted) {
             ctx.fillStyle = '#f0f';
             ctx.shadowColor = '#f0f';
         } else if (isAnalyzed) {
@@ -487,19 +541,22 @@ export function renderStarMap() {
             ctx.shadowColor = '#fff';
         }
 
-        ctx.shadowBlur = isSelected ? 15 : 10;
+        ctx.shadowBlur = isSelected && !isLocked ? 15 : (isLocked ? 0 : 10);
 
         // Draw star (pixel art style)
-        const size = isSelected ? 5 : 3;
+        const size = isSelected && !isLocked ? 5 : 3;
         ctx.fillRect(parallaxX - size / 2, parallaxY - size / 2, size, size);
 
-        // Draw cross pattern
-        ctx.fillRect(parallaxX - size - 2, parallaxY - 1, 2, 2);
-        ctx.fillRect(parallaxX + size, parallaxY - 1, 2, 2);
-        ctx.fillRect(parallaxX - 1, parallaxY - size - 2, 2, 2);
-        ctx.fillRect(parallaxX - 1, parallaxY + size, 2, 2);
+        // Draw cross pattern (not for locked stars)
+        if (!isLocked) {
+            ctx.fillRect(parallaxX - size - 2, parallaxY - 1, 2, 2);
+            ctx.fillRect(parallaxX + size, parallaxY - 1, 2, 2);
+            ctx.fillRect(parallaxX - 1, parallaxY - size - 2, 2, 2);
+            ctx.fillRect(parallaxX - 1, parallaxY + size, 2, 2);
+        }
 
         ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
     });
 
     // Draw rotating crosshair on selected star

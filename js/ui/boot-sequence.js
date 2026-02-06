@@ -9,6 +9,18 @@ import { playClick, playTypingBeep } from '../systems/audio.js';
 import { BOOT_INITIAL, BOOT_CONTINUATION } from '../narrative/boot-messages.js';
 import { WELCOME_EMAIL } from '../narrative/emails.js';
 import { addMailMessage } from '../systems/mailbox.js';
+import {
+    hasSaveFile,
+    loadSave,
+    applySaveData,
+    deleteSave,
+    applyDayCode,
+    isValidDayCode,
+    getSaveInfo,
+    autoSave
+} from '../core/save-system.js';
+import { getCurrentDayConfig, getDayBootMessages } from '../core/day-system.js';
+import { updateStarCatalogDisplay } from './starmap.js';
 
 // External function references (set by main.js to avoid circular deps)
 let renderStarMapFn = null;
@@ -93,6 +105,25 @@ function continueBootSequence(playerName) {
             await typeBootLine(line.text, line.class, line.delay, line.beep);
         }
 
+        // Add day-specific boot messages
+        const dayMessages = getDayBootMessages();
+        if (dayMessages.length > 0) {
+            await typeBootLine('', '', 200); // Small gap
+            for (const msg of dayMessages) {
+                await typeBootLine(msg, 'highlight', 150);
+            }
+        }
+
+        // Show day indicator if not demo mode
+        if (!gameState.demoMode && gameState.currentDay > 0) {
+            const dayConfig = getCurrentDayConfig();
+            await typeBootLine('', '', 200);
+            await typeBootLine(`═══ ${dayConfig.title} ═══`, 'highlight', 200);
+        }
+
+        // Save the game state after name entry
+        autoSave();
+
         // Show proceed button instead of auto-transitioning
         setTimeout(() => {
             const proceedBtn = document.getElementById('proceed-btn');
@@ -102,14 +133,250 @@ function continueBootSequence(playerName) {
     })();
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Save/Resume System
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Update start screen based on save file existence
+function updateStartScreen() {
+    const saveInfo = getSaveInfo();
+    const startBtnContainer = document.querySelector('.start-btn-container') ||
+                              document.getElementById('start-btn')?.parentElement;
+
+    if (!startBtnContainer) return;
+
+    // Create additional buttons if save exists
+    if (saveInfo) {
+        // Check if resume button already exists
+        if (!document.getElementById('resume-btn')) {
+            const resumeBtn = document.createElement('button');
+            resumeBtn.id = 'resume-btn';
+            resumeBtn.className = 'start-btn';
+            resumeBtn.innerHTML = `RESUME (Day ${saveInfo.currentDay} - ${saveInfo.progress}%)`;
+            resumeBtn.style.marginTop = '10px';
+
+            // Insert before start button
+            const startBtn = document.getElementById('start-btn');
+            startBtnContainer.insertBefore(resumeBtn, startBtn);
+
+            // Change start button text
+            startBtn.textContent = 'NEW GAME';
+
+            resumeBtn.addEventListener('click', () => {
+                playClick();
+                resumeGame();
+            });
+        }
+    }
+
+    // Add demo mode and day code buttons if they don't exist
+    if (!document.getElementById('demo-btn')) {
+        const demoBtn = document.createElement('button');
+        demoBtn.id = 'demo-btn';
+        demoBtn.className = 'start-btn secondary';
+        demoBtn.textContent = 'DEMO MODE';
+        demoBtn.style.marginTop = '10px';
+        demoBtn.style.fontSize = '14px';
+        demoBtn.style.opacity = '0.7';
+        startBtnContainer.appendChild(demoBtn);
+
+        demoBtn.addEventListener('click', () => {
+            playClick();
+            applyDayCode('DEMO-000');
+            showView('boot-view');
+            runBootSequence();
+        });
+    }
+
+    if (!document.getElementById('daycode-btn')) {
+        const dayCodeBtn = document.createElement('button');
+        dayCodeBtn.id = 'daycode-btn';
+        dayCodeBtn.className = 'start-btn secondary';
+        dayCodeBtn.textContent = 'ENTER DAY CODE';
+        dayCodeBtn.style.marginTop = '10px';
+        dayCodeBtn.style.fontSize = '14px';
+        dayCodeBtn.style.opacity = '0.7';
+        startBtnContainer.appendChild(dayCodeBtn);
+
+        dayCodeBtn.addEventListener('click', () => {
+            playClick();
+            showDayCodeInput();
+        });
+    }
+}
+
+// Resume from saved game
+function resumeGame() {
+    const saveData = loadSave();
+    if (!saveData) {
+        console.error('SIGNAL: No save data found');
+        return;
+    }
+
+    // Apply saved state
+    applySaveData(saveData);
+
+    // Update star catalog display for locked stars
+    updateStarCatalogDisplay();
+
+    // Skip boot sequence, go directly to starmap
+    showView('starmap-view');
+    document.getElementById('mailbox-btn').style.display = 'block';
+
+    // Initialize starmap
+    initializeStarmapSequence();
+
+    log(`Welcome back, Dr. ${gameState.playerName}`, 'highlight');
+    log(`Resuming Day ${gameState.currentDay} operations...`, 'info');
+}
+
+// Show day code input modal
+function showDayCodeInput() {
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.id = 'daycode-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.95);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+    `;
+
+    modal.innerHTML = `
+        <div style="
+            background: #001100;
+            border: 2px solid #0f0;
+            padding: 30px;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+        ">
+            <h2 style="color: #0f0; margin-bottom: 20px; text-shadow: 0 0 10px #0f0;">
+                ENTER DAY CODE
+            </h2>
+            <input type="text" id="daycode-input"
+                placeholder="XXXXX-###"
+                style="
+                    background: #000;
+                    border: 1px solid #0f0;
+                    color: #0f0;
+                    padding: 10px 15px;
+                    font-family: 'VT323', monospace;
+                    font-size: 20px;
+                    text-align: center;
+                    width: 200px;
+                    text-transform: uppercase;
+                "
+            />
+            <div id="daycode-error" style="color: #f00; margin-top: 10px; min-height: 20px;"></div>
+            <div style="margin-top: 20px;">
+                <button id="daycode-submit" class="start-btn" style="margin-right: 10px;">
+                    APPLY
+                </button>
+                <button id="daycode-cancel" class="start-btn" style="opacity: 0.7;">
+                    CANCEL
+                </button>
+            </div>
+            <div style="margin-top: 20px; color: #0a0; font-size: 12px;">
+                Valid codes: ALPHA-001, SIGMA-042, OMEGA-137, FINAL-999, DEMO-000
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const input = document.getElementById('daycode-input');
+    const errorDiv = document.getElementById('daycode-error');
+    const submitBtn = document.getElementById('daycode-submit');
+    const cancelBtn = document.getElementById('daycode-cancel');
+
+    input.focus();
+
+    submitBtn.addEventListener('click', () => {
+        const code = input.value.trim();
+        if (isValidDayCode(code)) {
+            playClick();
+            const result = applyDayCode(code);
+            if (result.success) {
+                modal.remove();
+                showView('boot-view');
+                runBootSequence();
+            }
+        } else {
+            errorDiv.textContent = 'INVALID CODE';
+            playClick();
+        }
+    });
+
+    cancelBtn.addEventListener('click', () => {
+        playClick();
+        modal.remove();
+    });
+
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            submitBtn.click();
+        }
+    });
+
+    // Close on escape
+    modal.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            modal.remove();
+        }
+    });
+}
+
 // Setup boot sequence event listeners
 export function setupBootSequence() {
-    // Start button
+    // Check for save file and update start screen
+    updateStartScreen();
+
+    // Start button (new game)
     document.getElementById('start-btn').addEventListener('click', () => {
         playClick();
+        // Delete any existing save for fresh start
+        deleteSave();
+        gameState.currentDay = 1;
+        gameState.demoMode = false;
         showView('boot-view');
         runBootSequence();
     });
+
+    // Resume button (if exists)
+    const resumeBtn = document.getElementById('resume-btn');
+    if (resumeBtn) {
+        resumeBtn.addEventListener('click', () => {
+            playClick();
+            resumeGame();
+        });
+    }
+
+    // Demo button (if exists)
+    const demoBtn = document.getElementById('demo-btn');
+    if (demoBtn) {
+        demoBtn.addEventListener('click', () => {
+            playClick();
+            applyDayCode('DEMO-000');
+            showView('boot-view');
+            runBootSequence();
+        });
+    }
+
+    // Day code button (if exists)
+    const dayCodeBtn = document.getElementById('daycode-btn');
+    if (dayCodeBtn) {
+        dayCodeBtn.addEventListener('click', () => {
+            playClick();
+            showDayCodeInput();
+        });
+    }
 
     // Name input submit
     document.getElementById('name-submit-btn').addEventListener('click', () => {

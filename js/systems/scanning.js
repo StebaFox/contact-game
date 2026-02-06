@@ -4,6 +4,7 @@
 // ═════════════════════════════════════════════════════════════════════════════
 
 import { gameState } from '../core/game-state.js';
+import { autoSave } from '../core/save-system.js';
 import { showView, log, typeAnalysisText } from '../ui/rendering.js';
 import { playClick, playAnalysisSound, playContactSound, playSecurityBeep, playTypingBeep, stopNaturalPhenomenaSound, stopAlienSignalSound, switchToBackgroundMusic } from './audio.js';
 import { startTuningMinigame } from './tuning-minigame.js';
@@ -542,6 +543,9 @@ function showFalsePositiveResult(star, cause, display) {
         source: cause.source
     });
 
+    // Auto-save after scan result
+    autoSave();
+
     const resultDiv = document.createElement('div');
     resultDiv.style.cssText = 'margin-top: 20px; padding: 15px; border: 2px solid #f00; background: rgba(255, 0, 0, 0.1);';
 
@@ -582,6 +586,9 @@ function showVerifiedSignalResult(star, display) {
     gameState.scanResults.set(star.id, {
         type: 'verified_signal'
     });
+
+    // Auto-save after scan result
+    autoSave();
 
     const resultDiv = document.createElement('div');
     resultDiv.style.cssText = 'margin-top: 20px; padding: 15px; border: 2px solid #f0f; background: rgba(255, 0, 255, 0.1);';
@@ -657,6 +664,9 @@ function initiateContact(star) {
 
     gameState.contactedStars.add(star.id);
     updateStarStatus(star.id, 'contact');
+
+    // Auto-save after contact
+    autoSave();
 
     if (isFirstContact) {
         setTimeout(() => {
