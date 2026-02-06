@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLANETARY DEFENSE SYSTEM</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            image-rendering: pixelated;
+            touch-action: none;
+        }
+
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #header {
+            background: rgba(0, 20, 0, 0.9);
+            border-bottom: 2px solid #0f0;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #title {
+            font-size: 24px;
+            text-shadow: 0 0 10px #0f0;
+            letter-spacing: 3px;
+        }
+
+        #stats {
+            display: flex;
+            gap: 30px;
+            font-size: 14px;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            color: #0a0;
+            font-size: 10px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            text-shadow: 0 0 5px #0f0;
+        }
+
+        #sidebar {
+            position: absolute;
+            right: 0;
+            top: 60px;
+            width: 300px;
+            height: calc(100% - 60px);
+            background: rgba(0, 20, 0, 0.95);
+            border-left: 2px solid #0f0;
+            padding: 15px;
+            overflow-y: auto;
+            pointer-events: auto;
+            transition: transform 0.3s;
+        }
+
+        #sidebar.hidden {
+            transform: translateX(100%);
+        }
+
+        #sidebar h3 {
+            margin-bottom: 10px;
+            color: #0f0;
+            text-shadow: 0 0 10px #0f0;
+            border-bottom: 1px solid #0f0;
+            padding-bottom: 5px;
+        }
+
+        .asteroid-entry {
+            background: rgba(0, 50, 0, 0.3);
+            border: 1px solid #0a0;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .asteroid-entry:active {
+            background: rgba(0, 100, 0, 0.5);
+            border-color: #0f0;
+            box-shadow: 0 0 10px #0f0;
+        }
+
+        .asteroid-entry.threat {
+            border-color: #f00;
+            background: rgba(50, 0, 0, 0.3);
+        }
+
+        .asteroid-entry.threat:active {
+            background: rgba(100, 0, 0, 0.5);
+            box-shadow: 0 0 10px #f00;
+        }
+
+        .asteroid-entry.selected {
+            background: rgba(0, 100, 0, 0.5);
+            border-color: #0f0;
+            box-shadow: 0 0 10px #0f0;
+        }
+
+        .asteroid-entry.threat.selected {
+            background: rgba(100, 0, 0, 0.5);
+            border-color: #f00;
+            box-shadow: 0 0 10px #f00;
+        }
+
+        .asteroid-id {
+            color: #0ff;
+            font-weight: bold;
+        }
+
+        .threat-level {
+            color: #f00;
+            font-weight: bold;
+            text-shadow: 0 0 5px #f00;
+        }
+
+        .safe-level {
+            color: #0f0;
+        }
+
+        button {
+            background: rgba(0, 100, 0, 0.5);
+            border: 1px solid #0f0;
+            color: #0f0;
+            padding: 8px 12px;
+            margin-top: 5px;
+            margin-right: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            transition: all 0.2s;
+            pointer-events: auto;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button:active {
+            background: rgba(0, 150, 0, 0.7);
+            box-shadow: 0 0 10px #0f0;
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .danger-btn {
+            background: rgba(100, 0, 0, 0.5);
+            border-color: #f00;
+            color: #f00;
+        }
+
+        .danger-btn:active:not(:disabled) {
+            background: rgba(150, 0, 0, 0.7);
+            box-shadow: 0 0 10px #f00;
+        }
+
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #0f0;
+            padding: 20px 40px;
+            font-size: 20px;
+            text-align: center;
+            text-shadow: 0 0 10px #0f0;
+            display: none;
+            pointer-events: auto;
+            max-width: 90%;
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 20, 0, 0.9);
+            border: 1px solid #0f0;
+            padding: 15px;
+            font-size: 11px;
+            color: #0a0;
+        }
+
+        #toggleSidebar {
+            position: absolute;
+            top: 70px;
+            right: 10px;
+            background: rgba(0, 100, 0, 0.8);
+            border: 2px solid #0f0;
+            color: #0f0;
+            padding: 10px 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            pointer-events: auto;
+            z-index: 20;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #toggleSidebar:active {
+            background: rgba(0, 150, 0, 0.9);
+            box-shadow: 0 0 10px #0f0;
+        }
+
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                transparent 50%,
+                rgba(0, 255, 0, 0.03) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        @media (max-width: 768px) {
+            #title {
+                font-size: 14px;
+                letter-spacing: 1px;
+            }
+
+            #stats {
+                gap: 10px;
+                font-size: 11px;
+            }
+
+            .stat-label {
+                font-size: 8px;
+            }
+
+            .stat-value {
+                font-size: 14px;
+            }
+
+            #header {
+                padding: 8px 10px;
+            }
+
+            #sidebar {
+                width: 100%;
+                max-width: 300px;
+                top: 50px;
+                height: calc(100% - 50px);
+            }
+
+            #controls {
+                display: none;
+            }
+
+            #message {
+                font-size: 16px;
+                padding: 15px 20px;
+            }
+
+            #toggleSidebar {
+                top: 60px;
+                right: 5px;
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #title {
+                font-size: 11px;
+            }
+
+            #stats {
+                gap: 6px;
+                font-size: 10px;
+            }
+
+            .stat-label {
+                font-size: 7px;
+            }
+
+            .stat-value {
+                font-size: 12px;
+            }
+
+            button {
+                padding: 6px 10px;
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="scanline"></div>
+
+    <div id="ui">
+        <div id="header">
+            <div id="title">◢ PLANETARY DEFENSE SYSTEM ◣</div>
+            <div id="stats">
+                <div class="stat">
+                    <div class="stat-label">CATALOGED</div>
+                    <div class="stat-value" id="cataloged">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">THREATS</div>
+                    <div class="stat-value" id="threats" style="color: #f00;">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">SAVED</div>
+                    <div class="stat-value" id="saved">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">BRUCE WILLIS</div>
+                    <div class="stat-value" id="bruce">3</div>
+                </div>
+            </div>
+        </div>
+
+        <button id="toggleSidebar">☰ CATALOG</button>
+
+        <div id="sidebar" class="hidden">
+            <h3>ASTEROID CATALOG</h3>
+            <div id="catalog"></div>
+        </div>
+
+        <div id="controls">
+            <strong>CONTROLS</strong><br>
+            Left-click: Select asteroid<br>
+            Drag box: Select multiple<br>
+            Right-click drag: Rotate view<br>
+            Selected asteroids show trajectory
+        </div>
+
+        <div id="message"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        // Game state
+        const game = {
+            asteroids: [],
+            missions: [], // Active shuttles and missiles
+            cataloged: 0,
+            threats: 0,
+            saved: 0,
+            bruceWillis: 3,
+            rotation: { x: 0, y: 0 },
+            selectedAsteroids: [], // Array for multiple selections
+            time: 0,
+            selectionBox: null, // For drag-to-select
+            isDragging: false,
+            dragStart: null
+        };
+
+        // Mission class for shuttles and missiles
+        class Mission {
+            constructor(type, targetAsteroid) {
+                this.type = type; // 'shuttle' or 'missile'
+                this.target = targetAsteroid;
+                this.progress = 0; // 0 to 1
+                this.speed = type === 'shuttle' ? 0.0008 : 0.0015; // Missile is faster
+                this.trail = []; // Trail points
+                this.complete = false;
+                this.startAngle = Math.random() * Math.PI * 2; // Launch angle from Earth
+            }
+
+            update(dt) {
+                if (this.complete) return;
+
+                this.progress += this.speed * dt;
+
+                // Store trail point
+                if (this.trail.length === 0 || this.progress - this.trail[this.trail.length - 1].p > 0.02) {
+                    this.trail.push({ p: this.progress });
+                }
+
+                // Keep trail limited
+                if (this.trail.length > 30) {
+                    this.trail.shift();
+                }
+
+                if (this.progress >= 1) {
+                    this.complete = true;
+                    // Trigger the actual effect
+                    if (this.type === 'shuttle') {
+                        this.target.destroyed = true;
+                        this.target.threat = false;
+                        showMessage('BRUCE WILLIS DEPLOYED\n"I don\'t wanna close my eyes..."');
+                    } else {
+                        this.target.deflected = true;
+                        this.target.threat = false;
+                        this.target.color = '#ff0';
+                        showMessage('ASTEROID DEFLECTED\nTrajectory altered successfully');
+                    }
+                    updateUI();
+                    updateCatalog();
+                }
+            }
+
+            getPosition(progress) {
+                // Interpolate from Earth (0,0,0) to asteroid position
+                const t = progress;
+                // Use easing for more natural movement
+                const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+                const targetX = Math.cos(this.target.angle) * this.target.distance;
+                const targetY = this.target.height;
+                const targetZ = Math.sin(this.target.angle) * this.target.distance;
+
+                // Start slightly off Earth based on launch angle
+                const startOffset = 30;
+                const startX = Math.cos(this.startAngle) * startOffset;
+                const startZ = Math.sin(this.startAngle) * startOffset;
+
+                // Add arc to the trajectory
+                const arcHeight = this.target.distance * 0.15 * Math.sin(t * Math.PI);
+
+                return {
+                    x: startX + (targetX - startX) * eased,
+                    y: arcHeight + targetY * eased,
+                    z: startZ + (targetZ - startZ) * eased
+                };
+            }
+        }
+
+        // Asteroid class
+        class Asteroid {
+            constructor(isInitial = false) {
+                this.id = 'AST-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+                this.angle = Math.random() * Math.PI * 2;
+                this.distance = 350 + Math.random() * 250; // Start further out (350-600)
+                this.height = (Math.random() - 0.5) * 200;
+                this.size = 3 + Math.random() * 8;
+                this.speed = 0.02 + Math.random() * 0.03; // Much slower (was 0.2-0.7, now 0.02-0.05)
+                this.scanned = false;
+                // No threats in initial batch, gives player time to learn controls
+                this.threat = isInitial ? false : Math.random() < 0.3;
+                this.threatDistance = this.threat ? 30 + Math.random() * 50 : null; // Impact closer to center
+                this.deflected = false;
+                this.destroyed = false;
+                this.color = '#0f0';
+            }
+
+            update(dt) {
+                if (this.threat && !this.deflected && !this.destroyed && !this.missionInProgress) {
+                    this.distance -= this.speed * dt;
+                    if (this.distance < this.threatDistance) {
+                        return 'impact';
+                    }
+                } else if (!this.missionInProgress) {
+                    this.angle += 0.0002 * dt;
+                }
+            }
+
+            project(rotation) {
+                const rx = Math.cos(this.angle) * this.distance;
+                const ry = this.height;
+                const rz = Math.sin(this.angle) * this.distance;
+
+                // Rotate
+                const x1 = rx;
+                const y1 = ry * Math.cos(rotation.x) - rz * Math.sin(rotation.x);
+                const z1 = ry * Math.sin(rotation.x) + rz * Math.cos(rotation.x);
+
+                const x2 = x1 * Math.cos(rotation.y) - z1 * Math.sin(rotation.y);
+                const z2 = x1 * Math.sin(rotation.y) + z1 * Math.cos(rotation.y);
+
+                // Project
+                const scale = 400 / (400 + z2);
+                return {
+                    x: width / 2 + x2 * scale,
+                    y: height / 2 + y1 * scale,
+                    scale: scale,
+                    z: z2
+                };
+            }
+        }
+
+        // Spawn asteroids
+        function spawnAsteroid(isInitial = false) {
+            game.asteroids.push(new Asteroid(isInitial));
+        }
+
+        // Initial asteroids are safe - gives player time to learn
+        for (let i = 0; i < 15; i++) {
+            spawnAsteroid(true);
+        }
+
+        setInterval(() => {
+            if (game.asteroids.length < 20) {
+                spawnAsteroid();
+            }
+        }, 3000);
+
+        // Mouse control
+        let mouseDown = false;
+        let lastMouse = { x: 0, y: 0 };
+        let rightMouseDown = false;
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 2) {
+                // Right-click for rotation
+                rightMouseDown = true;
+                lastMouse = { x: e.clientX, y: e.clientY };
+            } else {
+                // Left-click for drag selection
+                mouseDown = true;
+                game.isDragging = false;
+                game.dragStart = { x: e.clientX, y: e.clientY };
+                game.selectionBox = null;
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (rightMouseDown) {
+                // Rotation with right mouse
+                const dx = e.clientX - lastMouse.x;
+                const dy = e.clientY - lastMouse.y;
+                game.rotation.y += dx * 0.005;
+                game.rotation.x += dy * 0.005;
+                game.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, game.rotation.x));
+                lastMouse = { x: e.clientX, y: e.clientY };
+            } else if (mouseDown && game.dragStart) {
+                // Drag selection box
+                const dx = e.clientX - game.dragStart.x;
+                const dy = e.clientY - game.dragStart.y;
+                if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                    game.isDragging = true;
+                    game.selectionBox = {
+                        x1: Math.min(game.dragStart.x, e.clientX),
+                        y1: Math.min(game.dragStart.y, e.clientY),
+                        x2: Math.max(game.dragStart.x, e.clientX),
+                        y2: Math.max(game.dragStart.y, e.clientY)
+                    };
+                }
+            }
+        });
+
+        let skipNextClick = false; // Flag to prevent click after drag
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (e.button === 2) {
+                rightMouseDown = false;
+            } else {
+                if (game.isDragging && game.selectionBox) {
+                    // Select all asteroids in the box
+                    selectAsteroidsInBox(game.selectionBox);
+                    skipNextClick = true; // Skip the click event that follows
+                }
+                mouseDown = false;
+                game.isDragging = false;
+                game.selectionBox = null;
+                game.dragStart = null;
+            }
+        });
+
+        // Prevent context menu on right-click
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        function selectAsteroidsInBox(box) {
+            game.selectedAsteroids = [];
+            for (let asteroid of game.asteroids) {
+                if (asteroid.destroyed) continue;
+                const pos = asteroid.project(game.rotation);
+                if (pos.x >= box.x1 && pos.x <= box.x2 && pos.y >= box.y1 && pos.y <= box.y2) {
+                    game.selectedAsteroids.push(asteroid);
+                    // Auto-scan selected asteroids
+                    if (!asteroid.scanned) {
+                        scanAsteroid(asteroid);
+                    }
+                }
+            }
+        }
+
+        // Touch controls
+        let touchStart = null;
+        let touchMoveId = null;
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                touchMoveId = e.touches[0].identifier;
+            }
+        }, { passive: true });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (touchStart && e.touches.length === 1) {
+                const touch = e.touches[0];
+                if (touch.identifier === touchMoveId) {
+                    const dx = touch.clientX - touchStart.x;
+                    const dy = touch.clientY - touchStart.y;
+                    game.rotation.y += dx * 0.005;
+                    game.rotation.x += dy * 0.005;
+                    game.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, game.rotation.x));
+                    touchStart = { x: touch.clientX, y: touch.clientY };
+                }
+            }
+        }, { passive: true });
+
+        canvas.addEventListener('touchend', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === touchMoveId) {
+                    touchStart = null;
+                    touchMoveId = null;
+                    break;
+                }
+            }
+        }, { passive: true });
+
+        // Click/tap to scan
+        canvas.addEventListener('click', handleScan);
+        canvas.addEventListener('touchend', (e) => {
+            if (e.changedTouches.length === 1 && !touchStart) {
+                handleScan(e.changedTouches[0]);
+            }
+        });
+
+        function handleScan(e) {
+            // Don't process if we just finished dragging
+            if (skipNextClick) {
+                skipNextClick = false;
+                return;
+            }
+            if (game.isDragging) return;
+
+            const mx = e.clientX;
+            const my = e.clientY;
+
+            for (let asteroid of game.asteroids) {
+                if (asteroid.destroyed) continue;
+                const pos = asteroid.project(game.rotation);
+                const dist = Math.sqrt((pos.x - mx) ** 2 + (pos.y - my) ** 2);
+                const hitRadius = asteroid.size * pos.scale * 3; // Larger hit area for mobile
+
+                if (dist < hitRadius) {
+                    // Select this asteroid
+                    game.selectedAsteroids = [asteroid];
+                    scanAsteroid(asteroid);
+                    return;
+                }
+            }
+            // Clicked on empty space - clear selection
+            game.selectedAsteroids = [];
+        }
+
+        // Sidebar toggle
+        const toggleBtn = document.getElementById('toggleSidebar');
+        const sidebar = document.getElementById('sidebar');
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('hidden');
+        });
+
+        function scanAsteroid(asteroid) {
+            if (asteroid.scanned) return;
+
+            asteroid.scanned = true;
+            asteroid.color = asteroid.threat ? '#f00' : '#0ff';
+            game.cataloged++;
+            if (asteroid.threat) {
+                game.threats++;
+            }
+
+            updateUI();
+            updateCatalog();
+        }
+
+        function deflectAsteroid(asteroid) {
+            // Check if mission already in progress for this asteroid
+            if (game.missions.some(m => m.target === asteroid && !m.complete)) return;
+            if (asteroid.missionInProgress) return;
+
+            // Launch missile
+            const mission = new Mission('missile', asteroid);
+            game.missions.push(mission);
+
+            // Update stats immediately
+            game.threats--;
+            game.saved++;
+            asteroid.missionInProgress = true;
+            updateUI();
+            updateCatalog();
+
+            showMessage('MISSILE LAUNCHED\nIntercepting target...');
+        }
+
+        function destroyAsteroid(asteroid) {
+            if (game.bruceWillis <= 0) return;
+
+            // Check if mission already in progress for this asteroid
+            if (game.missions.some(m => m.target === asteroid && !m.complete)) return;
+
+            // Launch shuttle with Bruce
+            const mission = new Mission('shuttle', asteroid);
+            game.missions.push(mission);
+
+            // Update stats immediately
+            game.bruceWillis--;
+            game.threats--;
+            game.saved++;
+            updateUI();
+
+            showMessage('SHUTTLE LAUNCHED\nBruce Willis en route...');
+
+            // Mark as in-progress (will be destroyed when mission completes)
+            asteroid.missionInProgress = true;
+            updateCatalog();
+        }
+
+        function showMessage(text) {
+            const msg = document.getElementById('message');
+            msg.innerHTML = text;
+            msg.style.display = 'block';
+            setTimeout(() => {
+                msg.style.display = 'none';
+            }, 2000);
+        }
+
+        function updateUI() {
+            document.getElementById('cataloged').textContent = game.cataloged;
+            document.getElementById('threats').textContent = game.threats;
+            document.getElementById('saved').textContent = game.saved;
+            document.getElementById('bruce').textContent = game.bruceWillis;
+        }
+
+        function updateCatalog() {
+            const catalog = document.getElementById('catalog');
+            catalog.innerHTML = '';
+
+            const scanned = game.asteroids.filter(a => a.scanned && !a.destroyed);
+            scanned.sort((a, b) => {
+                if (a.threat !== b.threat) return b.threat - a.threat;
+                return a.distance - b.distance;
+            });
+
+            for (let asteroid of scanned) {
+                const entry = document.createElement('div');
+                entry.className = 'asteroid-entry' + (asteroid.threat && !asteroid.deflected && !asteroid.missionInProgress ? ' threat' : '');
+                if (game.selectedAsteroids.includes(asteroid)) {
+                    entry.classList.add('selected');
+                }
+
+                let html = `<div class="asteroid-id">${asteroid.id}</div>`;
+                html += `<div>Distance: ${Math.floor(asteroid.distance)}km</div>`;
+                html += `<div>Size: ${asteroid.size.toFixed(1)}m</div>`;
+
+                if (asteroid.missionInProgress) {
+                    html += `<div style="color: #f90;">⟳ INTERCEPTING...</div>`;
+                } else if (asteroid.threat && !asteroid.deflected) {
+                    html += `<div class="threat-level">⚠ THREAT DETECTED</div>`;
+                    html += `<div>Impact distance: ${Math.floor(asteroid.threatDistance)}km</div>`;
+                    html += `<button class="danger-btn" onclick="event.stopPropagation(); deflectAsteroid(game.asteroids.find(a => a.id === '${asteroid.id}'))">DEFLECT</button>`;
+                    html += `<button class="danger-btn" onclick="event.stopPropagation(); destroyAsteroid(game.asteroids.find(a => a.id === '${asteroid.id}'))" ${game.bruceWillis <= 0 ? 'disabled' : ''}>SEND BRUCE</button>`;
+                } else if (asteroid.deflected) {
+                    html += `<div class="safe-level">✓ DEFLECTED</div>`;
+                } else {
+                    html += `<div class="safe-level">✓ SAFE</div>`;
+                }
+
+                entry.innerHTML = html;
+
+                // Click on entry to select asteroid and show trajectory
+                entry.addEventListener('click', () => {
+                    game.selectedAsteroids = [asteroid];
+                    updateCatalog(); // Refresh to show selection
+                });
+
+                catalog.appendChild(entry);
+            }
+        }
+
+        // Draw grid
+        function drawGrid() {
+            ctx.strokeStyle = '#003300';
+            ctx.lineWidth = 1;
+
+            // Circular grid
+            for (let r = 100; r <= 500; r += 100) {
+                ctx.beginPath();
+                for (let a = 0; a < Math.PI * 2; a += 0.1) {
+                    const x = Math.cos(a) * r;
+                    const z = Math.sin(a) * r;
+                    const pos = projectPoint(x, 0, z);
+                    if (a === 0) {
+                        ctx.moveTo(pos.x, pos.y);
+                    } else {
+                        ctx.lineTo(pos.x, pos.y);
+                    }
+                }
+                ctx.closePath();
+                ctx.stroke();
+            }
+
+            // Radial lines
+            for (let a = 0; a < Math.PI * 2; a += Math.PI / 8) {
+                ctx.beginPath();
+                for (let r = 0; r <= 500; r += 50) {
+                    const x = Math.cos(a) * r;
+                    const z = Math.sin(a) * r;
+                    const pos = projectPoint(x, 0, z);
+                    if (r === 0) {
+                        ctx.moveTo(pos.x, pos.y);
+                    } else {
+                        ctx.lineTo(pos.x, pos.y);
+                    }
+                }
+                ctx.stroke();
+            }
+        }
+
+        function projectPoint(x, y, z) {
+            // Rotate
+            const x1 = x;
+            const y1 = y * Math.cos(game.rotation.x) - z * Math.sin(game.rotation.x);
+            const z1 = y * Math.sin(game.rotation.x) + z * Math.cos(game.rotation.x);
+
+            const x2 = x1 * Math.cos(game.rotation.y) - z1 * Math.sin(game.rotation.y);
+            const z2 = x1 * Math.sin(game.rotation.y) + z1 * Math.cos(game.rotation.y);
+
+            const scale = 400 / (400 + z2);
+            return {
+                x: width / 2 + x2 * scale,
+                y: height / 2 + y1 * scale,
+                z: z2
+            };
+        }
+
+        // Draw Earth at center
+        function drawEarth() {
+            const earthPos = projectPoint(0, 0, 0);
+            const earthRadius = 25 * (400 / (400 + earthPos.z));
+
+            // Earth glow
+            const gradient = ctx.createRadialGradient(
+                earthPos.x, earthPos.y, earthRadius * 0.5,
+                earthPos.x, earthPos.y, earthRadius * 2
+            );
+            gradient.addColorStop(0, 'rgba(100, 150, 255, 0.3)');
+            gradient.addColorStop(1, 'rgba(100, 150, 255, 0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(earthPos.x, earthPos.y, earthRadius * 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Earth body
+            const earthGradient = ctx.createRadialGradient(
+                earthPos.x - earthRadius * 0.3, earthPos.y - earthRadius * 0.3, 0,
+                earthPos.x, earthPos.y, earthRadius
+            );
+            earthGradient.addColorStop(0, '#6B93D6');
+            earthGradient.addColorStop(0.5, '#4A7FC1');
+            earthGradient.addColorStop(1, '#1A4A7A');
+
+            ctx.fillStyle = earthGradient;
+            ctx.beginPath();
+            ctx.arc(earthPos.x, earthPos.y, earthRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Continents (simplified)
+            ctx.fillStyle = '#228B22';
+            ctx.globalAlpha = 0.6;
+            // Americas-ish
+            ctx.beginPath();
+            ctx.arc(earthPos.x - earthRadius * 0.3, earthPos.y - earthRadius * 0.1, earthRadius * 0.25, 0, Math.PI * 2);
+            ctx.fill();
+            // Europe/Africa-ish
+            ctx.beginPath();
+            ctx.arc(earthPos.x + earthRadius * 0.2, earthPos.y, earthRadius * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+
+            // Atmosphere ring
+            ctx.strokeStyle = 'rgba(100, 180, 255, 0.4)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(earthPos.x, earthPos.y, earthRadius + 3, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Label
+            ctx.fillStyle = '#0ff';
+            ctx.font = '12px Courier New';
+            ctx.fillText('EARTH', earthPos.x - 20, earthPos.y + earthRadius + 18);
+        }
+
+        // Draw trajectory for selected asteroids
+        function drawTrajectories() {
+            for (let asteroid of game.selectedAsteroids) {
+                if (asteroid.destroyed) continue;
+
+                const currentPos = asteroid.project(game.rotation);
+
+                if (asteroid.threat && !asteroid.deflected) {
+                    // Threat trajectory - heading toward Earth
+                    ctx.strokeStyle = 'rgba(255, 0, 0, 0.6)';
+                    ctx.setLineDash([5, 5]);
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+
+                    // Draw trajectory from current position toward center
+                    const steps = 30;
+                    for (let i = 0; i <= steps; i++) {
+                        const t = i / steps;
+                        const futureDistance = asteroid.distance * (1 - t * 0.8);
+                        const futureAngle = asteroid.angle;
+                        const futureHeight = asteroid.height * (1 - t);
+
+                        const rx = Math.cos(futureAngle) * futureDistance;
+                        const ry = futureHeight;
+                        const rz = Math.sin(futureAngle) * futureDistance;
+
+                        const pos = projectPoint(rx, ry, rz);
+
+                        if (i === 0) {
+                            ctx.moveTo(pos.x, pos.y);
+                        } else {
+                            ctx.lineTo(pos.x, pos.y);
+                        }
+                    }
+                    ctx.stroke();
+
+                    // Impact marker
+                    const earthPos = projectPoint(0, 0, 0);
+                    ctx.fillStyle = '#f00';
+                    ctx.beginPath();
+                    ctx.arc(earthPos.x, earthPos.y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#f00';
+                    ctx.font = '10px Courier New';
+                    ctx.fillText('IMPACT', earthPos.x + 10, earthPos.y);
+                } else {
+                    // Safe asteroid - orbital trajectory
+                    ctx.strokeStyle = 'rgba(0, 255, 255, 0.4)';
+                    ctx.setLineDash([3, 3]);
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+
+                    // Draw orbital path
+                    const steps = 60;
+                    for (let i = 0; i <= steps; i++) {
+                        const t = i / steps;
+                        const futureAngle = asteroid.angle + t * Math.PI * 2;
+
+                        const rx = Math.cos(futureAngle) * asteroid.distance;
+                        const ry = asteroid.height;
+                        const rz = Math.sin(futureAngle) * asteroid.distance;
+
+                        const pos = projectPoint(rx, ry, rz);
+
+                        if (i === 0) {
+                            ctx.moveTo(pos.x, pos.y);
+                        } else {
+                            ctx.lineTo(pos.x, pos.y);
+                        }
+                    }
+                    ctx.stroke();
+                }
+
+                ctx.setLineDash([]);
+            }
+        }
+
+        // Draw selection box
+        function drawSelectionBox() {
+            if (game.selectionBox) {
+                ctx.strokeStyle = '#0f0';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.strokeRect(
+                    game.selectionBox.x1,
+                    game.selectionBox.y1,
+                    game.selectionBox.x2 - game.selectionBox.x1,
+                    game.selectionBox.y2 - game.selectionBox.y1
+                );
+                ctx.setLineDash([]);
+
+                // Fill with semi-transparent color
+                ctx.fillStyle = 'rgba(0, 255, 0, 0.1)';
+                ctx.fillRect(
+                    game.selectionBox.x1,
+                    game.selectionBox.y1,
+                    game.selectionBox.x2 - game.selectionBox.x1,
+                    game.selectionBox.y2 - game.selectionBox.y1
+                );
+            }
+        }
+
+        // Draw missions (shuttles and missiles)
+        function drawMissions() {
+            for (let mission of game.missions) {
+                if (mission.complete) continue;
+
+                const pos3d = mission.getPosition(mission.progress);
+                const pos = projectPoint(pos3d.x, pos3d.y, pos3d.z);
+
+                // Draw trail
+                ctx.setLineDash([3, 3]);
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = mission.type === 'shuttle' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 165, 0, 0.6)';
+                ctx.beginPath();
+
+                for (let i = 0; i < mission.trail.length; i++) {
+                    const trailPos3d = mission.getPosition(mission.trail[i].p);
+                    const trailPos = projectPoint(trailPos3d.x, trailPos3d.y, trailPos3d.z);
+                    if (i === 0) {
+                        ctx.moveTo(trailPos.x, trailPos.y);
+                    } else {
+                        ctx.lineTo(trailPos.x, trailPos.y);
+                    }
+                }
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Draw the vehicle
+                ctx.save();
+                ctx.translate(pos.x, pos.y);
+
+                // Calculate angle toward target
+                const targetPos3d = mission.getPosition(Math.min(mission.progress + 0.1, 1));
+                const targetPos = projectPoint(targetPos3d.x, targetPos3d.y, targetPos3d.z);
+                const angle = Math.atan2(targetPos.y - pos.y, targetPos.x - pos.x);
+                ctx.rotate(angle);
+
+                if (mission.type === 'shuttle') {
+                    // Draw space shuttle
+                    const scale = 0.8;
+
+                    // Shuttle body (white)
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath();
+                    ctx.moveTo(12 * scale, 0);
+                    ctx.lineTo(-8 * scale, -4 * scale);
+                    ctx.lineTo(-8 * scale, 4 * scale);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Wings
+                    ctx.fillStyle = '#ccc';
+                    ctx.beginPath();
+                    ctx.moveTo(-2 * scale, 0);
+                    ctx.lineTo(-8 * scale, -8 * scale);
+                    ctx.lineTo(-8 * scale, -4 * scale);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(-2 * scale, 0);
+                    ctx.lineTo(-8 * scale, 8 * scale);
+                    ctx.lineTo(-8 * scale, 4 * scale);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Engine glow
+                    ctx.fillStyle = '#f80';
+                    ctx.beginPath();
+                    ctx.arc(-10 * scale, 0, 3 * scale, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Cockpit
+                    ctx.fillStyle = '#0af';
+                    ctx.beginPath();
+                    ctx.arc(6 * scale, 0, 2 * scale, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Draw missile
+                    const scale = 0.7;
+
+                    // Missile body (orange/red)
+                    ctx.fillStyle = '#f60';
+                    ctx.beginPath();
+                    ctx.moveTo(10 * scale, 0);
+                    ctx.lineTo(-6 * scale, -3 * scale);
+                    ctx.lineTo(-6 * scale, 3 * scale);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Fins
+                    ctx.fillStyle = '#c40';
+                    ctx.beginPath();
+                    ctx.moveTo(-4 * scale, -2 * scale);
+                    ctx.lineTo(-8 * scale, -6 * scale);
+                    ctx.lineTo(-6 * scale, -2 * scale);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(-4 * scale, 2 * scale);
+                    ctx.lineTo(-8 * scale, 6 * scale);
+                    ctx.lineTo(-6 * scale, 2 * scale);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Engine flame
+                    ctx.fillStyle = '#ff0';
+                    ctx.beginPath();
+                    ctx.moveTo(-6 * scale, -2 * scale);
+                    ctx.lineTo(-12 * scale, 0);
+                    ctx.lineTo(-6 * scale, 2 * scale);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Warhead tip
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath();
+                    ctx.arc(8 * scale, 0, 2 * scale, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+
+                // Label
+                ctx.fillStyle = mission.type === 'shuttle' ? '#fff' : '#f90';
+                ctx.font = '9px Courier New';
+                const label = mission.type === 'shuttle' ? 'BRUCE' : 'MISSILE';
+                ctx.fillText(label, pos.x + 10, pos.y - 5);
+            }
+        }
+
+        // Animation loop
+        let lastTime = Date.now();
+        function animate() {
+            const now = Date.now();
+            const dt = now - lastTime;
+            lastTime = now;
+            game.time += dt;
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+
+            drawGrid();
+
+            // Draw Earth at center
+            drawEarth();
+
+            // Draw trajectories for selected asteroids
+            drawTrajectories();
+
+            // Update and draw asteroids
+            const sorted = [...game.asteroids].sort((a, b) => {
+                const pa = a.project(game.rotation);
+                const pb = b.project(game.rotation);
+                return pb.z - pa.z;
+            });
+
+            for (let asteroid of sorted) {
+                if (asteroid.destroyed) continue;
+
+                const result = asteroid.update(dt);
+                if (result === 'impact') {
+                    showMessage('⚠ IMPACT! EARTH DESTROYED ⚠\nGame Over');
+                    setTimeout(() => location.reload(), 3000);
+                    return;
+                }
+
+                const pos = asteroid.project(game.rotation);
+                if (pos.z < -100) continue;
+
+                const size = asteroid.size * pos.scale;
+
+                // Highlight selected asteroids
+                const isSelected = game.selectedAsteroids.includes(asteroid);
+                if (isSelected) {
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, size + 5, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                // Glow for threats
+                if (asteroid.threat && asteroid.scanned && !asteroid.deflected) {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#f00';
+                }
+
+                ctx.fillStyle = asteroid.color;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.shadowBlur = 0;
+
+                // Draw label if scanned
+                if (asteroid.scanned) {
+                    ctx.fillStyle = asteroid.color;
+                    ctx.font = '10px Courier New';
+                    ctx.fillText(asteroid.id, pos.x + size + 5, pos.y - 5);
+                }
+            }
+
+            // Update and draw missions
+            for (let mission of game.missions) {
+                mission.update(dt);
+            }
+            // Remove completed missions
+            game.missions = game.missions.filter(m => !m.complete);
+            drawMissions();
+
+            // Draw selection box if dragging
+            drawSelectionBox();
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

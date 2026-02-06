@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGNAL TRIANGULATION</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            image-rendering: pixelated;
+            touch-action: none;
+        }
+
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #header {
+            background: rgba(0, 20, 0, 0.9);
+            border-bottom: 2px solid #0f0;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #title {
+            font-size: 20px;
+            text-shadow: 0 0 10px #0f0;
+            letter-spacing: 3px;
+        }
+
+        #stats {
+            display: flex;
+            gap: 30px;
+            font-size: 14px;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            color: #0a0;
+            font-size: 10px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            text-shadow: 0 0 5px #0f0;
+        }
+
+        #sidebar {
+            position: absolute;
+            left: 0;
+            top: 60px;
+            width: 280px;
+            height: calc(100% - 60px);
+            background: rgba(0, 20, 0, 0.95);
+            border-right: 2px solid #0f0;
+            padding: 15px;
+            overflow-y: auto;
+            pointer-events: auto;
+        }
+
+        #sidebar h3 {
+            margin-bottom: 10px;
+            color: #0f0;
+            text-shadow: 0 0 10px #0f0;
+            border-bottom: 1px solid #0f0;
+            padding-bottom: 5px;
+        }
+
+        .star-entry {
+            background: rgba(0, 50, 0, 0.3);
+            border: 1px solid #0a0;
+            padding: 10px;
+            margin-bottom: 8px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .star-entry:hover {
+            background: rgba(0, 80, 0, 0.4);
+        }
+
+        .star-entry.selected {
+            background: rgba(0, 100, 0, 0.5);
+            border-color: #0f0;
+            box-shadow: 0 0 10px #0f0;
+        }
+
+        .star-entry.locked {
+            border-color: #0ff;
+            background: rgba(0, 50, 80, 0.3);
+        }
+
+        .star-name {
+            color: #0ff;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .signal-strength {
+            color: #ff0;
+        }
+
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 300px;
+            background: rgba(0, 20, 0, 0.9);
+            border: 1px solid #0f0;
+            padding: 15px;
+            font-size: 11px;
+            color: #0a0;
+            max-width: 300px;
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #0f0;
+            padding: 30px 50px;
+            font-size: 18px;
+            text-align: center;
+            text-shadow: 0 0 10px #0f0;
+            display: none;
+            pointer-events: auto;
+            max-width: 500px;
+        }
+
+        #message.success {
+            border-color: #0ff;
+            color: #0ff;
+        }
+
+        button {
+            background: rgba(0, 100, 0, 0.5);
+            border: 1px solid #0f0;
+            color: #0f0;
+            padding: 10px 20px;
+            margin-top: 15px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            transition: all 0.2s;
+            pointer-events: auto;
+        }
+
+        button:hover {
+            background: rgba(0, 150, 0, 0.7);
+            box-shadow: 0 0 10px #0f0;
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        #lockBtn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 30px;
+            font-size: 14px;
+        }
+
+        #lockBtn.ready {
+            background: rgba(0, 150, 150, 0.5);
+            border-color: #0ff;
+            color: #0ff;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 5px #0ff; }
+            50% { box-shadow: 0 0 20px #0ff; }
+        }
+
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                transparent 50%,
+                rgba(0, 255, 0, 0.03) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        #accuracy {
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            font-size: 14px;
+            text-align: right;
+        }
+
+        .accuracy-value {
+            font-size: 24px;
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff;
+        }
+
+        @media (max-width: 768px) {
+            #sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 150px;
+                top: auto;
+                bottom: 0;
+                border-right: none;
+                border-top: 2px solid #0f0;
+            }
+
+            #instructions {
+                display: none;
+            }
+
+            #title {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="scanline"></div>
+
+    <div id="ui">
+        <div id="header">
+            <div id="title">◢ SIGNAL TRIANGULATION ◣</div>
+            <div id="stats">
+                <div class="stat">
+                    <div class="stat-label">VECTORS LOCKED</div>
+                    <div class="stat-value" id="locked">0/3</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">CONVERGENCE</div>
+                    <div class="stat-value" id="convergence" style="color: #f00;">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="sidebar">
+            <h3>SIGNAL SOURCES</h3>
+            <div id="starList"></div>
+        </div>
+
+        <div id="instructions">
+            <strong>OBJECTIVE</strong><br><br>
+            Locate the origin point of the anomalous signal by triangulating vectors from three confirmed sources.<br><br>
+            <strong>CONTROLS</strong><br>
+            Right-drag: Rotate view<br>
+            Scroll: Zoom in/out<br>
+            Click star: Select/lock vector<br>
+            Find where 3 vectors converge
+        </div>
+
+        <div id="zoomLevel" style="position: absolute; bottom: 20px; left: 300px; font-size: 12px; color: #0a0;">
+            ZOOM: <span id="zoomValue">100%</span>
+        </div>
+
+        <div id="accuracy">
+            <div class="stat-label">INTERSECTION ACCURACY</div>
+            <div class="accuracy-value" id="accuracyValue">--</div>
+        </div>
+
+        <button id="lockBtn" disabled>LOCK COORDINATES</button>
+
+        <div id="message"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        // Game state
+        const game = {
+            stars: [],
+            rotation: { x: 0.3, y: 0.5 },
+            zoom: 1.0,
+            selectedStar: null,
+            lockedStars: [],
+            targetPoint: null,
+            time: 0,
+            solved: false
+        };
+
+        // Static 2D starfield (screen-space, doesn't move)
+        const staticStars = [];
+        for (let i = 0; i < 400; i++) {
+            staticStars.push({
+                x: Math.random(),
+                y: Math.random(),
+                size: Math.random() < 0.9 ? 0.5 + Math.random() * 0.5 : 1 + Math.random() * 1.5,
+                brightness: 0.15 + Math.random() * 0.4,
+                twinkleSpeed: 0.5 + Math.random() * 2,
+                twinkleOffset: Math.random() * Math.PI * 2
+            });
+        }
+
+        // The hidden target point where signals originate
+        game.targetPoint = {
+            x: 80 + Math.random() * 100 - 50,
+            y: 30 + Math.random() * 60 - 30,
+            z: 80 + Math.random() * 100 - 50
+        };
+
+
+        // Star class
+        class Star {
+            constructor(name, angle, distance, height, color, isAccurate) {
+                this.name = name;
+                this.angle = angle;
+                this.distance = distance;
+                this.height = height;
+                this.color = color;
+                this.isAccurate = isAccurate; // Only accurate stars point to target
+                this.signalStrength = (70 + Math.random() * 30).toFixed(1);
+                this.selected = false;
+                this.locked = false;
+
+                // Calculate position
+                this.x = Math.cos(angle) * distance;
+                this.y = height;
+                this.z = Math.sin(angle) * distance;
+
+                if (isAccurate) {
+                    // Vector pointing toward target (with slight noise)
+                    const toTarget = {
+                        x: game.targetPoint.x - this.x,
+                        y: game.targetPoint.y - this.y,
+                        z: game.targetPoint.z - this.z
+                    };
+                    const len = Math.sqrt(toTarget.x**2 + toTarget.y**2 + toTarget.z**2);
+
+                    const noise = 0.03;
+                    this.vectorDir = {
+                        x: toTarget.x / len + (Math.random() - 0.5) * noise,
+                        y: toTarget.y / len + (Math.random() - 0.5) * noise,
+                        z: toTarget.z / len + (Math.random() - 0.5) * noise
+                    };
+                } else {
+                    // Inaccurate star - vector points somewhere else entirely
+                    // Create a fake target offset significantly from real target
+                    const fakeTarget = {
+                        x: game.targetPoint.x + (Math.random() - 0.5) * 300,
+                        y: game.targetPoint.y + (Math.random() - 0.5) * 200,
+                        z: game.targetPoint.z + (Math.random() - 0.5) * 300
+                    };
+                    const toFake = {
+                        x: fakeTarget.x - this.x,
+                        y: fakeTarget.y - this.y,
+                        z: fakeTarget.z - this.z
+                    };
+                    const len = Math.sqrt(toFake.x**2 + toFake.y**2 + toFake.z**2);
+
+                    this.vectorDir = {
+                        x: toFake.x / len,
+                        y: toFake.y / len,
+                        z: toFake.z / len
+                    };
+                }
+            }
+
+            project(rotation) {
+                return projectPoint(this.x, this.y, this.z, rotation);
+            }
+
+            getVectorEnd(length = 400) {
+                return {
+                    x: this.x + this.vectorDir.x * length,
+                    y: this.y + this.vectorDir.y * length,
+                    z: this.z + this.vectorDir.z * length
+                };
+            }
+        }
+
+        // Create stars around the scene
+        // Shuffle which 3 stars are "accurate" each game
+        const accurateIndices = [0, 1, 2, 3, 4];
+        for (let i = accurateIndices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [accurateIndices[i], accurateIndices[j]] = [accurateIndices[j], accurateIndices[i]];
+        }
+        const accurateSet = new Set(accurateIndices.slice(0, 3)); // Only first 3 are accurate
+
+        const starData = [
+            { name: "ROSS 128", angle: 0.5, distance: 280, height: 40, color: '#ff6b6b' },
+            { name: "PROXIMA CENTAURI", angle: 1.8, distance: 320, height: -30, color: '#ffd93d' },
+            { name: "LUYTEN'S STAR", angle: 2.9, distance: 250, height: 60, color: '#6bcb77' },
+            { name: "WOLF 359", angle: 4.2, distance: 300, height: -50, color: '#4d96ff' },
+            { name: "LALANDE 21185", angle: 5.5, distance: 270, height: 20, color: '#ff8e4d' },
+        ];
+
+        for (let i = 0; i < starData.length; i++) {
+            const data = starData[i];
+            const isAccurate = accurateSet.has(i);
+            game.stars.push(new Star(data.name, data.angle, data.distance, data.height, data.color, isAccurate));
+        }
+
+        function projectPoint(x, y, z, rotation = game.rotation) {
+            // Rotate around X axis
+            const y1 = y * Math.cos(rotation.x) - z * Math.sin(rotation.x);
+            const z1 = y * Math.sin(rotation.x) + z * Math.cos(rotation.x);
+
+            // Rotate around Y axis
+            const x2 = x * Math.cos(rotation.y) - z1 * Math.sin(rotation.y);
+            const z2 = x * Math.sin(rotation.y) + z1 * Math.cos(rotation.y);
+
+            const baseScale = 500 / (500 + z2);
+            const scale = baseScale * game.zoom;
+            return {
+                x: width / 2 + x2 * scale,
+                y: height / 2 + y1 * scale,
+                z: z2,
+                scale: scale
+            };
+        }
+
+        // Mouse wheel zoom
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomSpeed = 0.001;
+            game.zoom -= e.deltaY * zoomSpeed;
+            game.zoom = Math.max(0.5, Math.min(2.5, game.zoom));
+            document.getElementById('zoomValue').textContent = `${Math.round(game.zoom * 100)}%`;
+        }, { passive: false });
+
+        // Mouse controls
+        let rightMouseDown = false;
+        let lastMouse = { x: 0, y: 0 };
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 2) {
+                rightMouseDown = true;
+                lastMouse = { x: e.clientX, y: e.clientY };
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (rightMouseDown) {
+                const dx = e.clientX - lastMouse.x;
+                const dy = e.clientY - lastMouse.y;
+                game.rotation.y += dx * 0.005;
+                game.rotation.x += dy * 0.005;
+                game.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, game.rotation.x));
+                lastMouse = { x: e.clientX, y: e.clientY };
+            }
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (e.button === 2) {
+                rightMouseDown = false;
+            }
+        });
+
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // Click to select star
+        canvas.addEventListener('click', (e) => {
+            if (game.solved) return;
+
+            const mx = e.clientX;
+            const my = e.clientY;
+
+            for (let star of game.stars) {
+                const pos = star.project(game.rotation);
+                const dist = Math.sqrt((pos.x - mx) ** 2 + (pos.y - my) ** 2);
+
+                if (dist < 25) {
+                    if (star.locked) {
+                        // Unlock
+                        star.locked = false;
+                        game.lockedStars = game.lockedStars.filter(s => s !== star);
+                    } else if (game.lockedStars.length < 3) {
+                        // Lock this star
+                        star.locked = true;
+                        game.lockedStars.push(star);
+                    }
+                    updateUI();
+                    updateStarList();
+                    return;
+                }
+            }
+        });
+
+        // Draw static 2D starfield (screen-space background)
+        function drawStaticStarfield() {
+            for (let star of staticStars) {
+                // Subtle twinkle
+                const twinkle = 0.7 + 0.3 * Math.sin(game.time * 0.001 * star.twinkleSpeed + star.twinkleOffset);
+                const alpha = star.brightness * twinkle;
+
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(star.x * width, star.y * height, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+
+        // Draw grid
+        function drawGrid() {
+            ctx.strokeStyle = '#002200';
+            ctx.lineWidth = 1;
+
+            // Circular grid
+            for (let r = 100; r <= 400; r += 100) {
+                ctx.beginPath();
+                for (let a = 0; a <= Math.PI * 2; a += 0.1) {
+                    const pos = projectPoint(Math.cos(a) * r, 0, Math.sin(a) * r);
+                    if (a === 0) ctx.moveTo(pos.x, pos.y);
+                    else ctx.lineTo(pos.x, pos.y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+            }
+
+            // Radial lines
+            for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) {
+                ctx.beginPath();
+                const start = projectPoint(0, 0, 0);
+                const end = projectPoint(Math.cos(a) * 400, 0, Math.sin(a) * 400);
+                ctx.moveTo(start.x, start.y);
+                ctx.lineTo(end.x, end.y);
+                ctx.stroke();
+            }
+        }
+
+        // Draw origin point (Earth/Observatory)
+        function drawOrigin() {
+            const pos = projectPoint(0, 0, 0);
+
+            // Glow
+            const gradient = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 30);
+            gradient.addColorStop(0, 'rgba(0, 255, 100, 0.3)');
+            gradient.addColorStop(1, 'rgba(0, 255, 100, 0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 30, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Center point
+            ctx.fillStyle = '#0f0';
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#0a0';
+            ctx.font = '10px Courier New';
+            ctx.fillText('OBSERVATORY', pos.x - 35, pos.y + 20);
+        }
+
+        // Draw stars
+        function drawStars() {
+            for (let star of game.stars) {
+                const pos = star.project(game.rotation);
+                // No z-clipping - always show interactive stars
+
+                const size = 8 * pos.scale;
+
+                // Star glow
+                const gradient = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, size * 3);
+                gradient.addColorStop(0, star.color + '80');
+                gradient.addColorStop(1, star.color + '00');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, size * 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Selection ring
+                if (star.locked) {
+                    ctx.strokeStyle = '#0ff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, size + 8, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                // Star body
+                ctx.fillStyle = star.color;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Label
+                ctx.fillStyle = star.locked ? '#0ff' : '#0a0';
+                ctx.font = '10px Courier New';
+                ctx.fillText(star.name, pos.x + size + 5, pos.y - 5);
+            }
+        }
+
+        // Draw signal vectors from locked stars
+        function drawVectors() {
+            const colors = ['#ff6b6b', '#6bcb77', '#4d96ff'];
+
+            for (let i = 0; i < game.lockedStars.length; i++) {
+                const star = game.lockedStars[i];
+                const startPos = star.project(game.rotation);
+                const endPoint = star.getVectorEnd(500);
+                const endPos = projectPoint(endPoint.x, endPoint.y, endPoint.z);
+
+                // Draw vector line
+                ctx.strokeStyle = colors[i % colors.length];
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(startPos.x, startPos.y);
+                ctx.lineTo(endPos.x, endPos.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Animated particles along the vector
+                const particleCount = 5;
+                for (let p = 0; p < particleCount; p++) {
+                    const t = ((game.time * 0.001 + p / particleCount) % 1);
+                    const px = star.x + star.vectorDir.x * 500 * t;
+                    const py = star.y + star.vectorDir.y * 500 * t;
+                    const pz = star.z + star.vectorDir.z * 500 * t;
+                    const pPos = projectPoint(px, py, pz);
+
+                    ctx.fillStyle = colors[i % colors.length];
+                    ctx.globalAlpha = 1 - t;
+                    ctx.beginPath();
+                    ctx.arc(pPos.x, pPos.y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+            }
+        }
+
+        // Calculate and draw convergence point
+        function drawConvergence() {
+            if (game.lockedStars.length < 2) return;
+
+            // Find approximate intersection point
+            const intersection = calculateIntersection();
+            if (!intersection) return;
+
+            const pos = projectPoint(intersection.x, intersection.y, intersection.z);
+
+            // Draw convergence zone
+            const accuracy = intersection.accuracy;
+            const zoneSize = Math.max(10, 50 - accuracy * 0.4);
+
+            // Pulsing glow
+            const pulse = 0.5 + 0.5 * Math.sin(game.time * 0.005);
+            ctx.strokeStyle = `rgba(0, 255, 255, ${0.3 + pulse * 0.4})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, zoneSize * (1 + pulse * 0.2), 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Inner marker
+            ctx.fillStyle = `rgba(0, 255, 255, ${0.5 + pulse * 0.3})`;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Crosshair
+            ctx.strokeStyle = '#0ff';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(pos.x - 15, pos.y);
+            ctx.lineTo(pos.x - 5, pos.y);
+            ctx.moveTo(pos.x + 5, pos.y);
+            ctx.lineTo(pos.x + 15, pos.y);
+            ctx.moveTo(pos.x, pos.y - 15);
+            ctx.lineTo(pos.x, pos.y - 5);
+            ctx.moveTo(pos.x, pos.y + 5);
+            ctx.lineTo(pos.x, pos.y + 15);
+            ctx.stroke();
+
+            // Distance label
+            const dist = Math.sqrt(intersection.x**2 + intersection.y**2 + intersection.z**2);
+            ctx.fillStyle = '#0ff';
+            ctx.font = '10px Courier New';
+            ctx.fillText(`${dist.toFixed(0)} LY`, pos.x + 20, pos.y);
+        }
+
+        // Calculate intersection of vectors (least squares approximation)
+        function calculateIntersection() {
+            if (game.lockedStars.length < 2) return null;
+
+            // Use closest point between lines approach
+            let sumPoint = { x: 0, y: 0, z: 0 };
+            let count = 0;
+
+            for (let i = 0; i < game.lockedStars.length; i++) {
+                for (let j = i + 1; j < game.lockedStars.length; j++) {
+                    const s1 = game.lockedStars[i];
+                    const s2 = game.lockedStars[j];
+
+                    // Find closest point between two lines
+                    const p1 = { x: s1.x, y: s1.y, z: s1.z };
+                    const d1 = s1.vectorDir;
+                    const p2 = { x: s2.x, y: s2.y, z: s2.z };
+                    const d2 = s2.vectorDir;
+
+                    const closest = closestPointBetweenLines(p1, d1, p2, d2);
+                    if (closest) {
+                        sumPoint.x += closest.x;
+                        sumPoint.y += closest.y;
+                        sumPoint.z += closest.z;
+                        count++;
+                    }
+                }
+            }
+
+            if (count === 0) return null;
+
+            const intersection = {
+                x: sumPoint.x / count,
+                y: sumPoint.y / count,
+                z: sumPoint.z / count
+            };
+
+            // Calculate accuracy (distance from true target)
+            const dx = intersection.x - game.targetPoint.x;
+            const dy = intersection.y - game.targetPoint.y;
+            const dz = intersection.z - game.targetPoint.z;
+            const error = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+            // Convert to percentage (100% = perfect, 0% = far off)
+            let accuracy = Math.max(0, 100 - error);
+
+            // With only 2 vectors, cap accuracy - need 3 for reliable triangulation
+            if (game.lockedStars.length < 3) {
+                accuracy = Math.min(accuracy, 65);
+            }
+
+            intersection.accuracy = accuracy;
+
+            return intersection;
+        }
+
+        // Find closest point between two 3D lines
+        function closestPointBetweenLines(p1, d1, p2, d2) {
+            const w0 = { x: p1.x - p2.x, y: p1.y - p2.y, z: p1.z - p2.z };
+
+            const a = d1.x*d1.x + d1.y*d1.y + d1.z*d1.z;
+            const b = d1.x*d2.x + d1.y*d2.y + d1.z*d2.z;
+            const c = d2.x*d2.x + d2.y*d2.y + d2.z*d2.z;
+            const d = d1.x*w0.x + d1.y*w0.y + d1.z*w0.z;
+            const e = d2.x*w0.x + d2.y*w0.y + d2.z*w0.z;
+
+            const denom = a*c - b*b;
+            if (Math.abs(denom) < 0.0001) return null;
+
+            const t1 = (b*e - c*d) / denom;
+            const t2 = (a*e - b*d) / denom;
+
+            // Only consider forward direction
+            if (t1 < 0 || t2 < 0) return null;
+
+            const point1 = {
+                x: p1.x + d1.x * t1,
+                y: p1.y + d1.y * t1,
+                z: p1.z + d1.z * t1
+            };
+
+            const point2 = {
+                x: p2.x + d2.x * t2,
+                y: p2.y + d2.y * t2,
+                z: p2.z + d2.z * t2
+            };
+
+            // Return midpoint
+            return {
+                x: (point1.x + point2.x) / 2,
+                y: (point1.y + point2.y) / 2,
+                z: (point1.z + point2.z) / 2
+            };
+        }
+
+        // Update UI
+        function updateUI() {
+            document.getElementById('locked').textContent = `${game.lockedStars.length}/3`;
+            document.getElementById('zoomValue').textContent = `${Math.round(game.zoom * 100)}%`;
+
+            const intersection = calculateIntersection();
+            const convergenceEl = document.getElementById('convergence');
+            const accuracyEl = document.getElementById('accuracyValue');
+            const lockBtn = document.getElementById('lockBtn');
+
+            if (intersection && game.lockedStars.length >= 2) {
+                const acc = intersection.accuracy.toFixed(1);
+                convergenceEl.textContent = `${acc}%`;
+
+                // Show hint if capped due to insufficient vectors
+                if (game.lockedStars.length < 3) {
+                    accuracyEl.textContent = `${acc}% (need 3)`;
+                } else {
+                    accuracyEl.textContent = `${acc}%`;
+                }
+
+                if (intersection.accuracy > 50) {
+                    convergenceEl.style.color = '#ff0';
+                    accuracyEl.style.color = '#ff0';
+                }
+                if (intersection.accuracy > 80) {
+                    convergenceEl.style.color = '#0f0';
+                    accuracyEl.style.color = '#0f0';
+                }
+                if (intersection.accuracy > 90) {
+                    convergenceEl.style.color = '#0ff';
+                    accuracyEl.style.color = '#0ff';
+                }
+            } else {
+                convergenceEl.textContent = '0%';
+                convergenceEl.style.color = '#f00';
+                accuracyEl.textContent = '--';
+                accuracyEl.style.color = '#0a0';
+            }
+
+            // Enable lock button when accuracy is good enough
+            if (intersection && intersection.accuracy > 85 && game.lockedStars.length === 3) {
+                lockBtn.disabled = false;
+                lockBtn.classList.add('ready');
+            } else {
+                lockBtn.disabled = true;
+                lockBtn.classList.remove('ready');
+            }
+        }
+
+        // Update star list in sidebar
+        function updateStarList() {
+            const list = document.getElementById('starList');
+            list.innerHTML = '';
+
+            for (let star of game.stars) {
+                const entry = document.createElement('div');
+                entry.className = 'star-entry' + (star.locked ? ' locked selected' : '');
+
+                entry.innerHTML = `
+                    <div class="star-name">${star.name}</div>
+                    <div>Distance: ${star.distance.toFixed(0)} LY</div>
+                    <div class="signal-strength">Signal: ${star.signalStrength}%</div>
+                    <div style="color: ${star.locked ? '#0ff' : '#0a0'}">
+                        ${star.locked ? '◉ VECTOR LOCKED' : '○ Click to lock vector'}
+                    </div>
+                `;
+
+                entry.addEventListener('click', () => {
+                    if (game.solved) return;
+
+                    if (star.locked) {
+                        star.locked = false;
+                        game.lockedStars = game.lockedStars.filter(s => s !== star);
+                    } else if (game.lockedStars.length < 3) {
+                        star.locked = true;
+                        game.lockedStars.push(star);
+                    }
+                    updateUI();
+                    updateStarList();
+                });
+
+                list.appendChild(entry);
+            }
+        }
+
+        // Lock coordinates button
+        document.getElementById('lockBtn').addEventListener('click', () => {
+            if (game.solved) return;
+
+            const intersection = calculateIntersection();
+            if (intersection && intersection.accuracy > 85) {
+                game.solved = true;
+
+                const msg = document.getElementById('message');
+                msg.innerHTML = `
+                    <div style="color: #0ff; font-size: 24px; margin-bottom: 15px;">
+                        ◆ COORDINATES LOCKED ◆
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        Signal origin triangulated at:<br>
+                        <span style="color: #ff0; font-size: 20px;">
+                            ${intersection.x.toFixed(1)}, ${intersection.y.toFixed(1)}, ${intersection.z.toFixed(1)}
+                        </span>
+                    </div>
+                    <div style="color: #0f0;">
+                        Accuracy: ${intersection.accuracy.toFixed(1)}%
+                    </div>
+                    <div style="margin-top: 20px; color: #0a0; font-size: 14px;">
+                        Source identified beyond known stellar cartography.<br>
+                        Signal origin predates observable universe formation.
+                    </div>
+                    <button onclick="location.reload()">NEW PUZZLE</button>
+                `;
+                msg.classList.add('success');
+                msg.style.display = 'block';
+            }
+        });
+
+        // Animation loop
+        let lastTime = Date.now();
+        function animate() {
+            const now = Date.now();
+            const dt = now - lastTime;
+            lastTime = now;
+            game.time += dt;
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+
+            drawStaticStarfield();
+            drawGrid();
+            drawOrigin();
+            drawVectors();
+            drawStars();
+            drawConvergence();
+
+            requestAnimationFrame(animate);
+        }
+
+        // Initialize
+        updateStarList();
+        updateUI();
+        animate();
+    </script>
+</body>
+</html>
