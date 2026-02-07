@@ -204,3 +204,50 @@ Stand by for further instructions.
 
 [END TRANSMISSION]`
 };
+
+// Day 2 cliffhanger: Dr. Chen email about deep space signal detection
+export const DAY2_CHEN_SIGNAL_EMAIL = {
+    from: 'Dr. Sarah Chen - Signal Intelligence',
+    subject: 'URGENT: Deep Space Anomaly Detected',
+    body: `Dr. {PLAYER_NAME},
+
+The overnight co-processor flagged something extraordinary during batch analysis of today's survey data.
+
+A coherent signal source at coordinates that do NOT match any entry in our stellar catalog. I have cross-referenced with every known database — military, civilian, deep space network — and returned zero matches.
+
+This signal is coming from somewhere we have never looked before.
+
+I have designated it SRC-7024 and I am pushing it to your starmap now. You need to scan it immediately.
+
+I have been in this field for twenty-three years. I have never seen anything like this.
+
+- Dr. Sarah Chen
+  Signal Intelligence Division`
+};
+
+// Day 2 cliffhanger: Western seaboard blackout email
+export const DAY2_BLACKOUT_EMAIL = {
+    from: 'EMERGENCY ALERT - SETI OPERATIONS',
+    subject: '[CRITICAL] System Failure — Western Grid Event',
+    body: `[AUTOMATED PRIORITY ALERT]
+
+Dr. {PLAYER_NAME},
+
+At approximately {TIME} UTC, the deep space monitoring array experienced a catastrophic system failure coinciding with widespread power disruptions across the western seaboard.
+
+AFFECTED SYSTEMS:
+- Array dishes 1-12: OFFLINE (recovering)
+- Signal processing core: REBOOTED
+- Data integrity: UNDER REVIEW
+
+CONCURRENT EVENT:
+Reports are coming in from multiple observatories. The entire western seaboard power grid experienced a momentary blackout at the exact moment our array locked onto SRC-7024.
+
+Coincidence or not, SRC-7024 is now classified MAXIMUM PRIORITY. Whatever that signal source is, it responded to our scan with enough electromagnetic energy to knock out infrastructure across three states.
+
+Further analysis will resume tomorrow with all resources dedicated to SRC-7024.
+
+Report your findings and stand down for the night.
+
+- SETI Emergency Operations`
+};

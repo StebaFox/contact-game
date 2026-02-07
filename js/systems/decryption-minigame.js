@@ -72,9 +72,54 @@ const PATTERN_CHARS = '0123456789ABCDEF□■●○◆◇▲△';
 // Start Decryption Minigame
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function startDecryptionMinigame(onSuccess, onCancel) {
+// Difficulty presets
+const DIFFICULTY_PRESETS = {
+    easy: {
+        patternsNeeded: 5,
+        targetDuration: 3500,
+        windowDuration: 5000,
+        dangerousChance: 0,       // No dangerous patterns
+        minPatternWidth: 3,
+        maxPatternWidth: 5,
+        minPatternHeight: 3,
+        maxPatternHeight: 4
+    },
+    medium: {
+        patternsNeeded: 8,
+        targetDuration: 2500,
+        windowDuration: 4000,
+        dangerousChance: 0.3,     // Occasional dangerous patterns
+        minPatternWidth: 2,
+        maxPatternWidth: 5,
+        minPatternHeight: 2,
+        maxPatternHeight: 4
+    },
+    hard: {
+        patternsNeeded: 12,
+        targetDuration: 1800,
+        windowDuration: 3000,
+        dangerousChance: 0.6,     // Frequent dangerous patterns
+        minPatternWidth: 2,
+        maxPatternWidth: 4,
+        minPatternHeight: 2,
+        maxPatternHeight: 3
+    }
+};
+
+export function startDecryptionMinigame(onSuccess, onCancel, difficulty = 'medium') {
     decryptionState.onSuccess = onSuccess;
     decryptionState.onCancel = onCancel;
+
+    // Apply difficulty preset
+    const preset = DIFFICULTY_PRESETS[difficulty] || DIFFICULTY_PRESETS.medium;
+    decryptionState.patternsNeeded = preset.patternsNeeded;
+    decryptionState.targetDuration = preset.targetDuration;
+    decryptionState.windowDuration = preset.windowDuration;
+    decryptionState.dangerousChance = preset.dangerousChance;
+    decryptionState.minPatternWidth = preset.minPatternWidth;
+    decryptionState.maxPatternWidth = preset.maxPatternWidth;
+    decryptionState.minPatternHeight = preset.minPatternHeight;
+    decryptionState.maxPatternHeight = preset.maxPatternHeight;
 
     // Show instruction screen first
     showDecryptionInstructions(() => {
@@ -134,7 +179,7 @@ function showDecryptionInstructions(onBegin, onCancel) {
                     <span style="color: #f80;">▶</span> <span style="color: #f80;">ORANGE</span> patterns overlap locked data - miss them and data is LOST
                 </div>
                 <div style="color: #0f0; font-size: 13px;">
-                    <span style="color: #0ff;">▶</span> Capture <span style="color: #ff0;">8 patterns</span> to complete decryption
+                    <span style="color: #0ff;">▶</span> Capture <span style="color: #ff0;">${decryptionState.patternsNeeded} patterns</span> to complete decryption
                 </div>
             </div>
 
@@ -511,9 +556,13 @@ function addFlashEffect(x, y, color, intensity) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function generateTargetPattern() {
-    // Random size (2x2 to 4x3)
-    const width = 2 + Math.floor(Math.random() * 3);
-    const height = 2 + Math.floor(Math.random() * 2);
+    // Random size based on difficulty
+    const minW = decryptionState.minPatternWidth || 2;
+    const maxW = decryptionState.maxPatternWidth || 5;
+    const minH = decryptionState.minPatternHeight || 2;
+    const maxH = decryptionState.maxPatternHeight || 4;
+    const width = minW + Math.floor(Math.random() * (maxW - minW + 1));
+    const height = minH + Math.floor(Math.random() * (maxH - minH + 1));
 
     // Try to find a position that doesn't overlap locked cells
     let x, y;
@@ -536,8 +585,30 @@ function generateTargetPattern() {
         attempts++;
     } while (overlappingLocked.length > 0 && attempts < 20);
 
-    // If we couldn't find a clear spot after 20 tries, allow overlap but mark as dangerous
-    const isDangerous = overlappingLocked.length > 0;
+    // If we couldn't find a clear spot, allow overlap but mark as dangerous
+    // On easy difficulty (dangerousChance = 0), keep trying to avoid overlaps
+    const dangerousChance = decryptionState.dangerousChance || 0;
+    let isDangerous = overlappingLocked.length > 0;
+    if (isDangerous && dangerousChance === 0) {
+        // On easy, just place it somewhere clear even if suboptimal
+        isDangerous = false;
+        overlappingLocked = [];
+    } else if (!isDangerous && dangerousChance > 0 && decryptionState.lockedCells.length > 0 && Math.random() < dangerousChance) {
+        // On medium/hard, sometimes deliberately create dangerous patterns
+        // by placing near locked cells
+        const lockedCell = decryptionState.lockedCells[Math.floor(Math.random() * decryptionState.lockedCells.length)];
+        x = Math.max(0, Math.min(lockedCell.x - Math.floor(width / 2), decryptionState.gridWidth - width));
+        y = Math.max(0, Math.min(lockedCell.y - Math.floor(height / 2), decryptionState.gridHeight - height));
+        // Recheck overlaps
+        overlappingLocked = [];
+        for (const locked of decryptionState.lockedCells) {
+            if (locked.x >= x && locked.x < x + width &&
+                locked.y >= y && locked.y < y + height) {
+                overlappingLocked.push(locked);
+            }
+        }
+        isDangerous = overlappingLocked.length > 0;
+    }
     decryptionState.isDangerous = isDangerous;
     decryptionState.dangerousCells = overlappingLocked;
 

@@ -8,12 +8,12 @@ import { showView, log } from '../ui/rendering.js';
 import { playClick, playEmailNotification } from '../systems/audio.js';
 import { RANDOM_EMAILS, FIRST_CONTACT_EMAIL } from '../narrative/emails.js';
 
-// Open the mailbox view
+// Open the mailbox view (toggles if already open)
 export function openMailbox() {
-    // Check if already in mailbox view
     const currentView = document.querySelector('.view.active').id;
     if (currentView === 'mailbox-view') {
-        return; // Already in mailbox, do nothing
+        closeMailbox();
+        return;
     }
 
     // Save current view to return to it later
@@ -31,6 +31,30 @@ export function closeMailbox() {
     const returnView = gameState.previousView || 'starmap-view';
     showView(returnView);
     log('Mailbox closed');
+
+    // Day 2 cliffhanger: check if we need to advance the state machine
+    if (gameState.day2CliffhangerPhase === 0 || gameState.day2CliffhangerPhase === 4) {
+        const hasReadRelevant = checkCliffhangerEmailRead();
+        if (hasReadRelevant) {
+            // Dynamic import to avoid circular dependency with day-report.js
+            import('./day-report.js').then(module => {
+                module.advanceDay2Cliffhanger(gameState.day2CliffhangerPhase);
+            });
+        }
+    }
+}
+
+function checkCliffhangerEmailRead() {
+    if (gameState.day2CliffhangerPhase === 0) {
+        return gameState.mailboxMessages.some(
+            msg => msg.subject.includes('Deep Space Anomaly') && msg.read
+        );
+    } else if (gameState.day2CliffhangerPhase === 4) {
+        return gameState.mailboxMessages.some(
+            msg => msg.subject.includes('System Failure') && msg.read
+        );
+    }
+    return false;
 }
 
 // Update the mailbox display with current messages

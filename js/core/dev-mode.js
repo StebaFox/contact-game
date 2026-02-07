@@ -6,6 +6,7 @@
 import { gameState } from './game-state.js';
 import { showView, log } from '../ui/rendering.js';
 import { applyDayCode, autoSave } from './save-system.js';
+import { loadDayWithProgress } from '../ui/boot-sequence.js';
 import { DAY_CONFIG } from './day-system.js';
 import { checkAndShowDayComplete } from '../systems/day-report.js';
 import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
@@ -30,6 +31,11 @@ let updateStarStatusFn = null;
 let saveProgressFn = null;
 let showFinalReportFn = null;
 let sendRandomMailFn = null;
+let openInvestigationFn = null;
+let unlockInvestigationFn = null;
+let onFragmentCollectedFn = null;
+let addSRC7024Fn = null;
+let addNexusPointFn = null;
 
 // Set external functions (called from main.js)
 export function setDevFunctions(fns) {
@@ -46,6 +52,11 @@ export function setDevFunctions(fns) {
     saveProgressFn = fns.saveProgress;
     showFinalReportFn = fns.showFinalReport;
     sendRandomMailFn = fns.sendRandomMail;
+    openInvestigationFn = fns.openInvestigation;
+    unlockInvestigationFn = fns.unlockInvestigation;
+    onFragmentCollectedFn = fns.onFragmentCollected;
+    addSRC7024Fn = fns.addSRC7024;
+    addNexusPointFn = fns.addNexusPoint;
 }
 
 // Initialize dev mode
@@ -119,6 +130,16 @@ export function showDevPanel() {
             <button data-action="showFinalAlignment">Final Alignment</button>
             <button data-action="showTriangulation">Triangulation</button>
             <button data-action="showReroute">Reroute (Power)</button>
+
+            <div class="dev-section">INVESTIGATION</div>
+            <button data-action="unlockInvestigation">Unlock Investigation</button>
+            <button data-action="openInvestigation">Open Investigation</button>
+            <button data-action="addSRC7024">Add SRC-7024</button>
+            <button data-action="addNexusPoint">Add NEXUS POINT</button>
+            <button data-action="giveFragment1">Give Fragment 1 (SRC-7024)</button>
+            <button data-action="giveFragment2">Give Fragment 2 (Nexus)</button>
+            <button data-action="giveFragment3">Give Fragment 3 (Eridani)</button>
+            <button data-action="giveAllFragments">Give All Fragments</button>
 
             <div class="dev-section">STAR ACTIONS</div>
             <button data-action="markAllScanned">Mark All Scanned</button>
@@ -226,6 +247,14 @@ export function showDevPanel() {
                 case 'resetProgress': devResetProgress(); break;
                 case 'addRandomMail': devAddRandomMail(); break;
                 case 'logState': devLogState(); break;
+                case 'unlockInvestigation': devUnlockInvestigation(); break;
+                case 'openInvestigation': devOpenInvestigation(); break;
+                case 'addSRC7024': devAddSRC7024(); break;
+                case 'addNexusPoint': devAddNexusPoint(); break;
+                case 'giveFragment1': devGiveFragment('src7024'); break;
+                case 'giveFragment2': devGiveFragment('nexusPoint'); break;
+                case 'giveFragment3': devGiveFragment('eridani82'); break;
+                case 'giveAllFragments': devGiveAllFragments(); break;
                 case 'showFinalMessage': devShowFinalMessage(); break;
                 case 'triggerEndState': devTriggerEndState(); break;
             }
@@ -281,8 +310,8 @@ function devSkipToDay(day) {
     if (code) {
         applyDayCode(code);
         log(`DEV: Skipped to Day ${day} (code: ${code})`, 'highlight');
-        // Reload to apply the new day state
-        setTimeout(() => location.reload(), 500);
+        // Load the day state directly without page reload
+        loadDayWithProgress();
     }
 }
 
@@ -545,12 +574,54 @@ export function devLogState() {
     console.log('Contacted Stars:', [...gameState.contactedStars]);
     console.log('Scan Results:', [...gameState.scanResults.entries()]);
     console.log('Fragments:', gameState.fragments);
+    console.log('Investigation Unlocked:', gameState.investigationUnlocked);
+    console.log('Dynamic Stars:', gameState.dynamicStars?.map(s => s.id) || []);
+    console.log('CMB Detected:', gameState.cmbDetected);
     console.log('Decryption Complete:', gameState.decryptionComplete);
     console.log('Tutorial Complete:', gameState.tutorialCompleted);
     console.log('Mailbox Messages:', gameState.mailboxMessages.length);
     console.log('Unread Mail:', gameState.unreadMailCount);
     console.log('==================');
     log('DEV: State logged to console (F12 to view)', 'highlight');
+}
+
+// Dev functions - Investigation
+function devUnlockInvestigation() {
+    if (unlockInvestigationFn) unlockInvestigationFn();
+    log('DEV: Investigation page unlocked', 'highlight');
+}
+
+function devOpenInvestigation() {
+    if (!gameState.investigationUnlocked) {
+        if (unlockInvestigationFn) unlockInvestigationFn();
+    }
+    if (openInvestigationFn) openInvestigationFn();
+    log('DEV: Opened investigation page', 'highlight');
+}
+
+function devAddSRC7024() {
+    if (addSRC7024Fn) addSRC7024Fn();
+    log('DEV: SRC-7024 added to starmap', 'highlight');
+}
+
+function devAddNexusPoint() {
+    if (addNexusPointFn) addNexusPointFn();
+    log('DEV: NEXUS POINT added to starmap', 'highlight');
+}
+
+function devGiveFragment(fragmentKey) {
+    if (onFragmentCollectedFn) onFragmentCollectedFn(fragmentKey);
+    log(`DEV: Fragment "${fragmentKey}" collected`, 'highlight');
+}
+
+function devGiveAllFragments() {
+    ['src7024', 'nexusPoint', 'eridani82'].forEach(key => {
+        if (onFragmentCollectedFn) onFragmentCollectedFn(key);
+    });
+    if (!gameState.investigationUnlocked && unlockInvestigationFn) {
+        unlockInvestigationFn();
+    }
+    log('DEV: All 3 fragments collected (use Synthesis for #4)', 'highlight');
 }
 
 function devShowFinalMessage() {

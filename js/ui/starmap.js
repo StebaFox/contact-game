@@ -19,6 +19,8 @@ let updateStarmapArrayStatsFn = null;
 let drawStarVisualizationFn = null;
 let stopSignalAnimationFn = null;
 let updateTelemetryFn = null;
+let startDirectDecryptionFn = null;
+let initiateSRC7024CrashScanFn = null;
 
 export function setStarmapFunctions(fns) {
     setArrayTargetFn = fns.setArrayTarget;
@@ -29,6 +31,27 @@ export function setStarmapFunctions(fns) {
         drawStarVisualizationFn = fns.drawStarVisualization;
     }
     if (fns.updateTelemetry) updateTelemetryFn = fns.updateTelemetry;
+    if (fns.startDirectDecryption) startDirectDecryptionFn = fns.startDirectDecryption;
+    if (fns.initiateSRC7024CrashScan) initiateSRC7024CrashScanFn = fns.initiateSRC7024CrashScan;
+}
+
+// Helper to get the selected star object (regular or dynamic)
+function getSelectedStar() {
+    const id = gameState.selectedStarId;
+    if (id === null || id === undefined) return null;
+    if (typeof id === 'number' && gameState.stars[id]) return gameState.stars[id];
+    if (gameState.dynamicStars) {
+        return gameState.dynamicStars.find(s => s.id === id) || null;
+    }
+    return null;
+}
+
+// Get pixel position for a star (handles dynamic stars with fractional coords)
+function getStarPixelXY(star, canvasWidth, canvasHeight) {
+    if (star.isDynamic) {
+        return { x: star.x * canvasWidth, y: star.y * canvasHeight };
+    }
+    return { x: star.x, y: star.y };
 }
 
 // False positive star indices (Day 1: 4, 7, 9; Day 2: 14, 18; Day 3: 24, 27)
@@ -389,15 +412,25 @@ export function selectStar(starId) {
     const hasContact = gameState.contactedStars.has(starId);
     const scanResult = gameState.scanResults.get(starId);
 
+    // Special case: Ross 128 (index 8) needs decryption on Day 2+
+    const needsDecryption = star.id === 8 && !gameState.decryptionComplete && gameState.currentDay >= 2;
+
     // Determine if this star is "complete" (can't be scanned again)
-    const isComplete = hasContact || (scanResult && (scanResult.type === 'false_positive' || scanResult.type === 'natural' || scanResult.type === 'verified_signal'));
+    const isComplete = needsDecryption || hasContact || (scanResult && (scanResult.type === 'false_positive' || scanResult.type === 'natural' || scanResult.type === 'verified_signal'));
 
     // Only show scan confirmation if not complete
     gameState.showScanConfirm = !isComplete;
 
     // Build status indicator with scan result details
     let statusBadge = '';
-    if (hasContact) {
+    if (needsDecryption) {
+        statusBadge = `<div style="margin-top: 12px; padding-top: 12px; border-top: 2px solid #ff0; animation: warningPulse 1.5s ease-in-out infinite;">
+            <div style="color: #ff0; text-shadow: 0 0 5px #ff0; font-size: 14px;">⚠ ENCRYPTED SIGNAL</div>
+            <div style="color: #0ff; font-size: 12px; margin-top: 8px;">EXTRASOLAR ORIGIN - ENCODED</div>
+            <div style="color: #0f0; font-size: 12px; margin-top: 8px; text-shadow: 0 0 5px #0f0;">QUANTUM DECRYPTION: AVAILABLE</div>
+            <button id="direct-decrypt-btn" class="btn" style="margin-top: 8px; background: rgba(0, 255, 0, 0.1); border: 1px solid #0f0; color: #0f0; padding: 4px 10px; font-family: 'VT323', monospace; font-size: 13px; cursor: pointer; display: inline-block; width: auto; text-shadow: 0 0 5px #0f0; animation: pulse 2s infinite;">BEGIN DECRYPTION</button>
+        </div>`;
+    } else if (hasContact) {
         statusBadge = '<div style="color: #f0f; text-shadow: 0 0 5px #f0f; margin-top: 12px; padding-top: 12px; border-top: 2px solid #0f0; font-size: 14px;">★ CONTACT ESTABLISHED</div>';
     } else if (scanResult) {
         // Show detailed scan result
@@ -419,14 +452,21 @@ export function selectStar(starId) {
                 <div style="color: #ff0; font-size: 12px; margin-top: 8px;">EXTRASOLAR ORIGIN</div>
             </div>`;
         } else if (scanResult.type === 'encrypted_signal') {
-            const canDecrypt = gameState.currentDay >= 2;
-            statusBadge = `<div style="margin-top: 12px; padding-top: 12px; border-top: 2px solid #ff0; animation: warningPulse 1.5s ease-in-out infinite;">
-                <div style="color: #ff0; text-shadow: 0 0 5px #ff0; font-size: 14px;">⚠ ENCRYPTED SIGNAL</div>
-                <div style="color: #0ff; font-size: 12px; margin-top: 8px;">EXTRASOLAR ORIGIN - ENCODED</div>
-                ${canDecrypt ?
-                    '<div style="color: #0f0; font-size: 12px; margin-top: 8px; text-shadow: 0 0 5px #0f0;">QUANTUM DECRYPTION: AVAILABLE<br>RESCAN TO DECRYPT</div>' :
-                    '<div style="color: #f00; font-size: 12px; margin-top: 8px;">DECRYPTION: REQUIRES LEVEL 5</div>'}
-            </div>`;
+            if (gameState.decryptionComplete) {
+                // Post-decryption: signal decoded, ready for contact
+                statusBadge = `<div style="margin-top: 12px; padding-top: 12px; border-top: 2px solid #0f0;">
+                    <div style="color: #0f0; text-shadow: 0 0 5px #0f0; font-size: 14px;">✓ SIGNAL DECRYPTED</div>
+                    <div style="color: #0ff; font-size: 12px; margin-top: 8px;">EXTRASOLAR ORIGIN CONFIRMED</div>
+                    <div style="color: #ff0; font-size: 12px; margin-top: 8px;">SCAN TO ESTABLISH CONTACT</div>
+                </div>`;
+            } else {
+                // Day 1: can't decrypt yet
+                statusBadge = `<div style="margin-top: 12px; padding-top: 12px; border-top: 2px solid #ff0; animation: warningPulse 1.5s ease-in-out infinite;">
+                    <div style="color: #ff0; text-shadow: 0 0 5px #ff0; font-size: 14px;">⚠ ENCRYPTED SIGNAL</div>
+                    <div style="color: #0ff; font-size: 12px; margin-top: 8px;">EXTRASOLAR ORIGIN - ENCODED</div>
+                    <div style="color: #f00; font-size: 12px; margin-top: 8px;">DECRYPTION: REQUIRES LEVEL 5</div>
+                </div>`;
+            }
         }
     } else if (isAnalyzed) {
         statusBadge = '<div style="color: #ff0; text-shadow: 0 0 5px #ff0; margin-top: 12px; padding-top: 12px; border-top: 2px solid #0f0; font-size: 14px;">✓ ANALYZED</div>';
@@ -474,6 +514,18 @@ export function selectStar(starId) {
         ${weakSignalWarning}
         ${statusBadge}
     `;
+
+    // Attach direct decryption button handler for Ross 128
+    if (needsDecryption) {
+        const decryptBtn = document.getElementById('direct-decrypt-btn');
+        if (decryptBtn && startDirectDecryptionFn) {
+            decryptBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                playClick();
+                startDirectDecryptionFn();
+            });
+        }
+    }
 
     // Draw star visualization
     drawStarVisualization(star);
@@ -540,9 +592,106 @@ export function selectStar(starId) {
     }
 }
 
+// Select a dynamic star (SRC-7024 or NEXUS POINT)
+function selectDynamicStar(dStar) {
+    gameState.selectedStarId = dStar.id;
+    gameState.currentStar = dStar;
+
+    playSelectStar();
+    playStaticBurst();
+
+    // Deselect any catalog star
+    document.querySelectorAll('.star-item').forEach(item => item.classList.remove('selected'));
+
+    // Update star info panel
+    const starInfoTitle = document.querySelector('.star-info-title');
+    starInfoTitle.textContent = dStar.name;
+
+    const starDetails = document.getElementById('star-details');
+
+    // Check scan status
+    const isComplete = gameState.scanResults.has(dStar.id) || gameState.contactedStars.has(dStar.id);
+    const isLockedDay2 = dStar.id === 'src7024' && gameState.currentDay < 3 && gameState.day2CliffhangerPhase !== 1;
+
+    // Enable scan confirmation if scannable
+    gameState.showScanConfirm = !isComplete && !isLockedDay2;
+
+    let statusBadge = '';
+    if (isComplete) {
+        statusBadge = `<div style="color: #0f0; margin-top: 12px; padding-top: 12px; border-top: 2px solid #0f0; font-size: 14px;">✓ ANALYZED</div>`;
+    } else if (isLockedDay2) {
+        statusBadge = `<div style="color: #ff0; margin-top: 12px; padding-top: 12px; border-top: 2px solid #ff0; font-size: 14px;">
+            ⚠ DAY 2 SURVEY COMPLETE<br>
+            <span style="font-size: 12px; color: #0ff;">Analysis deferred to Day 3</span>
+        </div>`;
+    }
+
+    starDetails.innerHTML = `
+        <div>
+            <strong>DESIGNATION:</strong><br>
+            ${dStar.name}<br>
+            <strong>COORDINATES:</strong><br>
+            ${dStar.coordinates}<br>
+            <strong>DISTANCE:</strong><br>
+            ${dStar.distance} ly<br>
+            <strong>TYPE:</strong><br>
+            ${dStar.starType}<br>
+            <strong>CLASS:</strong><br>
+            ${dStar.starClass}<br>
+        </div>
+        <div style="color: #0ff; margin-top: 12px; padding: 10px; border: 1px solid #0ff; background: rgba(0, 255, 255, 0.05); font-size: 12px;">
+            SIGNAL TYPE: UNKNOWN<br>
+            ORIGIN: ${dStar.starType}
+        </div>
+        ${statusBadge}
+    `;
+
+    // Hide array controls for dynamic stars
+    const arrayBtn = document.getElementById('array-status-btn');
+    if (arrayBtn) arrayBtn.style.display = 'none';
+    const starmapScanBtn = document.getElementById('starmap-array-scan-btn');
+    if (starmapScanBtn) starmapScanBtn.style.display = 'none';
+
+    // Draw a special visualization for dynamic stars
+    const canvas = document.getElementById('star-visual');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw distinct visual based on type
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const color = dStar.dynamicType === 'signal' ? '#0ff' : '#f0f';
+
+    for (let r = 50; r > 5; r -= 5) {
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = 0.1 + (50 - r) / 50 * 0.5;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    log(`Target acquired: ${dStar.name}`);
+    log(`Type: ${dStar.starType} | Distance: ${dStar.distance} ly`);
+}
+
 // Initiate scan sequence (called when user confirms)
 export function startScanSequence() {
     const star = gameState.currentStar;
+
+    // Day 2 cliffhanger: SRC-7024 crash scan intercept
+    if (star && star.id === 'src7024' && gameState.day2CliffhangerPhase === 1 && initiateSRC7024CrashScanFn) {
+        gameState.showScanConfirm = false;
+        initiateSRC7024CrashScanFn();
+        return;
+    }
 
     // Play acknowledgement sound
     playScanAcknowledge();
@@ -565,8 +714,10 @@ export function startScanSequence() {
     document.getElementById('target-class').textContent = star.starClass;
     document.getElementById('target-temp').textContent = star.temperature;
 
-    // Draw star visualization in analysis view
-    drawStarVisualization(star, 'analysis-star-visual');
+    // Draw star visualization in analysis view (skip for dynamic stars with non-numeric IDs)
+    if (!star.isDynamic) {
+        drawStarVisualization(star, 'analysis-star-visual');
+    }
 
     showView('analysis-view');
 
@@ -705,13 +856,97 @@ export function renderStarMap() {
         ctx.globalAlpha = 1;
     });
 
+    // Draw dynamic stars (SRC-7024, NEXUS POINT)
+    if (gameState.dynamicStars && gameState.dynamicStars.length > 0) {
+        gameState.dynamicStars.forEach(dStar => {
+            const dx = dStar.x * width;
+            const dy = dStar.y * height;
+            const parallaxX = dx + gameState.parallaxOffsetX * 0.3;
+            const parallaxY = dy + gameState.parallaxOffsetY * 0.3;
+            const isSelected = gameState.selectedStarId === dStar.id;
+            const pulse = (Math.sin(Date.now() * 0.004) + 1) / 2;
+
+            // Animate grow-in if recently added
+            const age = dStar.addedAt ? (Date.now() - dStar.addedAt) / 1000 : 10;
+            const growScale = Math.min(1, age / 2); // Grows over 2 seconds
+
+            if (dStar.dynamicType === 'signal') {
+                // SRC-7024: Pulsing cyan diamond
+                const size = (isSelected ? 8 : 6) * growScale;
+                ctx.save();
+                ctx.translate(parallaxX, parallaxY);
+                ctx.rotate(Math.PI / 4); // Diamond shape
+
+                ctx.fillStyle = `rgba(0, 255, 255, ${0.6 + pulse * 0.4})`;
+                ctx.shadowColor = '#0ff';
+                ctx.shadowBlur = 15 + pulse * 10;
+                ctx.fillRect(-size / 2, -size / 2, size, size);
+
+                // Outer glow ring
+                ctx.strokeStyle = `rgba(0, 255, 255, ${0.3 + pulse * 0.3})`;
+                ctx.lineWidth = 1;
+                ctx.strokeRect(-size - 2, -size - 2, (size + 2) * 2, (size + 2) * 2);
+                ctx.restore();
+
+                // Label
+                if (growScale > 0.5) {
+                    ctx.fillStyle = `rgba(0, 255, 255, ${0.7 * growScale})`;
+                    ctx.font = '16px VT323';
+                    ctx.textAlign = 'center';
+                    ctx.shadowBlur = 5;
+                    ctx.shadowColor = '#0ff';
+                    ctx.fillText('SRC-7024', parallaxX, parallaxY + 20);
+                    ctx.shadowBlur = 0;
+                }
+            } else if (dStar.dynamicType === 'nexus') {
+                // NEXUS POINT: Pulsing magenta/white
+                const size = (isSelected ? 8 : 6) * growScale;
+                const magentaPulse = (Math.sin(Date.now() * 0.006) + 1) / 2;
+
+                ctx.fillStyle = `rgba(255, ${Math.floor(100 * magentaPulse)}, 255, ${0.6 + pulse * 0.4})`;
+                ctx.shadowColor = '#f0f';
+                ctx.shadowBlur = 15 + pulse * 10;
+
+                // Draw as a star/asterisk shape
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2 + Date.now() * 0.001;
+                    const r = i % 2 === 0 ? size : size * 0.4;
+                    const sx = parallaxX + Math.cos(angle) * r;
+                    const sy = parallaxY + Math.sin(angle) * r;
+                    if (i === 0) ctx.moveTo(sx, sy);
+                    else ctx.lineTo(sx, sy);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                // Label
+                if (growScale > 0.5) {
+                    ctx.fillStyle = `rgba(255, 100, 255, ${0.7 * growScale})`;
+                    ctx.font = '16px VT323';
+                    ctx.textAlign = 'center';
+                    ctx.shadowBlur = 5;
+                    ctx.shadowColor = '#f0f';
+                    ctx.fillText('NEXUS POINT', parallaxX, parallaxY + 20);
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
+        });
+    }
+
     // Draw rotating crosshair on selected star
     if (gameState.selectedStarId !== null) {
-        const star = gameState.stars[gameState.selectedStarId];
+        const star = getSelectedStar();
+        if (star) {
+        // Get pixel position (handles dynamic stars with fractional coords)
+        const pos = getStarPixelXY(star, width, height);
 
         // Apply same parallax as target stars
-        const parallaxX = star.x + gameState.parallaxOffsetX * 0.3;
-        const parallaxY = star.y + gameState.parallaxOffsetY * 0.3;
+        const parallaxX = pos.x + gameState.parallaxOffsetX * 0.3;
+        const parallaxY = pos.y + gameState.parallaxOffsetY * 0.3;
 
         ctx.strokeStyle = '#0ff';
         ctx.lineWidth = 2;
@@ -765,12 +1000,17 @@ export function renderStarMap() {
 
         ctx.restore();
         ctx.shadowBlur = 0;
+        }
     }
 
     // Draw scan confirmation box or completion indicator
     if (gameState.selectedStarId !== null) {
-        const star = gameState.stars[gameState.selectedStarId];
-        const { boxX, boxY, boxWidth, boxHeight } = calculateScanBoxPosition(star, width);
+        const star = getSelectedStar();
+        if (!star) return;
+        // Convert dynamic star fractional coords to pixel coords for box positioning
+        const pos = getStarPixelXY(star, width, height);
+        const positionedStar = star.isDynamic ? { ...star, x: pos.x, y: pos.y } : star;
+        const { boxX, boxY, boxWidth, boxHeight } = calculateScanBoxPosition(positionedStar, width);
 
         if (gameState.showScanConfirm) {
             // Box background
@@ -901,13 +1141,23 @@ export function setupStarMapCanvas() {
 
     canvas.addEventListener('click', (e) => {
         const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        // Scale CSS coordinates to canvas pixel coordinates
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+
+        // Current parallax offset applied to stars during rendering
+        const pOffX = gameState.parallaxOffsetX * 0.3;
+        const pOffY = gameState.parallaxOffsetY * 0.3;
 
         // Check if clicking on scan confirmation box
         if (gameState.showScanConfirm && gameState.selectedStarId !== null) {
-            const star = gameState.stars[gameState.selectedStarId];
-            const { boxX, boxY, boxWidth, boxHeight } = calculateScanBoxPosition(star, canvas.width);
+            const star = getSelectedStar();
+            if (!star) return;
+            const pos = getStarPixelXY(star, canvas.width, canvas.height);
+            const positionedStar = star.isDynamic ? { ...star, x: pos.x, y: pos.y } : star;
+            const { boxX, boxY, boxWidth, boxHeight } = calculateScanBoxPosition(positionedStar, canvas.width);
 
             if (x >= boxX && x <= boxX + boxWidth && y >= boxY && y <= boxY + boxHeight) {
                 // Clicked on scan box
@@ -916,17 +1166,36 @@ export function setupStarMapCanvas() {
             }
         }
 
-        // Find clicked star
-        gameState.stars.forEach(star => {
-            const dx = star.x - x;
-            const dy = star.y - y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            if (distance < 10) {
-                gameState.selectedStarId = star.id;
-                selectStar(star.id);
+        // Check dynamic stars first
+        let clickedDynamic = false;
+        if (gameState.dynamicStars) {
+            for (const dStar of gameState.dynamicStars) {
+                const dsx = dStar.x * canvas.width + pOffX;
+                const dsy = dStar.y * canvas.height + pOffY;
+                const ddist = Math.sqrt((dsx - x) ** 2 + (dsy - y) ** 2);
+                if (ddist < 15) {
+                    selectDynamicStar(dStar);
+                    clickedDynamic = true;
+                    break;
+                }
             }
-        });
+        }
+
+        if (!clickedDynamic) {
+            // Find clicked catalog star
+            gameState.stars.forEach(star => {
+                const sx = star.x + pOffX;
+                const sy = star.y + pOffY;
+                const dx = sx - x;
+                const dy = sy - y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 10) {
+                    gameState.selectedStarId = star.id;
+                    selectStar(star.id);
+                }
+            });
+        }
     });
 }
 

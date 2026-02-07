@@ -31,6 +31,10 @@
                         <span class="mailbox-icon">[✉]</span> MAILBOX
                         <span class="mail-indicator" id="mail-indicator" style="display: none;">●</span>
                     </button>
+                    <button class="investigation-btn" id="investigation-btn" style="display: none;">
+                        <span class="investigation-icon">[◈]</span> PROJECT
+                        <span class="investigation-indicator" id="investigation-indicator" style="display: none;">●</span>
+                    </button>
                     <button class="layout-toggle-btn" id="layout-toggle-btn" title="Toggle Desktop/Mobile Layout">
                         [<span id="layout-label">AUTO</span>]
                     </button>
@@ -329,6 +333,75 @@ DEEP SPACE SIGNAL ANALYSIS SYSTEM  ·  Version 1.3.7
                         </div>
                     </div>
                     <button class="btn" id="mailbox-back-btn">RETURN</button>
+                </div>
+
+                <!-- Investigation / Project Lighthouse Section -->
+                <div id="investigation-view" class="view">
+                    <div class="investigation-container">
+                        <div class="investigation-header">
+                            <div class="investigation-classification">TOP SECRET // COSMIC // PROJECT LIGHTHOUSE</div>
+                            <h2>PROJECT LIGHTHOUSE</h2>
+                            <div class="investigation-subtitle">CLASSIFIED - LEVEL 6 CLEARANCE</div>
+                        </div>
+
+                        <div class="investigation-content">
+                            <!-- 3D Shape Canvas (Left) -->
+                            <div class="investigation-shape-panel">
+                                <div class="shape-title">DIMENSIONAL ANALYSIS</div>
+                                <canvas id="investigation-canvas" width="300" height="300"></canvas>
+                                <div class="shape-info">
+                                    <div class="shape-progress" id="shape-progress">FRAGMENTS: 0/4</div>
+                                    <div class="shape-form" id="shape-form">CURRENT FORM: VOID</div>
+                                </div>
+                            </div>
+
+                            <!-- Fragment Cards (Right) -->
+                            <div class="investigation-fragments">
+                                <div class="fragment-card" id="fragment-card-1">
+                                    <div class="fragment-header">
+                                        <span class="fragment-status" id="frag1-status">□</span>
+                                        FRAGMENT 1: SRC-7024
+                                    </div>
+                                    <div class="fragment-body" id="frag1-body">
+                                        <div class="fragment-locked">[AWAITING DATA]</div>
+                                    </div>
+                                </div>
+                                <div class="fragment-card" id="fragment-card-2">
+                                    <div class="fragment-header">
+                                        <span class="fragment-status" id="frag2-status">□</span>
+                                        FRAGMENT 2: NEXUS POINT
+                                    </div>
+                                    <div class="fragment-body" id="frag2-body">
+                                        <div class="fragment-locked">[AWAITING DATA]</div>
+                                    </div>
+                                </div>
+                                <div class="fragment-card" id="fragment-card-3">
+                                    <div class="fragment-header">
+                                        <span class="fragment-status" id="frag3-status">□</span>
+                                        FRAGMENT 3: 82 ERIDANI
+                                    </div>
+                                    <div class="fragment-body" id="frag3-body">
+                                        <div class="fragment-locked">[AWAITING DATA]</div>
+                                    </div>
+                                </div>
+                                <div class="fragment-card" id="fragment-card-4">
+                                    <div class="fragment-header">
+                                        <span class="fragment-status" id="frag4-status">□</span>
+                                        FRAGMENT 4: SYNTHESIS
+                                    </div>
+                                    <div class="fragment-body" id="frag4-body">
+                                        <div class="fragment-locked">[REQUIRES 3 DECODED FRAGMENTS]</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Button -->
+                        <div class="investigation-actions">
+                            <button class="btn" id="investigation-action-btn" style="display: none;">INITIATE SYNTHESIS SEQUENCE</button>
+                            <button class="btn" id="investigation-back-btn">RETURN TO ARRAY</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Dish Array Section -->

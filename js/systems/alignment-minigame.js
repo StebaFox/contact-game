@@ -67,8 +67,8 @@ const FRAGMENT_PATTERNS = {
         borderPattern: '▓▒░▒',
         pulseColor: '#00ff00'
     },
-    // Full puzzle fragments (4) - Day 3
-    ross128: {
+    // Full puzzle fragments (4) - Day 3 breadcrumb trail
+    src7024: {
         symbol: '◆◇◆',
         glyph: '▓█▓',
         color: '#0ff',
@@ -78,7 +78,7 @@ const FRAGMENT_PATTERNS = {
         borderPattern: '╔═╦═╗',
         pulseColor: '#00ffff'
     },
-    gliese832: {
+    nexusPoint: {
         symbol: '◇◆◇',
         glyph: '█▓█',
         color: '#ff0',
@@ -88,7 +88,7 @@ const FRAGMENT_PATTERNS = {
         borderPattern: '╠═╬═╣',
         pulseColor: '#ffff00'
     },
-    hd219134: {
+    eridani82: {
         symbol: '●○●',
         glyph: '░█░',
         color: '#0f0',
@@ -98,7 +98,7 @@ const FRAGMENT_PATTERNS = {
         borderPattern: '╚═╩═╝',
         pulseColor: '#00ff00'
     },
-    cmbSource: {
+    synthesis: {
         symbol: '○●○',
         glyph: '█░█',
         color: '#f0f',
@@ -138,6 +138,18 @@ function startAlignment(isTutorial, onSuccess, onCancel) {
     alignmentState.particles = [];
 
     alignmentState.requiredAlignments = isTutorial ? 2 : 4;
+
+    // Difficulty settings
+    if (isTutorial) {
+        alignmentState.alignmentTolerance = 15;
+        alignmentState.rotationEnabled = false;
+        alignmentState.driftEnabled = false;
+    } else {
+        alignmentState.alignmentTolerance = 8;
+        alignmentState.rotationEnabled = true;
+        alignmentState.driftEnabled = true;
+        alignmentState.driftPhase = 0;
+    }
 
     // Create UI
     createAlignmentUI(isTutorial);
@@ -225,7 +237,7 @@ function createAlignmentUI(isTutorial) {
                 font-size: 13px;
                 text-align: center;
             ">
-                <span style="color: #ff0;">⚡ STUDY</span> corner symbols on fragments | <span style="color: #ff0;">MATCH</span> them to slot hints | <span style="color: #ff0;">DRAG</span> to align
+                <span style="color: #ff0;">⚡ STUDY</span> corner symbols on fragments | <span style="color: #ff0;">MATCH</span> them to slot hints | <span style="color: #ff0;">DRAG</span> to align${!isTutorial ? ' | <span style="color: #f0f;">RIGHT-CLICK</span> to rotate' : ''}
             </div>
 
             <!-- Canvas Container -->
@@ -320,6 +332,7 @@ function setupCanvas() {
     alignmentState.canvas.addEventListener('mousemove', handleMouseMove);
     alignmentState.canvas.addEventListener('mouseup', handleMouseUp);
     alignmentState.canvas.addEventListener('mouseleave', handleMouseUp);
+    alignmentState.canvas.addEventListener('contextmenu', handleRightClick);
 
     // Touch events
     alignmentState.canvas.addEventListener('touchstart', handleTouchStart);
@@ -390,7 +403,7 @@ function initializeFragments(isTutorial) {
         ];
     } else {
         // Final: 4 fragments, 4 zones
-        const fragmentKeys = ['ross128', 'gliese832', 'hd219134', 'cmbSource'];
+        const fragmentKeys = ['src7024', 'nexusPoint', 'eridani82', 'synthesis'];
 
         alignmentState.fragments = fragmentKeys.map((key, i) => ({
             id: key,
@@ -400,7 +413,8 @@ function initializeFragments(isTutorial) {
             width: fragmentSize,
             height: fragmentSize,
             aligned: false,
-            targetZone: i
+            targetZone: i,
+            rotation: alignmentState.rotationEnabled ? (Math.random() * 4) * (Math.PI / 2) : 0 // Random 90-degree rotations
         }));
 
         // 4 zones arranged on the right - hints are random subsets of alienChars
@@ -477,6 +491,26 @@ function handleTouchEnd(e) {
     alignmentState.selectedFragment = null;
 }
 
+function handleRightClick(e) {
+    e.preventDefault();
+    if (!alignmentState.rotationEnabled) return;
+
+    const pos = getCanvasCoords(e);
+
+    // Find fragment under cursor and rotate it
+    for (let i = alignmentState.fragments.length - 1; i >= 0; i--) {
+        const f = alignmentState.fragments[i];
+        if (f.aligned) continue;
+
+        if (pos.x >= f.x && pos.x <= f.x + f.width &&
+            pos.y >= f.y && pos.y <= f.y + f.height) {
+            f.rotation = (f.rotation || 0) + Math.PI / 2; // Rotate 90 degrees
+            playFragmentPickup();
+            return;
+        }
+    }
+}
+
 function selectFragment(x, y) {
     // Find fragment under cursor
     for (let i = alignmentState.fragments.length - 1; i >= 0; i--) {
@@ -531,6 +565,16 @@ function checkAlignment() {
         );
 
         if (dist < alignmentState.alignmentTolerance + zone.width / 2) {
+            // Check rotation (must be upright - within ~10 degrees of 0 or 2*PI multiples)
+            if (alignmentState.rotationEnabled && f.rotation !== undefined) {
+                const normalizedRot = ((f.rotation % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+                if (normalizedRot > 0.2 && normalizedRot < Math.PI * 2 - 0.2) {
+                    // Not upright - give visual feedback
+                    playAlignmentError();
+                    addAlignmentParticles(fCenterX, fCenterY, '#ff0');
+                    return;
+                }
+            }
             // Check if correct zone
             if (f.targetZone === i) {
                 // Snap to zone
@@ -593,6 +637,19 @@ function animate() {
     // Update
     alignmentState.pulsePhase += 0.03;
     updateParticles();
+
+    // Apply gentle drift to unaligned fragments (hard mode only)
+    if (alignmentState.driftEnabled) {
+        alignmentState.driftPhase = (alignmentState.driftPhase || 0) + 0.01;
+        const rect2 = alignmentState.canvas.getBoundingClientRect();
+        alignmentState.fragments.forEach((f, i) => {
+            if (f.aligned || f === alignmentState.selectedFragment) return;
+            const driftX = Math.sin(alignmentState.driftPhase + i * 1.5) * 0.3;
+            const driftY = Math.cos(alignmentState.driftPhase * 0.7 + i * 2.1) * 0.2;
+            f.x = Math.max(0, Math.min(rect2.width - f.width, f.x + driftX));
+            f.y = Math.max(0, Math.min(rect2.height - f.height, f.y + driftY));
+        });
+    }
 
     alignmentState.animationId = requestAnimationFrame(animate);
 }
@@ -680,6 +737,18 @@ function drawFragments(ctx) {
         const pulse = 0.8 + 0.2 * Math.sin(alignmentState.pulsePhase + i);
         const fastPulse = 0.5 + 0.5 * Math.sin(alignmentState.pulsePhase * 3 + i);
 
+        const rotation = f.rotation || 0;
+        const centerX = f.x + f.width / 2;
+        const centerY = f.y + f.height / 2;
+
+        // Apply rotation transform
+        if (rotation !== 0) {
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(rotation);
+            ctx.translate(-centerX, -centerY);
+        }
+
         // Shadow for selected
         if (isSelected) {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
@@ -710,7 +779,6 @@ function drawFragments(ctx) {
         // Corner alien symbols (rotating through them based on phase)
         if (f.alienChars && f.alienChars.length > 0) {
             ctx.font = '10px "VT323", monospace';
-            const charIndex = Math.floor(alignmentState.pulsePhase * 2) % f.alienChars.length;
             const cornerAlpha = 0.4 + fastPulse * 0.4;
             ctx.fillStyle = `rgba(${hexToRgb(f.pulseColor || f.color)}, ${cornerAlpha})`;
 
@@ -751,9 +819,15 @@ function drawFragments(ctx) {
         ctx.fillStyle = `rgba(${hexToRgb(f.color)}, ${pulse * 0.7})`;
         ctx.fillText(f.glyph, f.x + f.width / 2, f.y + f.height / 2 + 18);
 
-        // Fragment label below
+        // Restore rotation transform
+        if (rotation !== 0) {
+            ctx.restore();
+        }
+
+        // Fragment label below (drawn without rotation so it's readable)
         ctx.font = '10px "VT323", monospace';
         ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.textAlign = 'center';
         ctx.fillText(f.id.toUpperCase(), f.x + f.width / 2, f.y + f.height + 12);
     });
 }

@@ -189,6 +189,225 @@ body {
     51%, 100% { opacity: 0; }
 }
 
+/* Investigation / Project Button */
+.investigation-btn {
+    background: rgba(255, 0, 255, 0.1);
+    border: 2px solid #f0f;
+    color: #f0f;
+    padding: 8px 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-shadow: 0 0 5px #f0f;
+    position: relative;
+}
+
+.investigation-btn:hover {
+    background: rgba(255, 0, 255, 0.2);
+    box-shadow: 0 0 10px #f0f;
+    transform: scale(1.05);
+}
+
+.investigation-icon {
+    font-size: 16px;
+    margin-right: 5px;
+}
+
+.investigation-indicator {
+    color: #ff0;
+    font-size: 20px;
+    animation: mailBlink 1s infinite;
+    margin-left: 5px;
+}
+
+/* Investigation Page */
+.investigation-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.investigation-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.investigation-classification {
+    color: #f00;
+    font-size: 12px;
+    letter-spacing: 3px;
+    margin-bottom: 10px;
+    text-shadow: 0 0 5px #f00;
+}
+
+.investigation-header h2 {
+    color: #f0f;
+    text-shadow: 0 0 10px #f0f;
+    letter-spacing: 4px;
+    font-size: 28px;
+    margin: 10px 0;
+}
+
+.investigation-subtitle {
+    color: #808;
+    font-size: 14px;
+    letter-spacing: 2px;
+}
+
+.investigation-content {
+    display: flex;
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
+/* 3D Shape Panel */
+.investigation-shape-panel {
+    flex: 0 0 320px;
+}
+
+.shape-title {
+    color: #0ff;
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-align: center;
+    margin-bottom: 10px;
+    text-shadow: 0 0 5px #0ff;
+}
+
+#investigation-canvas {
+    display: block;
+    border: 2px solid #333;
+    background: #000;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.1);
+}
+
+.shape-info {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.shape-progress {
+    color: #0f0;
+    font-size: 16px;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+.shape-form {
+    color: #0ff;
+    font-size: 13px;
+    letter-spacing: 1px;
+}
+
+/* Fragment Cards */
+.investigation-fragments {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.fragment-card {
+    border: 1px solid #333;
+    background: rgba(0, 0, 0, 0.5);
+    transition: border-color 0.3s;
+}
+
+.fragment-card.decoded {
+    border-color: #0f0;
+}
+
+.fragment-card.available {
+    border-color: #ff0;
+    animation: warningPulse 1.5s ease-in-out infinite;
+}
+
+.fragment-header {
+    padding: 8px 12px;
+    border-bottom: 1px solid #222;
+    color: #888;
+    font-size: 13px;
+    letter-spacing: 1px;
+}
+
+.fragment-card.decoded .fragment-header {
+    color: #0f0;
+}
+
+.fragment-card.available .fragment-header {
+    color: #ff0;
+}
+
+.fragment-status {
+    margin-right: 8px;
+}
+
+.fragment-body {
+    padding: 10px 12px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #0f0;
+    min-height: 40px;
+}
+
+.fragment-locked {
+    color: #444;
+    font-style: italic;
+}
+
+.fragment-decoded-content {
+    font-family: 'Courier New', monospace;
+}
+
+.fragment-parsed-bar {
+    margin-top: 6px;
+    color: #0ff;
+    font-size: 11px;
+}
+
+.fragment-action-btn {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 4px 12px;
+    border: 1px solid #ff0;
+    background: rgba(255, 255, 0, 0.1);
+    color: #ff0;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    text-shadow: 0 0 3px #ff0;
+}
+
+.fragment-action-btn:hover {
+    background: rgba(255, 255, 0, 0.2);
+    box-shadow: 0 0 8px #ff0;
+}
+
+/* Investigation Actions */
+.investigation-actions {
+    text-align: center;
+    margin-top: 20px;
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+#investigation-action-btn {
+    background: rgba(255, 0, 255, 0.15);
+    border: 2px solid #f0f;
+    color: #f0f;
+    text-shadow: 0 0 5px #f0f;
+    font-size: 16px;
+    padding: 12px 30px;
+    letter-spacing: 2px;
+}
+
+#investigation-action-btn:hover {
+    background: rgba(255, 0, 255, 0.3);
+    box-shadow: 0 0 15px #f0f;
+}
+
 /* Main Content */
 .main-content {
     flex: 1;
@@ -794,8 +1013,8 @@ h2 {
 }
 
 .star-info-panel {
-    flex: 0 0 250px;
-    min-width: 250px;
+    flex: 0 0 280px;
+    min-width: 280px;
     height: 554px; /* Match starmap canvas height (550px) + border (4px) */
     border: 2px solid #0f0;
     background: rgba(0, 255, 0, 0.02);
@@ -3639,4 +3858,275 @@ body.force-mobile input[type="range"]::-webkit-slider-thumb {
         box-shadow: 0 0 25px rgba(0, 255, 0, 0.8), 0 0 35px rgba(0, 255, 0, 0.4);
         border-color: #0ff;
     }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   INTERACTIVE DAY REPORT CLASSIFICATION FORMS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.classification-panel {
+    border: 2px solid #0f0;
+    background: #000;
+    max-width: 650px;
+    width: 100%;
+    box-shadow: 0 0 50px rgba(0, 255, 0, 0.3);
+}
+
+.classification-header {
+    background: linear-gradient(180deg, #020 0%, #010 100%);
+    border-bottom: 2px solid #0f0;
+    padding: 15px 20px;
+    color: #0f0;
+    font-size: 20px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px #0f0;
+}
+
+.classification-subheader {
+    color: #0ff;
+    font-size: 14px;
+    margin-top: 5px;
+    letter-spacing: 0;
+}
+
+.classification-body {
+    padding: 15px 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.classification-section-label {
+    color: #0f0;
+    font-size: 16px;
+    margin: 15px 0 8px 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #030;
+    letter-spacing: 1px;
+}
+
+.classification-section-label:first-child {
+    margin-top: 0;
+}
+
+.signal-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #020;
+    gap: 10px;
+}
+
+.signal-row-highlight {
+    border: 1px solid #ff0;
+    background: rgba(255, 255, 0, 0.03);
+    padding: 10px;
+    margin: 5px 0;
+    animation: warningPulse 2s ease-in-out infinite;
+}
+
+.signal-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 140px;
+}
+
+.signal-name {
+    color: #fff;
+    font-size: 15px;
+}
+
+.signal-meta {
+    color: #088;
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+.signal-buttons {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.signal-check {
+    color: #030;
+    font-size: 16px;
+    min-width: 20px;
+    text-align: center;
+    transition: color 0.3s;
+}
+
+.signal-check.done {
+    color: #0f0;
+    text-shadow: 0 0 5px #0f0;
+}
+
+.classify-btn,
+.verify-btn,
+.priority-btn,
+.assess-btn,
+.mission-btn,
+.recommend-btn,
+.fragment-ack-btn {
+    background: transparent;
+    border: 1px solid #060;
+    color: #080;
+    font-family: 'VT323', monospace;
+    font-size: 13px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.classify-btn:hover,
+.verify-btn:hover,
+.priority-btn:hover,
+.assess-btn:hover,
+.mission-btn:hover,
+.recommend-btn:hover,
+.fragment-ack-btn:hover {
+    background: rgba(0, 255, 0, 0.1);
+    border-color: #0f0;
+    color: #0f0;
+}
+
+.classify-btn.active,
+.priority-btn.active,
+.assess-btn.active,
+.mission-btn.active,
+.recommend-btn.active {
+    background: rgba(0, 255, 0, 0.15);
+    border: 2px solid #0f0;
+    color: #0f0;
+    text-shadow: 0 0 5px #0f0;
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+}
+
+.verify-btn.verified {
+    background: rgba(0, 255, 0, 0.1);
+    border-color: #0f0;
+    color: #0f0;
+    text-shadow: 0 0 5px #0f0;
+    pointer-events: none;
+}
+
+.fragment-ack-btn.acknowledged {
+    background: rgba(0, 255, 0, 0.1);
+    border-color: #0f0;
+    color: #0f0;
+    text-shadow: 0 0 5px #0f0;
+    pointer-events: none;
+}
+
+.priority-btn[data-value="CRITICAL"].active {
+    border-color: #ff0;
+    color: #ff0;
+    text-shadow: 0 0 5px #ff0;
+    box-shadow: 0 0 10px rgba(255, 255, 0, 0.3);
+    background: rgba(255, 255, 0, 0.1);
+}
+
+.mission-btn[data-value="COSMIC_REVELATION"].active {
+    border-color: #f0f;
+    color: #f0f;
+    text-shadow: 0 0 5px #f0f;
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
+    background: rgba(255, 0, 255, 0.1);
+}
+
+.assess-btn[data-value="PARADIGM_SHIFT"].active {
+    border-color: #ff0;
+    color: #ff0;
+    text-shadow: 0 0 5px #ff0;
+    box-shadow: 0 0 10px rgba(255, 255, 0, 0.3);
+    background: rgba(255, 255, 0, 0.1);
+}
+
+.classification-footer {
+    border-top: 2px solid #0f0;
+    padding: 15px 20px;
+    text-align: center;
+}
+
+#compile-report-btn {
+    background: transparent;
+    border: 2px solid #060;
+    color: #080;
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    padding: 12px 35px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+#compile-report-btn.ready {
+    border-color: #0f0;
+    color: #0f0;
+    text-shadow: 0 0 10px #0f0;
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.verify-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #020;
+}
+
+.verify-name {
+    color: #fff;
+    font-size: 14px;
+    min-width: 140px;
+}
+
+.verify-type {
+    color: #0aa;
+    font-size: 12px;
+    flex: 1;
+    text-align: center;
+}
+
+.fragment-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #020;
+    gap: 12px;
+}
+
+.fragment-status {
+    font-size: 12px;
+    min-width: 80px;
+    text-align: center;
+    padding: 2px 8px;
+    border: 1px solid;
+}
+
+.fragment-status.collected {
+    color: #0f0;
+    border-color: #0f0;
+    background: rgba(0, 255, 0, 0.05);
+}
+
+.fragment-status.pending {
+    color: #f00;
+    border-color: #f00;
+    background: rgba(255, 0, 0, 0.05);
+}
+
+.fragment-name {
+    color: #0ff;
+    font-size: 14px;
+    flex: 1;
+}
+
+.classification-flash {
+    animation: classificationFlash 0.6s ease-out;
+}
+
+@keyframes classificationFlash {
+    0% { background: rgba(0, 255, 0, 0.3); }
+    100% { background: transparent; }
 }

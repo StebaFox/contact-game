@@ -11,7 +11,8 @@ import { getDayProgress, advanceDay, DAY_CONFIG, checkDayComplete } from '../cor
 import { startFinalAlignment } from './alignment-minigame.js';
 import { showFinalMessage } from '../narrative/final-message.js';
 import { addMailMessage } from './mailbox.js';
-import { ROSS128_DECRYPT_EMAIL } from '../narrative/emails.js';
+import { ROSS128_DECRYPT_EMAIL, DAY2_CHEN_SIGNAL_EMAIL, DAY2_BLACKOUT_EMAIL } from '../narrative/emails.js';
+import { addSRC7024 } from './investigation.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Check Day Completion
@@ -36,12 +37,177 @@ export function checkAndShowDayComplete() {
     // Mark that we've shown the report for this day
     gameState.dayReportShown = gameState.currentDay;
 
-    // Show the day complete popup after a brief delay
-    setTimeout(() => {
-        showDayCompletePopup();
-    }, 1500);
+    // Day 2: Insert SRC-7024 cliffhanger reveal before showing popup
+    if (gameState.currentDay === 2) {
+        setTimeout(() => {
+            triggerDay2Cliffhanger();
+        }, 2000);
+    } else {
+        // Show the day complete popup after a brief delay
+        setTimeout(() => {
+            showDayCompletePopup();
+        }, 1500);
+    }
 
     return true;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Day 2 Cliffhanger — SRC-7024 Reveal
+// ─────────────────────────────────────────────────────────────────────────────
+
+function triggerDay2Cliffhanger() {
+    // If sequence already completed (or SRC-7024 already present from a prior run), skip
+    if (gameState.day2CliffhangerPhase >= 5 ||
+        (gameState.dynamicStars && gameState.dynamicStars.find(s => s.id === 'src7024') &&
+         gameState.day2CliffhangerPhase === -1)) {
+        showDayCompletePopup();
+        return;
+    }
+
+    // Start Phase 0: Send Dr. Chen email, wait for player to read it
+    gameState.day2CliffhangerPhase = 0;
+    autoSave();
+
+    playSecurityBeep('warning');
+    log('ALERT: Overnight analysis flagged anomalous deep space signature...', 'warning');
+
+    setTimeout(() => {
+        const body = DAY2_CHEN_SIGNAL_EMAIL.body.replace(/{PLAYER_NAME}/g, gameState.playerName);
+        addMailMessage(DAY2_CHEN_SIGNAL_EMAIL.from, DAY2_CHEN_SIGNAL_EMAIL.subject, body);
+        log('New priority message in your mailbox.', 'highlight');
+    }, 1500);
+}
+
+// State machine for Day 2 cliffhanger — called by mailbox.js and scanning.js
+export function advanceDay2Cliffhanger(triggerPhase) {
+    if (gameState.day2CliffhangerPhase !== triggerPhase) return;
+
+    switch (triggerPhase) {
+        case 0:
+            // Player read Chen email and closed mailbox → Phase 1: add SRC-7024
+            gameState.day2CliffhangerPhase = 1;
+            autoSave();
+
+            setTimeout(() => {
+                addSRC7024();
+                const src = gameState.dynamicStars.find(s => s.id === 'src7024');
+                if (src) src.addedAt = Date.now();
+                playSecurityBeep('success');
+                log('NEW TARGET ADDED TO STARMAP: SRC-7024', 'highlight');
+                log('Select SRC-7024 on the starmap to begin scanning.', 'info');
+                autoSave();
+            }, 500);
+            break;
+
+        case 1:
+            // Player scanned SRC-7024 → Phase 2 (crash sequence handles itself)
+            gameState.day2CliffhangerPhase = 2;
+            autoSave();
+            break;
+
+        case 2:
+            // Crash sequence complete → Phase 3: quick reboot
+            gameState.day2CliffhangerPhase = 3;
+            autoSave();
+            startQuickReboot();
+            break;
+
+        case 3:
+            // Reboot complete → Phase 4: send blackout email
+            gameState.day2CliffhangerPhase = 4;
+            autoSave();
+
+            setTimeout(() => {
+                const time = new Date().toTimeString().substring(0, 5);
+                const body = DAY2_BLACKOUT_EMAIL.body
+                    .replace(/{PLAYER_NAME}/g, gameState.playerName)
+                    .replace(/{TIME}/g, time);
+                addMailMessage(DAY2_BLACKOUT_EMAIL.from, DAY2_BLACKOUT_EMAIL.subject, body);
+                log('EMERGENCY ALERT: New priority message received.', 'warning');
+            }, 2000);
+            break;
+
+        case 4:
+            // Player read blackout email → show day report
+            gameState.day2CliffhangerPhase = 5;
+            autoSave();
+            showDayCompletePopup();
+            break;
+    }
+}
+
+function startQuickReboot() {
+    const overlay = document.createElement('div');
+    overlay.id = 'reboot-overlay';
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: #000; z-index: 9999;
+        font-family: 'VT323', monospace; padding: 40px; overflow: hidden;
+    `;
+    document.body.appendChild(overlay);
+
+    const rebootLines = [
+        { text: '', delay: 800 },
+        { text: 'SYSTEM FAILURE DETECTED', delay: 400, cls: 'error' },
+        { text: 'ERROR CODE: 0xDEAD7024', delay: 300, cls: 'error' },
+        { text: '', delay: 500 },
+        { text: 'EMERGENCY REBOOT INITIATED...', delay: 600 },
+        { text: '', delay: 400 },
+        { text: 'RESTORING CORE SYSTEMS........... OK', delay: 500 },
+        { text: 'SENSOR ARRAY.................... RECONNECTING', delay: 400 },
+        { text: 'SIGNAL PROCESSING............... ONLINE', delay: 350 },
+        { text: 'DEEP SPACE ARRAY................ STANDBY', delay: 350 },
+        { text: 'DATA INTEGRITY CHECK............ WARNINGS', delay: 400, cls: 'warning' },
+        { text: '', delay: 300 },
+        { text: 'SYSTEM RESTORED — PARTIAL DATA LOSS DETECTED', delay: 500, cls: 'warning' },
+        { text: 'RESUMING OPERATIONS...', delay: 800 }
+    ];
+
+    let lineIndex = 0;
+    function typeNextLine() {
+        if (lineIndex >= rebootLines.length) {
+            setTimeout(() => {
+                overlay.style.transition = 'opacity 1s';
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.remove();
+                    showView('starmap-view');
+                    advanceDay2Cliffhanger(3);
+                }, 1000);
+            }, 1000);
+            return;
+        }
+
+        const lineData = rebootLines[lineIndex];
+        const lineEl = document.createElement('div');
+        lineEl.style.cssText = 'font-size: 16px; margin: 4px 0; opacity: 0; transition: opacity 0.2s;';
+
+        if (lineData.cls === 'error') {
+            lineEl.style.color = '#f00';
+            lineEl.style.textShadow = '0 0 10px #f00';
+        } else if (lineData.cls === 'warning') {
+            lineEl.style.color = '#ff0';
+            lineEl.style.textShadow = '0 0 5px #ff0';
+        } else {
+            lineEl.style.color = '#0f0';
+            lineEl.style.textShadow = '0 0 5px #0f0';
+        }
+
+        lineEl.textContent = lineData.text;
+        overlay.appendChild(lineEl);
+
+        requestAnimationFrame(() => { lineEl.style.opacity = '1'; });
+
+        if (lineData.text.length > 0) {
+            playSecurityBeep('normal');
+        }
+
+        lineIndex++;
+        setTimeout(typeNextLine, lineData.delay);
+    }
+
+    typeNextLine();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -111,16 +277,386 @@ function showDayCompletePopup() {
     document.getElementById('send-day-report-btn').addEventListener('click', () => {
         playClick();
         overlay.remove();
-        showDayReport();
+        showInteractiveClassification();
     });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Interactive Classification Step
+// Player fills out a form before the report is generated
+// ─────────────────────────────────────────────────────────────────────────────
+
+function showInteractiveClassification() {
+    const day = gameState.currentDay;
+    const choices = {};
+
+    const overlay = document.createElement('div');
+    overlay.id = 'classification-overlay';
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: #000; z-index: 9000;
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'VT323', monospace; overflow-y: auto; padding: 20px;
+    `;
+
+    let formHTML, setupFn;
+    if (day === 1) {
+        ({ formHTML, setupFn } = buildDay1ClassificationForm(choices));
+    } else if (day === 2) {
+        ({ formHTML, setupFn } = buildDay2ClassificationForm(choices));
+    } else {
+        ({ formHTML, setupFn } = buildDay3ClassificationForm(choices));
+    }
+
+    overlay.innerHTML = formHTML;
+    document.body.appendChild(overlay);
+    setupFn(overlay, choices);
+
+    overlay.querySelector('#compile-report-btn').addEventListener('click', () => {
+        playClick();
+        autoFillMissing(day, choices);
+        overlay.remove();
+        showDayReport(choices);
+    });
+}
+
+// ─── Day 1: Signal Classification ─────────────────────────────────────────
+
+function buildDay1ClassificationForm(choices) {
+    choices.classifications = {};
+    choices.recommendation = null;
+
+    // 4 key signals to classify: indices 0, 4, 6, 8
+    const displayStars = [0, 4, 6, 8];
+
+    let signalRows = '';
+    displayStars.forEach(idx => {
+        const star = gameState.stars[idx];
+        if (!star) return;
+        const isRoss128 = idx === 8;
+        const rowClass = isRoss128 ? 'signal-row signal-row-highlight' : 'signal-row';
+
+        signalRows += `
+            <div class="${rowClass}" data-star-index="${idx}">
+                <div class="signal-info">
+                    <span class="signal-name">${star.name}</span>
+                    <span class="signal-meta">${star.distance} ly | ${star.starClass}</span>
+                </div>
+                <div class="signal-buttons">
+                    <button class="classify-btn" data-value="NATURAL">NATURAL</button>
+                    <button class="classify-btn" data-value="TERRESTRIAL">TERRESTRIAL</button>
+                    <button class="classify-btn" data-value="ANOMALOUS">ANOMALOUS</button>
+                </div>
+                <div class="signal-check" id="check-${idx}"></div>
+            </div>
+        `;
+    });
+
+    const formHTML = `
+        <div class="classification-panel">
+            <div class="classification-header">
+                DAILY SIGNAL CLASSIFICATION
+                <div class="classification-subheader">
+                    Review key signals and assign classifications for your report
+                </div>
+            </div>
+            <div class="classification-body">
+                <div class="classification-section-label">SIGNAL REVIEW</div>
+                ${signalRows}
+
+                <div class="classification-section-label" style="margin-top: 20px;">RECOMMENDATION</div>
+                <div style="display: flex; gap: 8px; padding: 8px 0;">
+                    <button class="recommend-btn" data-value="STANDARD_PROTOCOLS">STANDARD PROTOCOLS</button>
+                    <button class="recommend-btn" data-value="ELEVATED_ANALYSIS">ELEVATED ANALYSIS</button>
+                </div>
+            </div>
+            <div class="classification-footer">
+                <button id="compile-report-btn">COMPILE REPORT</button>
+            </div>
+        </div>
+    `;
+
+    function setupFn(overlay, choices) {
+        // Wire up classification buttons
+        overlay.querySelectorAll('.signal-row').forEach(row => {
+            const idx = parseInt(row.dataset.starIndex);
+            row.querySelectorAll('.classify-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    playClick();
+                    // Deactivate siblings
+                    row.querySelectorAll('.classify-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    choices.classifications[idx] = btn.dataset.value;
+
+                    // Show check
+                    const check = overlay.querySelector(`#check-${idx}`);
+                    if (check) { check.textContent = '✓'; check.classList.add('done'); }
+
+                    // Ross 128 special feedback
+                    if (idx === 8 && btn.dataset.value === 'ANOMALOUS') {
+                        playSecurityBeep('success');
+                        row.classList.add('classification-flash');
+                        setTimeout(() => row.classList.remove('classification-flash'), 600);
+                    }
+
+                    updateCompileButton(overlay, choices, 1);
+                });
+            });
+        });
+
+        // Wire up recommendation buttons
+        overlay.querySelectorAll('.recommend-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                playClick();
+                overlay.querySelectorAll('.recommend-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                choices.recommendation = btn.dataset.value;
+                updateCompileButton(overlay, choices, 1);
+            });
+        });
+    }
+
+    return { formHTML, setupFn };
+}
+
+// ─── Day 2: Contact Verification & Assessment ─────────────────────────────
+
+function buildDay2ClassificationForm(choices) {
+    choices.verifications = {};
+    choices.src7024Priority = null;
+    choices.missionAssessment = null;
+
+    // Find contacted stars from Day 2 (indices 10-19)
+    const dayConfig = DAY_CONFIG[2];
+    let contactRows = '';
+    dayConfig.availableStars.forEach(idx => {
+        if (gameState.contactedStars.has(idx)) {
+            const star = gameState.stars[idx];
+            if (!star) return;
+            contactRows += `
+                <div class="verify-row" data-star-index="${idx}">
+                    <span class="verify-name">${star.name}</span>
+                    <span class="verify-type">VERIFIED SIGNAL</span>
+                    <button class="verify-btn" data-star="${idx}">VERIFY</button>
+                </div>
+            `;
+        }
+    });
+
+    if (!contactRows) {
+        contactRows = '<div style="color: #666; padding: 8px 0;">No contacts established this day.</div>';
+    }
+
+    const formHTML = `
+        <div class="classification-panel">
+            <div class="classification-header">
+                CONTACT VERIFICATION & ASSESSMENT
+                <div class="classification-subheader">
+                    Verify confirmed contacts and assess mission status
+                </div>
+            </div>
+            <div class="classification-body">
+                <div class="classification-section-label">CONFIRMED CONTACTS</div>
+                ${contactRows}
+
+                <div class="classification-section-label" style="margin-top: 20px;">
+                    SRC-7024 — UNCHARTED SIGNAL SOURCE
+                    <span style="color: #ff0; font-size: 12px; margin-left: 10px;">PRIORITY ASSESSMENT REQUIRED</span>
+                </div>
+                <div style="display: flex; gap: 8px; padding: 8px 0;">
+                    <button class="priority-btn" data-value="STANDARD">STANDARD</button>
+                    <button class="priority-btn" data-value="HIGH">HIGH</button>
+                    <button class="priority-btn" data-value="CRITICAL">CRITICAL</button>
+                </div>
+
+                <div class="classification-section-label" style="margin-top: 20px;">MISSION ASSESSMENT</div>
+                <div style="display: flex; gap: 8px; padding: 8px 0;">
+                    <button class="assess-btn" data-value="ROUTINE_SURVEY">ROUTINE SURVEY</button>
+                    <button class="assess-btn" data-value="SIGNIFICANT_DISCOVERY">SIGNIFICANT DISCOVERY</button>
+                    <button class="assess-btn" data-value="PARADIGM_SHIFT">PARADIGM SHIFT</button>
+                </div>
+            </div>
+            <div class="classification-footer">
+                <button id="compile-report-btn">COMPILE REPORT</button>
+            </div>
+        </div>
+    `;
+
+    function setupFn(overlay, choices) {
+        // Verify buttons
+        overlay.querySelectorAll('.verify-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                playClick();
+                const idx = parseInt(btn.dataset.star);
+                choices.verifications[idx] = true;
+                btn.textContent = 'VERIFIED ✓';
+                btn.classList.add('verified');
+                updateCompileButton(overlay, choices, 2);
+            });
+        });
+
+        // Priority buttons
+        overlay.querySelectorAll('.priority-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                playClick();
+                overlay.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                choices.src7024Priority = btn.dataset.value;
+                updateCompileButton(overlay, choices, 2);
+            });
+        });
+
+        // Assessment buttons
+        overlay.querySelectorAll('.assess-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                playClick();
+                overlay.querySelectorAll('.assess-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                choices.missionAssessment = btn.dataset.value;
+                updateCompileButton(overlay, choices, 2);
+            });
+        });
+    }
+
+    return { formHTML, setupFn };
+}
+
+// ─── Day 3: Fragment Status Review ────────────────────────────────────────
+
+function buildDay3ClassificationForm(choices) {
+    choices.missionClassification = null;
+
+    const fragmentDefs = [
+        { key: 'src7024', label: 'SRC-7024 Signal Data' },
+        { key: 'nexusPoint', label: 'NEXUS POINT Deep Space Data' },
+        { key: 'eridani82', label: '82 Eridani Collaborative Data' },
+        { key: 'synthesis', label: 'Synthesized Message' }
+    ];
+
+    let fragmentRows = '';
+    fragmentDefs.forEach(f => {
+        const collected = gameState.fragments.sources[f.key];
+        const statusClass = collected ? 'collected' : 'pending';
+        const statusText = collected ? 'COLLECTED' : 'PENDING';
+        const btnHTML = collected
+            ? `<button class="fragment-ack-btn" data-fragment="${f.key}">ACKNOWLEDGE</button>`
+            : `<span style="color: #333; font-size: 12px;">—</span>`;
+
+        fragmentRows += `
+            <div class="fragment-row" data-fragment="${f.key}">
+                <span class="fragment-status ${statusClass}">${statusText}</span>
+                <span class="fragment-name">${f.label}</span>
+                ${btnHTML}
+            </div>
+        `;
+    });
+
+    const formHTML = `
+        <div class="classification-panel">
+            <div class="classification-header">
+                FRAGMENT STATUS REVIEW
+                <div class="classification-subheader">
+                    Review collected data and classify mission outcome
+                </div>
+            </div>
+            <div class="classification-body">
+                <div class="classification-section-label">SIGNAL FRAGMENTS</div>
+                ${fragmentRows}
+
+                <div class="classification-section-label" style="margin-top: 20px;">OVERALL MISSION CLASSIFICATION</div>
+                <div style="display: flex; gap: 8px; padding: 8px 0;">
+                    <button class="mission-btn" data-value="SCIENTIFIC_DISCOVERY">SCIENTIFIC DISCOVERY</button>
+                    <button class="mission-btn" data-value="FIRST_CONTACT">FIRST CONTACT</button>
+                    <button class="mission-btn" data-value="COSMIC_REVELATION">COSMIC REVELATION</button>
+                </div>
+            </div>
+            <div class="classification-footer">
+                <button id="compile-report-btn">COMPILE REPORT</button>
+            </div>
+        </div>
+    `;
+
+    function setupFn(overlay, choices) {
+        // Fragment acknowledge buttons
+        overlay.querySelectorAll('.fragment-ack-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                playClick();
+                btn.textContent = 'ACKNOWLEDGED ✓';
+                btn.classList.add('acknowledged');
+            });
+        });
+
+        // Mission classification buttons
+        overlay.querySelectorAll('.mission-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                playClick();
+                overlay.querySelectorAll('.mission-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                choices.missionClassification = btn.dataset.value;
+                updateCompileButton(overlay, choices, 3);
+            });
+        });
+    }
+
+    return { formHTML, setupFn };
+}
+
+// ─── Shared Helpers ───────────────────────────────────────────────────────
+
+function updateCompileButton(overlay, choices, day) {
+    const btn = overlay.querySelector('#compile-report-btn');
+    if (!btn) return;
+
+    let complete = false;
+    if (day === 1) {
+        const allClassified = [0, 4, 6, 8].every(idx => choices.classifications && choices.classifications[idx]);
+        complete = allClassified && choices.recommendation;
+    } else if (day === 2) {
+        complete = choices.src7024Priority && choices.missionAssessment;
+    } else if (day === 3) {
+        complete = !!choices.missionClassification;
+    }
+
+    if (complete) {
+        btn.classList.add('ready');
+    }
+}
+
+function autoFillMissing(day, choices) {
+    if (day === 1) {
+        if (!choices.classifications) choices.classifications = {};
+        [0, 4, 6, 8].forEach(idx => {
+            if (!choices.classifications[idx]) {
+                const result = gameState.scanResults.get(idx);
+                if (result) {
+                    if (result.type === 'false_positive') choices.classifications[idx] = 'TERRESTRIAL';
+                    else if (result.type === 'verified_signal' || result.type === 'encrypted_signal') choices.classifications[idx] = 'ANOMALOUS';
+                    else choices.classifications[idx] = 'NATURAL';
+                } else {
+                    choices.classifications[idx] = 'NATURAL';
+                }
+            }
+        });
+        // Ross 128 auto-correction
+        if (choices.classifications[8] !== 'ANOMALOUS') {
+            choices.ross128AutoCorrected = true;
+            choices.classifications[8] = 'ANOMALOUS';
+        }
+        if (!choices.recommendation) choices.recommendation = 'ELEVATED_ANALYSIS';
+    } else if (day === 2) {
+        if (!choices.src7024Priority) choices.src7024Priority = 'HIGH';
+        if (!choices.missionAssessment) choices.missionAssessment = 'SIGNIFICANT_DISCOVERY';
+    } else if (day === 3) {
+        if (!choices.missionClassification) choices.missionClassification = 'FIRST_CONTACT';
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Day Report Display
 // ─────────────────────────────────────────────────────────────────────────────
 
-function showDayReport() {
-    const report = generateDayReport();
+function showDayReport(choices = null) {
+    const report = generateDayReport(choices);
 
     const overlay = document.createElement('div');
     overlay.id = 'day-report-overlay';
@@ -210,7 +746,7 @@ function showDayReport() {
 // Generate Report Content
 // ─────────────────────────────────────────────────────────────────────────────
 
-function generateDayReport() {
+function generateDayReport(choices = null) {
     const day = gameState.currentDay;
     const dayConfig = DAY_CONFIG[day];
 
@@ -235,11 +771,11 @@ function generateDayReport() {
 
     // Day-specific reports
     if (day === 1) {
-        return generateDay1Report(naturalCount, falsePositiveCount, verifiedCount, verifiedStars);
+        return generateDay1Report(naturalCount, falsePositiveCount, verifiedCount, verifiedStars, choices);
     } else if (day === 2) {
-        return generateDay2Report(naturalCount, falsePositiveCount, verifiedCount, verifiedStars);
+        return generateDay2Report(naturalCount, falsePositiveCount, verifiedCount, verifiedStars, choices);
     } else if (day === 3) {
-        return generateDay3Report(naturalCount, falsePositiveCount, verifiedCount, verifiedStars);
+        return generateDay3Report(naturalCount, falsePositiveCount, verifiedCount, verifiedStars, choices);
     }
 
     return {
@@ -250,20 +786,65 @@ function generateDayReport() {
     };
 }
 
-function generateDay1Report(natural, falsePos, verified, verifiedStars) {
+function generateDay1Report(natural, falsePos, verified, verifiedStars, choices = null) {
     const hasAnomalous = verified > 0;
     const starList = verifiedStars.length > 0
         ? verifiedStars.map(s => `<span style="color: #0f0;">&#8226; ${s}</span>`).join('<br>')
         : '<span style="color: #666;">None detected</span>';
 
+    // Build operator classifications table from choices
+    let classificationSection = '';
+    if (choices && choices.classifications) {
+        const classColors = { 'NATURAL': '#0ff', 'TERRESTRIAL': '#f80', 'ANOMALOUS': '#ff0' };
+        let rows = '';
+        for (const [idx, cls] of Object.entries(choices.classifications)) {
+            const star = gameState.stars[parseInt(idx)];
+            if (!star) continue;
+            const color = classColors[cls] || '#0ff';
+            rows += `
+                <tr style="border-bottom: 1px solid #020;">
+                    <td style="padding: 5px 0; color: #0ff;">${star.name}</td>
+                    <td style="text-align: right; color: ${color}; text-shadow: 0 0 3px ${color};">${cls}</td>
+                </tr>
+            `;
+        }
+        classificationSection = `
+            <div style="color: #0f0; font-size: 16px; margin: 20px 0 10px 0;">
+                OPERATOR CLASSIFICATIONS
+            </div>
+            <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+                ${rows}
+            </table>
+        `;
+        if (choices.ross128AutoCorrected) {
+            classificationSection += `
+                <div style="color: #ff0; font-size: 12px; margin-top: 8px; padding: 8px; border: 1px solid #ff0; background: rgba(255, 255, 0, 0.05);">
+                    AUTOMATED REVIEW: Signal from ROSS 128 reclassified to ANOMALOUS.<br>
+                    Pattern analysis confirms non-natural origin.
+                </div>
+            `;
+        }
+    }
+
+    // Status text varies based on recommendation choice
     let statusText;
-    if (hasAnomalous) {
+    if (choices && choices.recommendation === 'ELEVATED_ANALYSIS') {
         statusText = `
             <div style="color: #ff0; font-size: 16px; margin-top: 15px; padding: 10px; border: 1px solid #ff0; background: rgba(255, 255, 0, 0.1);">
-                ⚠ ANOMALOUS SIGNAL DETECTED ⚠<br>
+                ⚠ ELEVATED ANALYSIS RECOMMENDED ⚠<br>
                 <span style="font-size: 14px; color: #0ff;">
-                    Signal characteristics inconsistent with known phenomena.<br>
-                    Recommend elevated analysis protocols.
+                    Operator recommends priority investigation of anomalous signals.<br>
+                    Request submitted for enhanced clearance protocols.
+                </span>
+            </div>
+        `;
+    } else if (hasAnomalous) {
+        statusText = `
+            <div style="color: #ff0; font-size: 16px; margin-top: 15px; padding: 10px; border: 1px solid #ff0; background: rgba(255, 255, 0, 0.1);">
+                ⚠ SYSTEM OVERRIDE: ELEVATED ANALYSIS REQUIRED ⚠<br>
+                <span style="font-size: 14px; color: #0ff;">
+                    Anomalous signal detected. Standard protocols insufficient.<br>
+                    Automatic escalation initiated.
                 </span>
             </div>
         `;
@@ -300,6 +881,8 @@ function generateDay1Report(natural, falsePos, verified, verifiedStars) {
                 </tr>
             </table>
 
+            ${classificationSection}
+
             <div style="color: #0f0; font-size: 16px; margin: 20px 0 10px 0;">
                 VERIFIED EXTRASOLAR SIGNALS
             </div>
@@ -308,13 +891,26 @@ function generateDay1Report(natural, falsePos, verified, verifiedStars) {
             </div>
 
             ${statusText}
+
+            <div style="margin-top: 25px; padding: 15px; border-top: 1px solid #030; font-style: italic;">
+                <div style="color: #0a0; font-size: 12px; letter-spacing: 2px; margin-bottom: 8px;">
+                    PERSONAL LOG — DR. ${gameState.playerName.toUpperCase()}
+                </div>
+                <div style="color: #0f0; font-size: 14px; line-height: 1.6; opacity: 0.8;">
+                    Something about that Ross 128 signal is keeping me up. The pattern recognition flagged it as anomalous, but it's more than that — there's a structure to it that feels almost... deliberate. Like someone arranged the frequencies to say "I'm here."
+                    <br><br>
+                    I keep telling myself it could be anything. Magnetar glitch, pulsar harmonic, some cosmic coincidence. But my hands were shaking when I logged the results. After years of static and false positives, what if this is the one?
+                    <br><br>
+                    Tomorrow I'll have the clearance to dig deeper. Tonight I can't sleep.
+                </div>
+            </div>
         `,
         footer: 'Report ready for transmission.',
         buttonText: 'SUBMIT REPORT'
     };
 }
 
-function generateDay2Report(natural, falsePos, verified, verifiedStars) {
+function generateDay2Report(natural, falsePos, verified, verifiedStars, choices = null) {
     const hasDecrypted = gameState.decryptionComplete;
     const starList = verifiedStars.length > 0
         ? verifiedStars.map(s => `<span style="color: #0f0;">&#8226; ${s}</span>`).join('<br>')
@@ -337,6 +933,32 @@ function generateDay2Report(natural, falsePos, verified, verifiedStars) {
                 Decryption pending - encrypted signal requires analysis.
             </div>
         `;
+    }
+
+    // SRC-7024 priority from operator assessment
+    const priorityLevel = choices?.src7024Priority || 'HIGH';
+    const priorityColor = priorityLevel === 'CRITICAL' ? '#ff0' : priorityLevel === 'HIGH' ? '#0ff' : '#0a0';
+    const priorityNote = priorityLevel === 'CRITICAL'
+        ? '<br><span style="color: #ff0; font-size: 12px;">OPERATOR ASSESSMENT: CRITICAL — Aligns with automated threat analysis.</span>'
+        : priorityLevel === 'HIGH'
+        ? '<br><span style="color: #0ff; font-size: 12px;">OPERATOR ASSESSMENT: HIGH PRIORITY</span>'
+        : '';
+
+    // Mission assessment from operator
+    const assessment = choices?.missionAssessment || 'SIGNIFICANT_DISCOVERY';
+    const assessmentLabels = {
+        'ROUTINE_SURVEY': 'ROUTINE SURVEY',
+        'SIGNIFICANT_DISCOVERY': 'SIGNIFICANT DISCOVERY',
+        'PARADIGM_SHIFT': 'PARADIGM SHIFT'
+    };
+    const assessmentLabel = assessmentLabels[assessment] || assessment;
+
+    // Footer varies based on assessment
+    let footer = 'Report ready for transmission.';
+    if (assessment === 'PARADIGM_SHIFT') {
+        footer = `Classification: ${assessmentLabel}. All resources redirected.`;
+    } else if (assessment === 'SIGNIFICANT_DISCOVERY') {
+        footer = `Classification: ${assessmentLabel}. Elevated protocols authorized.`;
     }
 
     return {
@@ -362,6 +984,10 @@ function generateDay2Report(natural, falsePos, verified, verifiedStars) {
                     <td style="padding: 8px 0; color: #0f0;">Verified Contacts:</td>
                     <td style="text-align: right; color: #0f0;">${verified}</td>
                 </tr>
+                <tr style="border-bottom: 1px solid #033;">
+                    <td style="padding: 8px 0; color: #0ff;">Mission Assessment:</td>
+                    <td style="text-align: right; color: ${assessment === 'PARADIGM_SHIFT' ? '#ff0' : '#0ff'};">${assessmentLabel}</td>
+                </tr>
             </table>
 
             <div style="color: #0f0; font-size: 16px; margin: 20px 0 10px 0;">
@@ -373,20 +999,51 @@ function generateDay2Report(natural, falsePos, verified, verifiedStars) {
 
             ${decryptStatus}
 
-            <div style="color: #f0f; font-size: 14px; margin-top: 15px; padding: 10px; border: 1px solid #f0f; background: rgba(255, 0, 255, 0.1);">
-                CMB ANOMALY DETECTED<br>
-                <span style="font-size: 13px;">Triangulation data received from contacts.</span>
+            <div style="color: ${priorityColor}; font-size: 16px; margin-top: 20px; padding: 15px; border: 2px solid ${priorityColor}; background: rgba(0, 255, 255, 0.1); animation: warningPulse 2s ease-in-out infinite;">
+                ◆ ANOMALY ALERT: SRC-7024 ◆<br>
+                <span style="font-size: 13px; color: #fff;">
+                    Signal source triggered catastrophic array overload during scan attempt.<br>
+                    Concurrent western seaboard power grid failure reported.<br>
+                    Designation: SRC-7024 | Origin: UNKNOWN | Status: MAXIMUM PRIORITY<br>
+                    <span style="color: ${priorityColor};">Priority: ${priorityLevel}</span>
+                    ${priorityNote}
+                </span>
+            </div>
+
+            <div style="margin-top: 25px; padding: 15px; border-top: 1px solid #030; font-style: italic;">
+                <div style="color: #0a0; font-size: 12px; letter-spacing: 2px; margin-bottom: 8px;">
+                    PERSONAL LOG — DR. ${gameState.playerName.toUpperCase()}
+                </div>
+                <div style="color: #0f0; font-size: 14px; line-height: 1.6; opacity: 0.8;">
+                    The system crash. I can't stop thinking about the system crash.
+                    <br><br>
+                    When SRC-7024 responded — and I do mean <em>responded</em> — the array overloaded so completely that it knocked out power across three states. That's not a signal. That's a demonstration. Whatever is out there wanted us to know what it's capable of.
+                    <br><br>
+                    I'm not frightened. Not exactly. But there's something deeply unsettling about pointing a telescope at the sky and having the sky point back.
+                    <br><br>
+                    Tomorrow, maximum priority. God help us all.
+                </div>
             </div>
         `,
-        footer: 'Report ready for transmission.',
+        footer: footer,
         buttonText: 'SUBMIT REPORT'
     };
 }
 
-function generateDay3Report(natural, falsePos, verified, verifiedStars) {
+function generateDay3Report(natural, falsePos, verified, verifiedStars, choices = null) {
     const starList = verifiedStars.length > 0
         ? verifiedStars.map(s => `<span style="color: #0f0;">&#8226; ${s}</span>`).join('<br>')
         : '<span style="color: #666;">None detected</span>';
+
+    // Mission classification from operator
+    const classification = choices?.missionClassification || 'FIRST_CONTACT';
+    const classLabels = {
+        'SCIENTIFIC_DISCOVERY': 'SCIENTIFIC DISCOVERY',
+        'FIRST_CONTACT': 'FIRST CONTACT',
+        'COSMIC_REVELATION': 'COSMIC REVELATION'
+    };
+    const classLabel = classLabels[classification] || classification;
+    const classColor = classification === 'COSMIC_REVELATION' ? '#f0f' : classification === 'FIRST_CONTACT' ? '#0ff' : '#0f0';
 
     return {
         title: 'DAY 3: COSMIC TRIANGULATION - COMPLETE',
@@ -407,6 +1064,10 @@ function generateDay3Report(natural, falsePos, verified, verifiedStars) {
                     <td style="padding: 8px 0;">Verified Contacts:</td>
                     <td style="text-align: right; color: #0f0;">${verified}</td>
                 </tr>
+                <tr style="border-bottom: 1px solid #033;">
+                    <td style="padding: 8px 0; color: ${classColor};">Mission Classification:</td>
+                    <td style="text-align: right; color: ${classColor}; text-shadow: 0 0 5px ${classColor};">${classLabel}</td>
+                </tr>
             </table>
 
             <div style="color: #0f0; font-size: 16px; margin: 20px 0 10px 0;">
@@ -416,11 +1077,31 @@ function generateDay3Report(natural, falsePos, verified, verifiedStars) {
                 ${starList}
             </div>
 
-            <div style="color: #f0f; font-size: 16px; margin-top: 20px; padding: 15px; border: 2px solid #f0f; background: rgba(255, 0, 255, 0.1); text-align: center;">
-                ALL TRIANGULATION DATA COLLECTED<br>
+            <div style="color: ${classColor}; font-size: 16px; margin-top: 20px; padding: 15px; border: 2px solid ${classColor}; background: rgba(${classification === 'COSMIC_REVELATION' ? '255, 0, 255' : '0, 255, 255'}, 0.1); text-align: center;">
+                MISSION CLASSIFICATION: ${classLabel}<br>
                 <span style="font-size: 14px; color: #0ff;">
-                    Coordinates locked. Preparing final alignment sequence.
+                    ${classification === 'COSMIC_REVELATION'
+                        ? 'The universe is speaking. We are listening.'
+                        : classification === 'FIRST_CONTACT'
+                        ? 'Contact established. The cosmos is not empty.'
+                        : 'Unprecedented data collected. Analysis ongoing.'
+                    }
                 </span>
+            </div>
+
+            <div style="margin-top: 25px; padding: 15px; border-top: 1px solid #030; font-style: italic;">
+                <div style="color: #0a0; font-size: 12px; letter-spacing: 2px; margin-bottom: 8px;">
+                    PERSONAL LOG — DR. ${gameState.playerName.toUpperCase()}
+                </div>
+                <div style="color: #0f0; font-size: 14px; line-height: 1.6; opacity: 0.8;">
+                    I came into this job hoping to find a signal. Just one signal that proved we weren't alone.
+                    <br><br>
+                    What I found instead is something I don't have words for. A message woven into the fabric of reality itself. Fragments of meaning scattered across the cosmos like breadcrumbs left by someone who knew we'd eventually learn to look.
+                    <br><br>
+                    Every civilization that answered our calls — they were part of it too. Pieces of a puzzle none of us could solve alone. As if the universe was designed that way on purpose.
+                    <br><br>
+                    I don't know what comes next. But for the first time in my career, I'm not afraid of the silence between the stars. There is no silence. There never was.
+                </div>
             </div>
         `,
         footer: 'The origin point awaits. Initiate final sequence.',
@@ -616,53 +1297,47 @@ function showDayTransition() {
                     addMailMessage(ROSS128_DECRYPT_EMAIL.from, ROSS128_DECRYPT_EMAIL.subject, body);
                 }, 5000);
             }
+
+            // Send SRC-7024 priority email on Day 3 start
+            if (gameState.currentDay === 3) {
+                setTimeout(() => {
+                    addMailMessage(
+                        'Dr. James Whitmore - SETI Director',
+                        '[PRIORITY] SRC-7024 — Top Target Today',
+                        `Dr. ${gameState.playerName},\n\nSRC-7024 is your top priority today. That uncharted signal source that appeared at the end of yesterday's survey — we need answers.\n\nScan it first. Whatever it is, it's not in any catalog we have access to. Dr. Chen has been monitoring it overnight and reports the signal is getting stronger.\n\nThe entire team is watching. Don't keep us waiting.\n\n- James Whitmore\n  SETI Program Director`
+                    );
+                }, 5000);
+            }
         });
     }, 3000);
 }
 
 function triggerFinalSequence() {
-    log('FINAL SEQUENCE INITIATED', 'highlight');
+    log('DAY 3 SURVEY COMPLETE', 'highlight');
 
-    // Check if all 4 fragments have been collected
-    const requiredFragments = ['ross128', 'gliese832', 'hd219134', 'cmbSource'];
-    const collectedFragments = gameState.fragments.collected || [];
-    const missingFragments = requiredFragments.filter(f => !collectedFragments.includes(f));
-
-    if (missingFragments.length > 0) {
-        // Some fragments are missing - show what's needed
-        log('WARNING: Incomplete fragment collection', 'warning');
-        showFragmentStatusPopup(missingFragments);
+    // Day 3 endgame now flows through the Investigation page
+    // If the player has already completed the final puzzle, show report
+    if (gameState.finalPuzzleComplete) {
+        showView('report-view');
+        import('../core/end-game.js').then(module => {
+            module.showFinalReport();
+        });
         return;
     }
 
-    // All fragments collected - start final alignment puzzle
-    log('All fragments collected - initiating cosmic alignment...', 'info');
-
-    setTimeout(() => {
-        startFinalAlignment(
-            // Success callback
-            () => {
-                log('COSMIC MESSAGE DECODED', 'highlight');
-                gameState.finalPuzzleComplete = true;
-                autoSave();
-                // Show the full final message
-                setTimeout(() => {
-                    showFinalMessage(() => {
-                        // After final message, show the standard report
-                        showView('report-view');
-                        import('../core/end-game.js').then(module => {
-                            module.showFinalReport();
-                        });
-                    });
-                }, 1000);
-            },
-            // Cancel callback
-            () => {
-                log('Alignment sequence aborted', 'warning');
-                showView('starmap-view');
-            }
-        );
-    }, 1500);
+    // Otherwise, guide them to the Investigation page
+    const fragCount = gameState.fragments.collected.length;
+    if (fragCount < 4) {
+        // Point them to the investigation page to finish
+        log('Continue analysis through PROJECT LIGHTHOUSE to complete the final sequence.', 'info');
+        showView('starmap-view');
+    } else {
+        // All done, show final report
+        showView('report-view');
+        import('../core/end-game.js').then(module => {
+            module.showFinalReport();
+        });
+    }
 }
 
 function showFragmentStatusPopup(missing) {
@@ -683,10 +1358,10 @@ function showFragmentStatusPopup(missing) {
     `;
 
     const fragmentNames = {
-        ross128: 'Ross 128 Signal Data',
-        gliese832: 'Gliese 832 Coordinates',
-        hd219134: 'Network Intelligence',
-        cmbSource: 'CMB Source Location'
+        src7024: 'SRC-7024 Signal Data',
+        nexusPoint: 'NEXUS POINT Deep Space Data',
+        eridani82: '82 Eridani Collaborative Data',
+        synthesis: 'Synthesized Message'
     };
 
     const missingList = missing.map(f =>

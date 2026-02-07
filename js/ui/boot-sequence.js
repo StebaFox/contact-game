@@ -347,15 +347,32 @@ function resumeGame() {
     showView('starmap-view');
     document.getElementById('mailbox-btn').style.display = 'block';
 
+    // Restore investigation button if unlocked
+    if (gameState.investigationUnlocked) {
+        const invBtn = document.getElementById('investigation-btn');
+        if (invBtn) invBtn.style.display = '';
+    }
+
     // Initialize starmap
     initializeStarmapSequence();
 
     log(`Welcome back, Dr. ${gameState.playerName}`, 'highlight');
     log(`Resuming Day ${gameState.currentDay} operations...`, 'info');
+
+    // Day 2 cliffhanger recovery: if interrupted during non-interactive phases (crash/reboot),
+    // skip ahead to reboot phase after starmap loads
+    if (gameState.day2CliffhangerPhase === 2 || gameState.day2CliffhangerPhase === 3) {
+        gameState.day2CliffhangerPhase = 3;
+        setTimeout(() => {
+            import('../systems/day-report.js').then(module => {
+                module.advanceDay2Cliffhanger(3);
+            });
+        }, 3000);
+    }
 }
 
 // Load a day directly (from day code) - skips boot, shows loading bar
-function loadDayWithProgress() {
+export function loadDayWithProgress() {
     // Mark previous days' stars as analyzed (they would have been scanned)
     markPreviousDaysAsScanned();
 
@@ -365,6 +382,12 @@ function loadDayWithProgress() {
     // Go directly to starmap with loading sequence
     showView('starmap-view');
     document.getElementById('mailbox-btn').style.display = 'block';
+
+    // Restore investigation button if unlocked
+    if (gameState.investigationUnlocked) {
+        const invBtn = document.getElementById('investigation-btn');
+        if (invBtn) invBtn.style.display = '';
+    }
 
     // Initialize starmap with loading bar
     initializeStarmapSequence();
@@ -407,6 +430,12 @@ function markPreviousDaysAsScanned() {
         if (dayConfig && dayConfig.availableStars) {
             dayConfig.availableStars.forEach(starIndex => {
                 gameState.analyzedStars.add(starIndex);
+
+                // Ross 128 (index 8): keep as encrypted signal until decrypted
+                if (starIndex === 8 && !gameState.decryptionComplete) {
+                    gameState.scanResults.set(starIndex, { type: 'encrypted_signal' });
+                    return;
+                }
 
                 // Check if this star has an alien contact
                 const hasContact = ALIEN_CONTACTS.some(m => m.starIndex === starIndex);

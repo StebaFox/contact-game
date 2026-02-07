@@ -1001,13 +1001,9 @@ function completeTriangulation(success) {
     if (overlay) overlay.remove();
 
     if (success) {
-        // Award CMB fragment
-        if (!gameState.fragments.sources.cmbSource) {
-            gameState.fragments.collected.push('cmbSource');
-            gameState.fragments.sources.cmbSource = true;
-            log('FRAGMENT ACQUIRED: CMB Source coordinates', 'highlight');
-        }
+        // Triangulation reveals the NEXUS POINT — fragment is awarded on scan/decrypt
         gameState.cmbDetected = true;
+        log('TRIANGULATION COMPLETE - Deep space target coordinates locked', 'highlight');
         autoSave();
 
         if (triState.onSuccess) {

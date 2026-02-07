@@ -54,16 +54,20 @@ export const gameState = {
     daysCompleted: [],
     demoMode: false, // When true, all content is unlocked
 
-    // Fragment collection for final puzzle
+    // Fragment collection for final puzzle (breadcrumb trail)
     fragments: {
         collected: [],
         sources: {
-            ross128: null,
-            gliese832: null,
-            hd219134: null,
-            cmbSource: null
+            src7024: null,      // Fragment 1: SRC-7024 scan (Day 3)
+            nexusPoint: null,   // Fragment 2: NEXUS POINT scan (Day 3)
+            eridani82: null,    // Fragment 3: 82 Eridani collaboration (Day 3)
+            synthesis: null     // Fragment 4: Synthesis alignment (Day 3)
         }
     },
+
+    // Investigation / Project Lighthouse
+    investigationUnlocked: false,
+    dynamicStars: [], // SRC-7024, NEXUS POINT - added during gameplay
 
     // Progress flags
     tutorialCompleted: false,
@@ -71,6 +75,7 @@ export const gameState = {
     cmbDetected: false,
     finalPuzzleComplete: false,
     dayReportShown: 0, // Track which day's report has been shown
+    day2CliffhangerPhase: -1, // -1=not started, 0-4=active phases, 5=complete
 
     // Mailbox
     mailboxMessages: [],
@@ -145,12 +150,16 @@ export function resetGameState() {
     gameState.fragments = {
         collected: [],
         sources: {
-            ross128: null,
-            gliese832: null,
-            hd219134: null,
-            cmbSource: null
+            src7024: null,
+            nexusPoint: null,
+            eridani82: null,
+            synthesis: null
         }
     };
+
+    // Reset investigation
+    gameState.investigationUnlocked = false;
+    gameState.dynamicStars = [];
 
     // Reset progress flags
     gameState.tutorialCompleted = false;
@@ -158,6 +167,7 @@ export function resetGameState() {
     gameState.cmbDetected = false;
     gameState.finalPuzzleComplete = false;
     gameState.dayReportShown = 0;
+    gameState.day2CliffhangerPhase = -1;
 
     // Reset mailbox
     gameState.mailboxMessages = [];

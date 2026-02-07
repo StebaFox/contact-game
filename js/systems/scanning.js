@@ -6,22 +6,19 @@
 import { gameState } from '../core/game-state.js';
 import { autoSave } from '../core/save-system.js';
 import { showView, log, typeAnalysisText } from '../ui/rendering.js';
-import { playClick, playAnalysisSound, playContactSound, playSecurityBeep, playTypingBeep, stopNaturalPhenomenaSound, stopAlienSignalSound, switchToBackgroundMusic } from './audio.js';
+import { playClick, playAnalysisSound, playContactSound, playSecurityBeep, playTypingBeep, playStaticBurst, stopNaturalPhenomenaSound, stopAlienSignalSound, switchToBackgroundMusic } from './audio.js';
 import { startTuningMinigame } from './tuning-minigame.js';
 import { startPatternRecognitionGame } from './pattern-minigame.js';
 import { startDecryptionMinigame } from './decryption-minigame.js';
 import { startAlignmentTutorial } from './alignment-minigame.js';
 import { startTriangulationMinigame } from './triangulation-minigame.js';
-import { sendFirstContactEmail } from './mailbox.js';
+import { sendFirstContactEmail, addMailMessage } from './mailbox.js';
 import { checkAndShowDayComplete } from './day-report.js';
 import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
+import { unlockInvestigation, onFragmentCollected } from './investigation.js';
 
 // Ross 128 star index - requires decryption
 const ROSS_128_INDEX = 8;
-
-// Day 3 stars that provide fragments or trigger triangulation
-const GLIESE_832_INDEX = 25;  // Megastructure beacon - gives fragment
-const VAN_MAANENS_INDEX = 21; // The Network - triggers triangulation offer
 
 // External function references
 let drawStarVisualizationFn = null;
@@ -101,11 +98,264 @@ export function initiateScan() {
     document.getElementById('target-class').textContent = star.starClass;
     document.getElementById('target-temp').textContent = star.temperature;
 
+    // Draw star visualization (skip for dynamic stars with non-numeric IDs)
+    if (drawStarVisualizationFn && !star.isDynamic) drawStarVisualizationFn(star, 'analysis-star-visual');
+
+    showView('analysis-view');
+    startTuningMinigame(star);
+}
+
+// Direct decryption for Ross 128 (bypasses scanning pipeline)
+// Used when Ross 128 is already analyzed but needs decryption on Day 2
+export function startRoss128DirectDecryption() {
+    const star = gameState.currentStar;
+    if (!star || star.id !== ROSS_128_INDEX) return;
+
+    // Set up analysis view target info
+    document.getElementById('target-name').textContent = star.name;
+    document.getElementById('target-coords').textContent = star.coordinates;
+    document.getElementById('target-distance').textContent = star.distance;
+    document.getElementById('target-type').textContent = star.starType;
+    document.getElementById('target-class').textContent = star.starClass;
+    document.getElementById('target-temp').textContent = star.temperature;
+
     // Draw star visualization
     if (drawStarVisualizationFn) drawStarVisualizationFn(star, 'analysis-star-visual');
 
     showView('analysis-view');
-    startTuningMinigame(star);
+
+    // Generate analyzed signal and start animation
+    generateSignal(star, true);
+    startSignalAnimation();
+
+    // Disable scan/analyze buttons (we're bypassing the pipeline)
+    document.getElementById('scan-btn').disabled = true;
+    document.getElementById('scan-btn').textContent = '✓ SCAN COMPLETE';
+    document.getElementById('analyze-btn').disabled = true;
+
+    // Show encrypted signal result directly
+    const contactBox = document.getElementById('contact-protocol-box');
+    const contactContent = document.getElementById('contact-protocol-content');
+    contactBox.style.display = 'block';
+    contactContent.innerHTML = '';
+
+    const display = document.createElement('div');
+    display.style.cssText = 'text-align: left; font-size: 14px; line-height: 1.8;';
+    contactContent.appendChild(display);
+
+    showEncryptedSignalResult(star, display);
+}
+
+// Special scan for SRC-7024 during Day 2 cliffhanger
+// Starts a normal-looking scan, then triggers crash/scramble sequence
+export function initiateSRC7024CrashScan() {
+    const star = gameState.currentStar;
+    if (!star || star.id !== 'src7024') return;
+
+    log(`Initiating deep space scan: ${star.name}`, 'highlight');
+    log('Aligning radio telescope array...');
+
+    // Set up analysis view
+    document.getElementById('target-name').textContent = star.name;
+    document.getElementById('target-coords').textContent = star.coordinates;
+    document.getElementById('target-distance').textContent = star.distance;
+    document.getElementById('target-type').textContent = star.starType;
+    document.getElementById('target-class').textContent = star.starClass;
+    document.getElementById('target-temp').textContent = star.temperature;
+
+    document.getElementById('scan-btn').disabled = true;
+    document.getElementById('analyze-btn').disabled = true;
+    document.getElementById('analysis-text').innerHTML =
+        '<p>INITIALIZING SCAN...</p><p>CALIBRATING RECEIVERS...</p>';
+
+    showView('analysis-view');
+
+    // Phase 1: Normal-looking scan start
+    setTimeout(() => {
+        log('Signal acquisition in progress...');
+        document.getElementById('analysis-text').innerHTML +=
+            '<p style="color: #0ff;">SIGNAL DETECTED...</p><p>LOCKING ON TARGET...</p>';
+    }, 1500);
+
+    setTimeout(() => {
+        log('SIGNAL LOCK ESTABLISHED', 'highlight');
+        document.getElementById('analysis-text').innerHTML +=
+            '<p style="color: #0f0;">✓ SIGNAL LOCK ESTABLISHED</p>';
+        playSecurityBeep('success');
+    }, 3000);
+
+    // Phase 2: Things go wrong
+    setTimeout(() => {
+        log('WARNING: Signal strength increasing exponentially', 'warning');
+        document.getElementById('analysis-text').innerHTML +=
+            '<p style="color: #ff0;">⚠ SIGNAL STRENGTH ANOMALY</p>';
+        playSecurityBeep('warning');
+    }, 4000);
+
+    // Phase 3: Crash begins
+    setTimeout(() => {
+        // Advance state machine
+        import('./day-report.js').then(module => {
+            module.advanceDay2Cliffhanger(1);
+        });
+        startCrashSequence();
+    }, 5000);
+}
+
+function startCrashSequence() {
+    playStaticBurst();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'crash-overlay';
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: #000; z-index: 9998; pointer-events: all;
+    `;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvas.style.cssText = 'width: 100%; height: 100%; display: block;';
+    overlay.appendChild(canvas);
+    document.body.appendChild(overlay);
+
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+
+    let frame = 0;
+    const totalFrames = 180; // ~3 seconds at 60fps
+
+    const codeChars = '0123456789ABCDEFabcdef!@#$%^&*<>{}[]|/\\';
+    function randomCode(len) {
+        let s = '';
+        for (let i = 0; i < len; i++) s += codeChars[Math.floor(Math.random() * codeChars.length)];
+        return s;
+    }
+
+    const shapes = ['triangle', 'circle', 'hexagon', 'diamond'];
+
+    function drawShape(type, x, y, size, color) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        switch (type) {
+            case 'triangle':
+                ctx.moveTo(x, y - size);
+                ctx.lineTo(x - size * 0.866, y + size * 0.5);
+                ctx.lineTo(x + size * 0.866, y + size * 0.5);
+                ctx.closePath();
+                break;
+            case 'circle':
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                break;
+            case 'hexagon':
+                for (let i = 0; i < 6; i++) {
+                    const angle = (Math.PI / 3) * i - Math.PI / 2;
+                    const px = x + size * Math.cos(angle);
+                    const py = y + size * Math.sin(angle);
+                    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                break;
+            case 'diamond':
+                ctx.moveTo(x, y - size);
+                ctx.lineTo(x + size * 0.7, y);
+                ctx.lineTo(x, y + size);
+                ctx.lineTo(x - size * 0.7, y);
+                ctx.closePath();
+                break;
+        }
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+    }
+
+    function renderCrashFrame() {
+        frame++;
+        const progress = frame / totalFrames;
+
+        // Background: increasingly dark
+        const bgAlpha = Math.min(0.95, 0.3 + progress * 0.65);
+        ctx.fillStyle = `rgba(0, 0, 0, ${bgAlpha})`;
+        ctx.fillRect(0, 0, w, h);
+
+        // Phase 1: Random code text
+        if (progress < 0.7) {
+            const textIntensity = Math.min(1, progress * 3);
+            const lineCount = Math.floor(textIntensity * 30);
+            ctx.font = '14px VT323, monospace';
+            for (let i = 0; i < lineCount; i++) {
+                const colors = ['#0f0', '#0ff', '#f0f', '#ff0', '#f00'];
+                ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+                ctx.globalAlpha = Math.random() * 0.8 + 0.2;
+                ctx.fillText(randomCode(Math.floor(Math.random() * 30 + 5)),
+                    Math.random() * w, Math.random() * h);
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // Phase 2: Geometric shapes
+        if (progress > 0.2 && progress < 0.8) {
+            const shapeCount = Math.floor((progress - 0.2) * 20);
+            for (let i = 0; i < shapeCount; i++) {
+                const colors = ['#0ff', '#f0f', '#ff0', '#f00', '#0f0'];
+                ctx.globalAlpha = Math.random() * 0.6 + 0.1;
+                drawShape(
+                    shapes[Math.floor(Math.random() * shapes.length)],
+                    Math.random() * w, Math.random() * h,
+                    20 + Math.random() * 80,
+                    colors[Math.floor(Math.random() * colors.length)]
+                );
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // Phase 3: Horizontal scan line distortion
+        if (progress > 0.5 && progress < 0.9) {
+            for (let i = 0; i < 10; i++) {
+                const y = Math.random() * h;
+                const barHeight = 2 + Math.random() * 8;
+                const shift = (Math.random() - 0.5) * 100;
+                ctx.fillStyle = `rgba(${Math.random() > 0.5 ? '255, 0, 0' : '0, 255, 255'}, ${Math.random() * 0.4})`;
+                ctx.fillRect(shift, y, w, barHeight);
+            }
+        }
+
+        // Phase 4: Color bleaching
+        if (progress > 0.7 && progress < 0.95) {
+            const bleachAlpha = (progress - 0.7) * 2;
+            ctx.fillStyle = `rgba(${Math.floor(Math.random() * 100)}, ${Math.floor(Math.random() * 50)}, ${Math.floor(Math.random() * 100)}, ${bleachAlpha * 0.3})`;
+            ctx.fillRect(0, 0, w, h);
+        }
+
+        // Phase 5: Fade to black
+        if (progress > 0.9) {
+            const fadeAlpha = (progress - 0.9) * 10;
+            ctx.fillStyle = `rgba(0, 0, 0, ${fadeAlpha})`;
+            ctx.fillRect(0, 0, w, h);
+        }
+
+        if (frame < totalFrames) {
+            requestAnimationFrame(renderCrashFrame);
+        } else {
+            // Hold black, then start reboot
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, w, h);
+            setTimeout(() => {
+                overlay.remove();
+                import('./day-report.js').then(module => {
+                    module.advanceDay2Cliffhanger(2);
+                });
+            }, 1500);
+        }
+    }
+
+    // Second static burst midway
+    setTimeout(() => playStaticBurst(), 1000);
+
+    renderCrashFrame();
 }
 
 // Natural phenomena waveform patterns (5 types)
@@ -818,6 +1068,12 @@ function showVerifiedSignalResult(star, display) {
         return;
     }
 
+    // Check dynamic stars requiring decryption (SRC-7024, NEXUS POINT)
+    if (star.isDynamic && (star.id === 'src7024' || star.id === 'nexusPoint')) {
+        showDynamicEncryptedResult(star, display);
+        return;
+    }
+
     gameState.scanResults.set(star.id, {
         type: 'verified_signal'
     });
@@ -992,12 +1248,8 @@ function showEncryptedSignalResult(star, display) {
                         // Success callback
                         () => {
                             log('DECRYPTION COMPLETE - Signal decoded!', 'highlight');
-                            // Award first fragment
-                            if (!gameState.fragments.sources.ross128) {
-                                gameState.fragments.collected.push('ross128');
-                                gameState.fragments.sources.ross128 = true;
-                                log('FRAGMENT ACQUIRED: Ross 128 signal data', 'highlight');
-                            }
+                            gameState.decryptionComplete = true;
+                            autoSave();
 
                             // Launch alignment tutorial if not completed
                             if (!gameState.tutorialCompleted) {
@@ -1052,6 +1304,178 @@ function showEncryptedSignalResult(star, display) {
     }
 }
 
+// Show encrypted result for dynamic stars (SRC-7024 and NEXUS POINT)
+function showDynamicEncryptedResult(star, display) {
+    const isSrc7024 = star.id === 'src7024';
+    const difficulty = isSrc7024 ? 'easy' : 'medium';
+    const fragmentKey = star.id; // 'src7024' or 'nexusPoint'
+    const fragmentLabel = isSrc7024 ? 'SRC-7024 signal data' : 'NEXUS POINT deep space data';
+    const fragmentNum = isSrc7024 ? 1 : 2;
+
+    gameState.scanResults.set(star.id, { type: 'encrypted_signal' });
+    autoSave();
+
+    const resultDiv = document.createElement('div');
+    resultDiv.style.cssText = 'margin-top: 20px; padding: 15px; border: 2px solid #ff0; background: rgba(255, 255, 0, 0.1);';
+
+    const borderColor = isSrc7024 ? '#0ff' : '#f0f';
+    resultDiv.innerHTML = `
+        <div style="color: ${borderColor}; font-size: 18px; text-shadow: 0 0 10px ${borderColor}; margin-bottom: 10px;">
+            ⚠ ENCRYPTED SIGNAL DETECTED ⚠
+        </div>
+        <div style="color: #0ff; font-size: 14px;">
+            Signal verified as ${isSrc7024 ? 'NON-CATALOGED' : 'EXTRAGALACTIC'} origin<br>
+            Distance: ${star.distance} light years<br><br>
+            <span style="color: #f0f; text-shadow: 0 0 5px #f0f;">
+                WARNING: ${isSrc7024 ? 'Multi-layered encoding detected' : 'Ultra-dense data compression detected'}<br>
+                Standard protocols cannot decode content
+            </span><br><br>
+            <span style="color: #0f0;">
+                QUANTUM DECRYPTION SYSTEM: AVAILABLE<br>
+                DIFFICULTY ASSESSMENT: ${difficulty.toUpperCase()}
+            </span>
+        </div>
+    `;
+
+    display.appendChild(resultDiv);
+    playSecurityBeep('warning');
+
+    setTimeout(() => {
+        const decryptDiv = document.createElement('div');
+        decryptDiv.style.cssText = 'margin-top: 20px; text-align: center;';
+
+        const question = document.createElement('p');
+        question.textContent = 'INITIATE QUANTUM DECRYPTION?';
+        question.style.cssText = `color: ${borderColor}; text-shadow: 0 0 5px ${borderColor}; font-size: 18px; margin-bottom: 15px;`;
+        decryptDiv.appendChild(question);
+
+        const buttonContainer = document.createElement('div');
+
+        const yesBtn = document.createElement('button');
+        yesBtn.textContent = 'DECRYPT';
+        yesBtn.className = 'btn';
+        yesBtn.style.cssText = 'background: rgba(0, 255, 0, 0.1); border: 2px solid #0f0; color: #0f0; margin: 5px; padding: 8px 20px;';
+        yesBtn.addEventListener('click', () => {
+            playClick();
+            buttonContainer.remove();
+            question.textContent = '[INITIALIZING QUANTUM PROCESSOR...]';
+
+            setTimeout(() => {
+                document.getElementById('contact-protocol-box').style.display = 'none';
+                startDecryptionMinigame(
+                    // Success callback
+                    () => {
+                        log(`DECRYPTION COMPLETE - Fragment ${fragmentNum} decoded!`, 'highlight');
+
+                        // Collect fragment
+                        if (!gameState.fragments.sources[fragmentKey]) {
+                            gameState.fragments.collected.push(fragmentKey);
+                            gameState.fragments.sources[fragmentKey] = true;
+                            log(`FRAGMENT ${fragmentNum} ACQUIRED: ${fragmentLabel}`, 'highlight');
+                        }
+
+                        // Mark scan as complete
+                        gameState.scanResults.set(star.id, { type: 'verified_signal' });
+
+                        // Fragment 1 (SRC-7024): Unlock investigation page
+                        if (isSrc7024) {
+                            unlockInvestigation();
+                            onFragmentCollected();
+                            // Schedule scientist emails about triangulation
+                            scheduleTriangulationEmails();
+                        } else {
+                            // Fragment 2 (NEXUS POINT): Update investigation
+                            onFragmentCollected();
+                            // Schedule emails about pre-Big Bang constants
+                            schedulePreBigBangEmails();
+                        }
+
+                        autoSave();
+                        showView('starmap-view');
+                        document.getElementById('analyze-btn').disabled = false;
+                        checkAndShowDayComplete();
+                    },
+                    // Cancel callback
+                    () => {
+                        showView('starmap-view');
+                        log('Decryption aborted.', 'warning');
+                        document.getElementById('analyze-btn').disabled = false;
+                    },
+                    difficulty
+                );
+            }, 1500);
+        });
+
+        const noBtn = document.createElement('button');
+        noBtn.textContent = 'ABORT';
+        noBtn.className = 'btn';
+        noBtn.style.cssText = 'background: rgba(255, 0, 0, 0.1); border: 2px solid #f00; color: #f00; margin: 5px; padding: 8px 20px;';
+        noBtn.addEventListener('click', () => {
+            playClick();
+            buttonContainer.remove();
+            question.textContent = '[DECRYPTION ABORTED]';
+            question.style.cssText = 'color: #f00; text-shadow: 0 0 5px #f00; font-size: 16px;';
+            log('Quantum decryption aborted by operator');
+            document.getElementById('analyze-btn').disabled = false;
+        });
+
+        buttonContainer.appendChild(yesBtn);
+        buttonContainer.appendChild(noBtn);
+        decryptDiv.appendChild(buttonContainer);
+        display.appendChild(decryptDiv);
+    }, 1500);
+}
+
+// Schedule scientist emails about triangulation (after Fragment 1)
+function scheduleTriangulationEmails() {
+    const name = gameState.playerName;
+
+    setTimeout(() => {
+        addMailMessage(
+            'Dr. Marcus Webb - Xenolinguistics',
+            'SRC-7024 Encoding Analysis',
+            `Dr. ${name},\n\nI've been analyzing the decoded SRC-7024 data. The encoding has definite positional structure — these aren't random symbols. The mathematical sequences embed what appear to be spatial coordinates.\n\nWhatever sent this signal wanted us to find something specific.\n\nCheck the PROJECT LIGHTHOUSE investigation page. I believe we can triangulate these coordinates.\n\n- Marcus`
+        );
+    }, 15000);
+
+    setTimeout(() => {
+        addMailMessage(
+            'Dr. Eleanor Chen - Radio Astronomy',
+            'Triangulation Vectors in SRC-7024 Data',
+            `${name},\n\nCross-referencing the SRC-7024 fragment with pulsar timing arrays — these look like triangulation vectors. Three reference points, all pointing to a single location in deep space.\n\nI've flagged the triangulation option on your investigation page. This is big.\n\n- Eleanor`
+        );
+    }, 30000);
+
+    setTimeout(() => {
+        addMailMessage(
+            'Dr. James Whitmore - SETI Director',
+            '[URGENT] Triangulate SRC-7024 Coordinates',
+            `Dr. ${name},\n\nDr. Chen and Dr. Webb both confirm: the SRC-7024 data contains triangulation vectors pointing to an unknown location in deep space.\n\nIf these are real coordinates, we need to triangulate NOW. Use PROJECT LIGHTHOUSE to initiate the sequence.\n\nThis could change everything.\n\n- James Whitmore\n  SETI Program Director`
+        );
+    }, 45000);
+}
+
+// Schedule scientist emails about pre-Big Bang constants (after Fragment 2)
+function schedulePreBigBangEmails() {
+    const name = gameState.playerName;
+
+    setTimeout(() => {
+        addMailMessage(
+            'Dr. Sarah Okonkwo - Astrobiology',
+            'NEXUS POINT Data — Impossible Constants',
+            `${name},\n\nI've been reviewing the NEXUS POINT fragment. These physical constants don't match our universe. They describe different initial conditions — as if someone is describing the parameters of a DIFFERENT cosmos.\n\nThe temporal markers... they predate the Big Bang by billions of years. This is impossible unless there was something before.\n\n- Sarah`
+        );
+    }, 20000);
+
+    setTimeout(() => {
+        addMailMessage(
+            'Dr. Marcus Webb - Xenolinguistics',
+            'RE: NEXUS POINT Analysis — "Before Time"',
+            `Dr. ${name},\n\nDr. Okonkwo is right. The temporal markers in Fragment 2 point to events before the Big Bang. I keep coming back to the 82 Eridani signal — that civilization mentioned "what came before."\n\nWe need their data. If they've decoded another piece of this message, combining it with ours might reveal the full picture.\n\nHave you established contact with 82 Eridani yet?\n\n- Marcus`
+        );
+    }, 40000);
+}
+
 // Initiate contact
 function initiateContact(star) {
     log('='.repeat(50), 'highlight');
@@ -1084,21 +1508,13 @@ function initiateContact(star) {
     displayContactMessage(messageData, star);
 }
 
-// Award fragments for Day 3 contacts
+// No-op: fragments are now awarded through decryption minigames, not contacts directly
 function awardContactFragment(star) {
-    // Van Maanen's Star - "The Network" - gives hd219134 fragment (shared network data)
-    if (star.id === VAN_MAANENS_INDEX && !gameState.fragments.sources.hd219134) {
-        gameState.fragments.collected.push('hd219134');
-        gameState.fragments.sources.hd219134 = true;
-        log('FRAGMENT ACQUIRED: Network shared intelligence data', 'highlight');
-    }
-
-    // Gliese 832 - Megastructure beacon - gives gliese832 fragment
-    if (star.id === GLIESE_832_INDEX && !gameState.fragments.sources.gliese832) {
-        gameState.fragments.collected.push('gliese832');
-        gameState.fragments.sources.gliese832 = true;
-        log('FRAGMENT ACQUIRED: Gliese 832 megastructure coordinates', 'highlight');
-    }
+    // Fragments are now part of the breadcrumb trail:
+    // Fragment 1: SRC-7024 scan → easy decryption
+    // Fragment 2: NEXUS POINT scan → medium decryption
+    // Fragment 3: 82 Eridani contact → hard decryption (triggered in showPostContactActions)
+    // Fragment 4: Synthesis alignment (from Investigation page)
 }
 
 // Display contact message
@@ -1218,29 +1634,31 @@ function displayContactMessage(messageData, star) {
         displayNextImageLine();
     }
 
-    // Show post-contact actions (triangulation offer for Day 3)
+    // Show post-contact actions
     function showPostContactActions(star) {
         if (!star) return;
 
-        // Check if this is Gliese 832 (megastructure) - offer triangulation
-        if (star.id === GLIESE_832_INDEX && !gameState.cmbDetected) {
+        // 82 Eridani — collaborative decryption data (Fragment 3)
+        const ERIDANI_82_INDEX = 26;
+        if (star.id === ERIDANI_82_INDEX && !gameState.fragments.sources.eridani82) {
             setTimeout(() => {
-                showTriangulationOffer();
+                showEridaniDecryptionOffer();
             }, 2000);
         }
     }
 
-    function showTriangulationOffer() {
+    function showEridaniDecryptionOffer() {
         const prompt = document.createElement('div');
         prompt.className = 'message-line';
-        prompt.style.cssText = 'color: #0ff; text-shadow: 0 0 10px #0ff; font-size: 18px; margin-top: 30px; text-align: center;';
+        prompt.style.cssText = 'color: #f0f; text-shadow: 0 0 10px #f0f; font-size: 18px; margin-top: 30px; text-align: center;';
         prompt.innerHTML = `
             <div style="margin-bottom: 15px;">
-                ◆ TRIANGULATION DATA DETECTED ◆
+                ◆ COLLABORATIVE DATA DETECTED ◆
             </div>
-            <div style="color: #0a0; font-size: 14px; margin-bottom: 15px;">
-                Signal contains coordinate vectors from multiple civilizations.<br>
-                Cross-reference to locate CMB signal origin?
+            <div style="color: #0ff; font-size: 14px; margin-bottom: 15px;">
+                82 Eridani has transmitted encrypted collaborative data.<br>
+                Combined with our fragments, this may reveal the full message.<br><br>
+                <span style="color: #ff0;">DECRYPTION DIFFICULTY: HARD</span>
             </div>
         `;
         messageDisplay.appendChild(prompt);
@@ -1249,27 +1667,38 @@ function displayContactMessage(messageData, star) {
         buttonContainer.style.cssText = 'margin-top: 15px; text-align: center;';
 
         const yesBtn = document.createElement('button');
-        yesBtn.textContent = 'INITIATE TRIANGULATION';
+        yesBtn.textContent = 'INITIATE DECRYPTION';
         yesBtn.className = 'btn';
-        yesBtn.style.cssText = 'background: rgba(0, 255, 255, 0.1); border: 2px solid #0ff; color: #0ff; margin: 0 10px; padding: 10px 20px;';
+        yesBtn.style.cssText = 'background: rgba(255, 0, 255, 0.1); border: 2px solid #f0f; color: #f0f; margin: 0 10px; padding: 10px 20px;';
         yesBtn.addEventListener('click', () => {
             playClick();
             buttonContainer.remove();
-            prompt.innerHTML = '<div style="color: #0ff;">[INITIALIZING TRIANGULATION ARRAY...]</div>';
+            prompt.innerHTML = '<div style="color: #f0f;">[INITIALIZING COLLABORATIVE DECRYPTION...]</div>';
 
             setTimeout(() => {
-                startTriangulationMinigame(
+                startDecryptionMinigame(
                     // Success callback
                     () => {
-                        log('TRIANGULATION COMPLETE - CMB origin located!', 'highlight');
+                        log('DECRYPTION COMPLETE - Fragment 3 decoded!', 'highlight');
+
+                        // Collect Fragment 3
+                        if (!gameState.fragments.sources.eridani82) {
+                            gameState.fragments.collected.push('eridani82');
+                            gameState.fragments.sources.eridani82 = true;
+                            log('FRAGMENT 3 ACQUIRED: 82 Eridani collaborative data', 'highlight');
+                        }
+
+                        onFragmentCollected();
+                        autoSave();
                         showView('starmap-view');
                         checkAndShowDayComplete();
                     },
                     // Cancel callback
                     () => {
-                        log('Triangulation aborted.', 'warning');
+                        log('Decryption aborted.', 'warning');
                         showView('contact-view');
-                    }
+                    },
+                    'hard'
                 );
             }, 1500);
         });
@@ -1281,7 +1710,7 @@ function displayContactMessage(messageData, star) {
         noBtn.addEventListener('click', () => {
             playClick();
             buttonContainer.remove();
-            prompt.innerHTML = '<div style="color: #aa0;">[TRIANGULATION DEFERRED]</div>';
+            prompt.innerHTML = '<div style="color: #aa0;">[DECRYPTION DEFERRED]</div>';
         });
 
         buttonContainer.appendChild(yesBtn);

@@ -43,13 +43,18 @@ export function autoSave() {
             sources: {}
         },
 
+        // Investigation state
+        investigationUnlocked: gameState.investigationUnlocked || false,
+        dynamicStars: gameState.dynamicStars || [],
+
         // Progress flags
         flags: {
             tutorialCompleted: gameState.tutorialCompleted || false,
             decryptionComplete: gameState.decryptionComplete || false,
             cmbDetected: gameState.cmbDetected || false,
             finalPuzzleComplete: gameState.finalPuzzleComplete || false,
-            dayReportShown: gameState.dayReportShown || 0
+            dayReportShown: gameState.dayReportShown || 0,
+            day2CliffhangerPhase: gameState.day2CliffhangerPhase ?? -1
         }
     };
 
@@ -120,6 +125,10 @@ export function applySaveData(data) {
             sources: {}
         };
 
+        // Investigation state
+        gameState.investigationUnlocked = data.investigationUnlocked || false;
+        gameState.dynamicStars = data.dynamicStars || [];
+
         // Progress flags
         if (data.flags) {
             gameState.tutorialCompleted = data.flags.tutorialCompleted || false;
@@ -127,6 +136,7 @@ export function applySaveData(data) {
             gameState.cmbDetected = data.flags.cmbDetected || false;
             gameState.finalPuzzleComplete = data.flags.finalPuzzleComplete || false;
             gameState.dayReportShown = data.flags.dayReportShown || 0;
+            gameState.day2CliffhangerPhase = data.flags.day2CliffhangerPhase ?? -1;
         }
 
         console.log('SIGNAL: Save data applied successfully');
@@ -170,37 +180,60 @@ const DAY_CODES = {
         flags: {}
     },
 
-    // Day 3 start (decryption complete, CMB detected)
+    // Day 3 start (decryption complete, ready for breadcrumb trail)
     'OMEGA-137': {
         day: 3,
         scannedStars: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
         fragments: {
-            collected: ['ross128'],
-            sources: { ross128: true }
+            collected: [],
+            sources: { src7024: null, nexusPoint: null, eridani82: null, synthesis: null }
         },
+        dynamicStars: [
+            {
+                id: 'src7024', name: 'SRC-7024', isDynamic: true, dynamicType: 'signal',
+                coordinates: '11h 47m 44s / +0° 48\' 16"', distance: '14.2',
+                starType: 'SIGNAL SOURCE', starClass: 'UNKNOWN', temperature: 'N/A',
+                hasIntelligence: true, isFalsePositive: false, x: 0.72, y: 0.35
+            }
+        ],
         flags: {
             decryptionComplete: true,
-            cmbDetected: true
+            day2CliffhangerPhase: 5
         }
     },
 
-    // Final puzzle only (all fragments)
+    // All fragments collected (ready for synthesis)
     'FINAL-999': {
         day: 3,
         scannedStars: Array.from({ length: 29 }, (_, i) => i),
         fragments: {
-            collected: ['ross128', 'gliese832', 'hd219134', 'cmbSource'],
+            collected: ['src7024', 'nexusPoint', 'eridani82'],
             sources: {
-                ross128: true,
-                gliese832: true,
-                hd219134: true,
-                cmbSource: true
+                src7024: true,
+                nexusPoint: true,
+                eridani82: true,
+                synthesis: null
             }
         },
+        dynamicStars: [
+            {
+                id: 'src7024', name: 'SRC-7024', isDynamic: true, dynamicType: 'signal',
+                coordinates: '11h 47m 44s / +0° 48\' 16"', distance: '14.2',
+                starType: 'SIGNAL SOURCE', starClass: 'UNKNOWN', temperature: 'N/A',
+                hasIntelligence: true, isFalsePositive: false, x: 0.72, y: 0.35
+            },
+            {
+                id: 'nexusPoint', name: 'NEXUS POINT', isDynamic: true, dynamicType: 'nexus',
+                coordinates: '?? ?? ?? / ?? ?? ??', distance: '???',
+                starType: 'EXTRAGALACTIC', starClass: 'ULTRA-DENSE', temperature: 'N/A',
+                hasIntelligence: true, isFalsePositive: false, x: 0.85, y: 0.55
+            }
+        ],
         flags: {
             decryptionComplete: true,
             cmbDetected: true,
-            tutorialCompleted: true
+            tutorialCompleted: true,
+            investigationUnlocked: true
         }
     },
 
@@ -221,6 +254,24 @@ export function applyDayCode(code) {
         return { success: false, error: 'Invalid code' };
     }
 
+    // Reset all progress flags for clean slate
+    gameState.tutorialCompleted = false;
+    gameState.decryptionComplete = false;
+    gameState.cmbDetected = false;
+    gameState.finalPuzzleComplete = false;
+    gameState.dayReportShown = 0;
+    gameState.demoMode = false;
+    gameState.investigationUnlocked = false;
+    gameState.dynamicStars = [];
+    gameState.day2CliffhangerPhase = -1;
+
+    // Clear runtime caches and collections
+    gameState.scannedSignals = new Map();
+    gameState.contactedStars = new Set();
+    gameState.mailboxMessages = [];
+    gameState.unreadMailCount = 0;
+    gameState.discoveredMessages = [];
+
     // Apply the code state
     gameState.currentDay = codeData.day;
     gameState.daysCompleted = [];
@@ -239,7 +290,12 @@ export function applyDayCode(code) {
     // Apply fragments
     gameState.fragments = { ...codeData.fragments };
 
-    // Apply flags
+    // Apply dynamic stars
+    if (codeData.dynamicStars) {
+        gameState.dynamicStars = [...codeData.dynamicStars];
+    }
+
+    // Apply flags (overrides reset above for specified flags)
     if (codeData.flags) {
         Object.assign(gameState, codeData.flags);
     }

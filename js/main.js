@@ -69,13 +69,24 @@ import {
     generateSignal,
     startSignalAnimation,
     stopSignalAnimation,
-    showVerifyPrompt
+    showVerifyPrompt,
+    startRoss128DirectDecryption,
+    initiateSRC7024CrashScan
 } from './systems/scanning.js';
 import { startTuningMinigame, setTuningFunctions, setupTuningSliders } from './systems/tuning-minigame.js';
 import { startPatternRecognitionGame, setPatternFunctions } from './systems/pattern-minigame.js';
 import { startDecryptionMinigame, isDecryptionComplete } from './systems/decryption-minigame.js';
 import { startAlignmentTutorial, startFinalAlignment, isAlignmentTutorialComplete, isFinalPuzzleComplete } from './systems/alignment-minigame.js';
 import { startTriangulationMinigame, isTriangulationActive } from './systems/triangulation-minigame.js';
+import {
+    openInvestigation,
+    closeInvestigation,
+    unlockInvestigation,
+    onFragmentCollected,
+    addSRC7024,
+    addNexusPoint,
+    pulseInvestigationIndicator
+} from './systems/investigation.js';
 
 // Wire up cross-module function references
 function setupModuleConnections() {
@@ -91,7 +102,9 @@ function setupModuleConnections() {
         renderStarmapArray: renderStarmapArray,
         updateStarmapArrayStats: updateStarmapArrayStats,
         stopSignalAnimation: stopSignalAnimation,
-        updateTelemetry: updateTelemetry
+        updateTelemetry: updateTelemetry,
+        startDirectDecryption: startRoss128DirectDecryption,
+        initiateSRC7024CrashScan: initiateSRC7024CrashScan
     });
 
     // Dev mode needs various functions
@@ -107,7 +120,12 @@ function setupModuleConnections() {
         startAlignmentTutorial: startAlignmentTutorial,
         startFinalAlignment: startFinalAlignment,
         startTriangulationMinigame: startTriangulationMinigame,
-        showFinalReport: showFinalReport
+        showFinalReport: showFinalReport,
+        openInvestigation: openInvestigation,
+        unlockInvestigation: unlockInvestigation,
+        onFragmentCollected: onFragmentCollected,
+        addSRC7024: addSRC7024,
+        addNexusPoint: addNexusPoint
     });
 
     // Tuning minigame needs signal functions
@@ -174,6 +192,23 @@ function setupEventListeners() {
         playClick();
         closeMailbox();
     });
+
+    // Investigation / Project Lighthouse button
+    const investigationBtn = document.getElementById('investigation-btn');
+    if (investigationBtn) {
+        investigationBtn.addEventListener('click', () => {
+            playClick();
+            openInvestigation();
+        });
+    }
+
+    const investigationBackBtn = document.getElementById('investigation-back-btn');
+    if (investigationBackBtn) {
+        investigationBackBtn.addEventListener('click', () => {
+            playClick();
+            closeInvestigation();
+        });
+    }
 
     // Dish Array buttons
     const arrayStatusBtn = document.getElementById('array-status-btn');
@@ -342,7 +377,14 @@ export {
     isAlignmentTutorialComplete,
     isFinalPuzzleComplete,
     startTriangulationMinigame,
-    isTriangulationActive
+    isTriangulationActive,
+    openInvestigation,
+    closeInvestigation,
+    unlockInvestigation,
+    onFragmentCollected,
+    addSRC7024,
+    addNexusPoint,
+    pulseInvestigationIndicator
 };
 
 // Start the game when DOM is ready
