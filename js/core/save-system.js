@@ -202,17 +202,17 @@ const DAY_CODES = {
         }
     },
 
-    // All fragments collected (ready for synthesis)
+    // All fragments collected (ready for final decryption)
     'FINAL-999': {
         day: 3,
         scannedStars: Array.from({ length: 29 }, (_, i) => i),
         fragments: {
-            collected: ['src7024', 'nexusPoint', 'eridani82'],
+            collected: ['src7024', 'nexusPoint', 'eridani82', 'synthesis'],
             sources: {
                 src7024: true,
                 nexusPoint: true,
                 eridani82: true,
-                synthesis: null
+                synthesis: true
             }
         },
         dynamicStars: [
@@ -227,13 +227,20 @@ const DAY_CODES = {
                 coordinates: '?? ?? ?? / ?? ?? ??', distance: '???',
                 starType: 'EXTRAGALACTIC', starClass: 'ULTRA-DENSE', temperature: 'N/A',
                 hasIntelligence: true, isFalsePositive: false, x: 0.85, y: 0.55
+            },
+            {
+                id: 'genesis', name: 'GENESIS POINT', isDynamic: true, dynamicType: 'genesis',
+                coordinates: '03h 19m 28s / -16° 42\' 58"', distance: '???',
+                starType: 'PRIMORDIAL SOURCE', starClass: 'PRE-COSMIC', temperature: 'N/A',
+                hasIntelligence: true, isFalsePositive: false, x: 0.15, y: 0.70
             }
         ],
         flags: {
             decryptionComplete: true,
             cmbDetected: true,
             tutorialCompleted: true,
-            investigationUnlocked: true
+            investigationUnlocked: true,
+            day2CliffhangerPhase: 5
         }
     },
 

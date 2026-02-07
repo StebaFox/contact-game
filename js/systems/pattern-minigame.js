@@ -61,6 +61,16 @@ let patternState = {
     generation: 0
 };
 
+// Simple string hash to produce a stable numeric seed for dynamic star IDs
+function hashStringToNumber(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash = Math.abs(hash | 0);
+    }
+    return hash || 1;
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // FILTER DEFINITIONS
 // ═════════════════════════════════════════════════════════════════════════════
@@ -161,7 +171,7 @@ export function startPatternRecognitionGame(star) {
     patternState.cursorX = -1;
     patternState.generation = 0;
     patternState.star = star;
-    patternState.starSeed = star.id + 1;
+    patternState.starSeed = typeof star.id === 'number' ? star.id + 1 : hashStringToNumber(star.id);
     patternState.currentFilter = 0;
 
     // Determine signal visual type
@@ -172,7 +182,7 @@ export function startPatternRecognitionGame(star) {
     } else {
         patternState.signalType = 'natural';
     }
-    patternState.naturalType = star.id % 5;
+    patternState.naturalType = (typeof star.id === 'number' ? star.id : patternState.starSeed) % 5;
 
     // Show UI
     document.getElementById('pattern-game').style.display = 'block';

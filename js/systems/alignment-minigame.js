@@ -40,7 +40,12 @@ let alignmentState = {
 
     // Callbacks
     onSuccess: null,
-    onCancel: null
+    onCancel: null,
+
+    // Single-fragment mode
+    singleFragmentKey: null,
+    customRevealMessage: null,
+    singleOptions: null
 };
 
 // Fragment visual patterns - each is a piece of a larger message
@@ -110,16 +115,76 @@ const FRAGMENT_PATTERNS = {
     }
 };
 
+// Sub-fragment patterns for multi-piece signal alignment
+// Each signal type has enough sub-pieces for its difficulty level
+const SIGNAL_SUB_FRAGMENTS = {
+    src7024: [
+        { symbol: 'Ψ∴', glyph: '▓▒', color: '#0ff', encrypted: '7F4A', message: 'Ψ∴⌬',
+          alienChars: ['Ψ', '∴', '⌬', '☉'], borderPattern: '╔═╗', pulseColor: '#00ffff' },
+        { symbol: '⌬☉', glyph: '▒░', color: '#0ff', encrypted: '2C91', message: '☉◆∞',
+          alienChars: ['◆', '∞', '⟐', '⎔'], borderPattern: '╠═╣', pulseColor: '#00ffff' },
+        { symbol: '◆⟐', glyph: '░▓', color: '#0ff', encrypted: '9F2E', message: '⟐⎔⬡',
+          alienChars: ['⬡', '⊕', '◇', '⊗'], borderPattern: '╚═╝', pulseColor: '#00ffff' }
+    ],
+    nexusPoint: [
+        { symbol: 'Ω∵', glyph: '█▓', color: '#ff0', encrypted: '8D5A', message: 'Ω∵⎔',
+          alienChars: ['Ω', '∵', '⎔', '⚡'], borderPattern: '┌─┐', pulseColor: '#ffff00' },
+        { symbol: 'Λ∞', glyph: '▓█', color: '#ff0', encrypted: 'C0F7', message: 'Λ∞ℏ',
+          alienChars: ['Λ', '∞', 'ℏ', '⊕'], borderPattern: '├─┤', pulseColor: '#ffff00' },
+        { symbol: '◆⟐', glyph: '█░', color: '#ff0', encrypted: '1E92', message: '◆⟐✧',
+          alienChars: ['◆', '⟐', '✧', '⬡'], borderPattern: '└─┘', pulseColor: '#ffff00' },
+        { symbol: '☉∴', glyph: '░█', color: '#ff0', encrypted: 'A3B8', message: '☉∴⌬',
+          alienChars: ['☉', '∴', '⌬', '⊗'], borderPattern: '│═│', pulseColor: '#ffff00' }
+    ],
+    eridani82: [
+        { symbol: '∆◊', glyph: '░█', color: '#0f0', encrypted: '3B4F', message: '∆◊⬢',
+          alienChars: ['∆', '◊', '⬢', '⊛'], borderPattern: '╔═╗', pulseColor: '#00ff00' },
+        { symbol: '⬡✧', glyph: '█░', color: '#0f0', encrypted: 'D8A6', message: '⬡✧◈',
+          alienChars: ['⬡', '✧', '◈', '⊜'], borderPattern: '╠═╣', pulseColor: '#00ff00' },
+        { symbol: '⊗⊕', glyph: '▓░', color: '#0f0', encrypted: '7C15', message: '⊗⊕⬣',
+          alienChars: ['⊗', '⊕', '⬣', '◎'], borderPattern: '╚═╝', pulseColor: '#00ff00' },
+        { symbol: '✦⊙', glyph: '░▓', color: '#0f0', encrypted: 'E4D2', message: '✦⊙⬟',
+          alienChars: ['✦', '⊙', '⬟', '⟐'], borderPattern: '║═║', pulseColor: '#00ff00' },
+        { symbol: 'Ψ☉', glyph: '█▓', color: '#0f0', encrypted: 'F9A1', message: 'Ψ☉∴',
+          alienChars: ['Ψ', '☉', '∴', 'Ω'], borderPattern: '╬═╬', pulseColor: '#00ff00' }
+    ],
+    synthesis: [
+        { symbol: 'Σ∞', glyph: '█▓', color: '#f0f', encrypted: 'E2B9', message: 'Σ∞⊕',
+          alienChars: ['Σ', '∞', '⊕', '⊗'], borderPattern: '┏━┓', pulseColor: '#ff00ff' },
+        { symbol: '⊕⊗', glyph: '▓█', color: '#f0f', encrypted: '6D08', message: '⊕⊗⬡',
+          alienChars: ['⬡', '⊛', 'Ψ', '∆'], borderPattern: '┣━┫', pulseColor: '#ff00ff' },
+        { symbol: '⬡Ψ', glyph: '░█', color: '#f0f', encrypted: 'F3CA', message: '⬡Ψ◊',
+          alienChars: ['◊', '✧', 'Ω', '⎔'], borderPattern: '┗━┛', pulseColor: '#ff00ff' },
+        { symbol: '◊Ω', glyph: '█░', color: '#f0f', encrypted: 'A1F7', message: '◊Ω⚡',
+          alienChars: ['⚡', 'Λ', '∴', '☉'], borderPattern: '╋━╋', pulseColor: '#ff00ff' },
+        { symbol: '⚡∴', glyph: '▓░', color: '#f0f', encrypted: 'B4E3', message: '⚡∴⟐',
+          alienChars: ['⟐', '◆', '⊜', '⬣'], borderPattern: '┠━┨', pulseColor: '#ff00ff' },
+        { symbol: '◆⊜', glyph: '░▓', color: '#f0f', encrypted: 'C8D5', message: '◆⊜✦',
+          alienChars: ['✦', '⊙', '⬟', '∞'], borderPattern: '┯━┷', pulseColor: '#ff00ff' }
+    ]
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Start Alignment Game
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function startAlignmentTutorial(onSuccess, onCancel) {
+    alignmentState.singleFragmentKey = null;
+    alignmentState.customRevealMessage = null;
     startAlignment(true, onSuccess, onCancel);
 }
 
 export function startFinalAlignment(onSuccess, onCancel) {
+    alignmentState.singleFragmentKey = null;
+    alignmentState.customRevealMessage = null;
     startAlignment(false, onSuccess, onCancel);
+}
+
+export function startSingleFragmentAlignment(fragmentKey, revealMessage, onSuccess, onCancel, options = {}) {
+    alignmentState.singleFragmentKey = fragmentKey;
+    alignmentState.customRevealMessage = revealMessage;
+    alignmentState.singleOptions = options;
+    startAlignment(true, onSuccess, onCancel);
 }
 
 function startAlignment(isTutorial, onSuccess, onCancel) {
@@ -137,13 +202,22 @@ function startAlignment(isTutorial, onSuccess, onCancel) {
     alignmentState.pulsePhase = 0;
     alignmentState.particles = [];
 
-    alignmentState.requiredAlignments = isTutorial ? 2 : 4;
+    const isSingle = !!alignmentState.singleFragmentKey;
+    const singleOpts = alignmentState.singleOptions || {};
+    const singleCount = singleOpts.fragmentCount || 3;
+    alignmentState.requiredAlignments = isSingle ? singleCount : (isTutorial ? 2 : 4);
 
     // Difficulty settings
-    if (isTutorial) {
+    const difficulty = isSingle ? (singleOpts.difficulty || 'easy') : (isTutorial ? 'easy' : 'hard');
+    if (difficulty === 'easy') {
         alignmentState.alignmentTolerance = 15;
         alignmentState.rotationEnabled = false;
         alignmentState.driftEnabled = false;
+    } else if (difficulty === 'medium') {
+        alignmentState.alignmentTolerance = 12;
+        alignmentState.rotationEnabled = false;
+        alignmentState.driftEnabled = true;
+        alignmentState.driftPhase = 0;
     } else {
         alignmentState.alignmentTolerance = 8;
         alignmentState.rotationEnabled = true;
@@ -188,12 +262,17 @@ function createAlignmentUI(isTutorial) {
         font-family: 'VT323', monospace;
     `;
 
-    const title = isTutorial
-        ? 'FRAGMENT ALIGNMENT TRAINING'
-        : 'COSMIC MESSAGE RECONSTRUCTION';
-    const subtitle = isTutorial
-        ? 'Practice aligning signal fragments'
-        : 'Align all 4 fragments to reveal the message';
+    const isSingle = !!alignmentState.singleFragmentKey;
+    const title = isSingle
+        ? 'SIGNAL FRAGMENT ALIGNMENT'
+        : isTutorial
+            ? 'FRAGMENT ALIGNMENT TRAINING'
+            : 'COSMIC MESSAGE RECONSTRUCTION';
+    const subtitle = isSingle
+        ? `Align ${alignmentState.requiredAlignments} decoded signal fragments to decode its content`
+        : isTutorial
+            ? 'Practice aligning signal fragments'
+            : 'Align all 4 fragments to reveal the message';
 
     overlay.innerHTML = `
         <div style="
@@ -237,7 +316,7 @@ function createAlignmentUI(isTutorial) {
                 font-size: 13px;
                 text-align: center;
             ">
-                <span style="color: #ff0;">⚡ STUDY</span> corner symbols on fragments | <span style="color: #ff0;">MATCH</span> them to slot hints | <span style="color: #ff0;">DRAG</span> to align${!isTutorial ? ' | <span style="color: #f0f;">RIGHT-CLICK</span> to rotate' : ''}
+                <span style="color: #ff0;">⚡ STUDY</span> corner symbols on fragments | <span style="color: #ff0;">MATCH</span> them to slot hints | <span style="color: #ff0;">DRAG</span> to align${alignmentState.rotationEnabled ? ' | <span style="color: #f0f;">RIGHT-CLICK</span> to rotate' : ''}
             </div>
 
             <!-- Canvas Container -->
@@ -356,7 +435,67 @@ function initializeFragments(isTutorial) {
         return shuffled.slice(0, 2).join('');
     }
 
-    if (isTutorial) {
+    const isSingle = !!alignmentState.singleFragmentKey;
+
+    if (isSingle) {
+        // Multi-sub-fragment signal alignment
+        const key = alignmentState.singleFragmentKey;
+        const subFrags = SIGNAL_SUB_FRAGMENTS[key] || [];
+        const singleOpts = alignmentState.singleOptions || {};
+        const count = Math.min(singleOpts.fragmentCount || 3, subFrags.length);
+        const hasRotation = alignmentState.rotationEnabled;
+
+        // Build fragment list, then scatter randomly on left half
+        alignmentState.fragments = [];
+        const leftRegionW = width * 0.4;
+        const margin = fragmentSize + 10;
+
+        // Generate random non-overlapping positions on the left side
+        const positions = [];
+        for (let i = 0; i < count; i++) {
+            let x, y, attempts = 0;
+            do {
+                x = margin / 2 + Math.random() * (leftRegionW - margin);
+                y = margin / 2 + Math.random() * (height - margin);
+                attempts++;
+            } while (attempts < 50 && positions.some(p =>
+                Math.abs(p.x - x) < fragmentSize + 8 && Math.abs(p.y - y) < fragmentSize + 8
+            ));
+            positions.push({ x, y });
+        }
+
+        for (let i = 0; i < count; i++) {
+            const sf = subFrags[i];
+            alignmentState.fragments.push({
+                id: `${key}_${i}`,
+                ...sf,
+                x: positions[i].x,
+                y: positions[i].y,
+                width: fragmentSize,
+                height: fragmentSize,
+                aligned: false,
+                targetZone: i,
+                rotation: hasRotation ? (Math.floor(Math.random() * 4)) * (Math.PI / 2) : 0
+            });
+        }
+
+        // Position zones on right side
+        const zoneSpacing = Math.min(100, (height - 20) / count);
+        const zoneStartY = (height - count * zoneSpacing) / 2;
+
+        alignmentState.alignmentZones = [];
+        for (let i = 0; i < count; i++) {
+            const sf = subFrags[i];
+            alignmentState.alignmentZones.push({
+                x: width - 150 - (count > 3 && i % 2 === 0 ? 80 : 0),
+                y: zoneStartY + i * zoneSpacing,
+                width: zoneSize,
+                height: zoneSize,
+                hintChars: getZoneHint(sf.alienChars),
+                occupied: false
+            });
+        }
+    } else if (isTutorial) {
         // Tutorial: 2 fragments, 2 zones
         // Fragments start on the left side
         alignmentState.fragments = [
@@ -405,16 +544,32 @@ function initializeFragments(isTutorial) {
         // Final: 4 fragments, 4 zones
         const fragmentKeys = ['src7024', 'nexusPoint', 'eridani82', 'synthesis'];
 
+        // Scatter fragments randomly on left half
+        const finalLeftW = width * 0.4;
+        const finalMargin = fragmentSize + 10;
+        const finalPositions = [];
+        for (let i = 0; i < fragmentKeys.length; i++) {
+            let x, y, attempts = 0;
+            do {
+                x = finalMargin / 2 + Math.random() * (finalLeftW - finalMargin);
+                y = finalMargin / 2 + Math.random() * (height - finalMargin);
+                attempts++;
+            } while (attempts < 50 && finalPositions.some(p =>
+                Math.abs(p.x - x) < fragmentSize + 8 && Math.abs(p.y - y) < fragmentSize + 8
+            ));
+            finalPositions.push({ x, y });
+        }
+
         alignmentState.fragments = fragmentKeys.map((key, i) => ({
             id: key,
             ...FRAGMENT_PATTERNS[key],
-            x: 30 + (i % 2) * 90,
-            y: 40 + Math.floor(i / 2) * 100,
+            x: finalPositions[i].x,
+            y: finalPositions[i].y,
             width: fragmentSize,
             height: fragmentSize,
             aligned: false,
             targetZone: i,
-            rotation: alignmentState.rotationEnabled ? (Math.random() * 4) * (Math.PI / 2) : 0 // Random 90-degree rotations
+            rotation: alignmentState.rotationEnabled ? (Math.floor(Math.random() * 4)) * (Math.PI / 2) : 0
         }));
 
         // 4 zones arranged on the right - hints are random subsets of alienChars
@@ -699,6 +854,18 @@ function drawZones(ctx) {
             ctx.setLineDash([]);
         }
 
+        // Orientation indicator bar (top edge — shows expected fragment orientation)
+        if (!zone.occupied) {
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.15 + pulse * 0.1})`;
+            ctx.fillRect(zone.x + 6, zone.y + 4, zone.width - 12, 4);
+            // Small triangle below bar
+            ctx.beginPath();
+            ctx.moveTo(zone.x + zone.width / 2 - 4, zone.y + 10);
+            ctx.lineTo(zone.x + zone.width / 2, zone.y + 14);
+            ctx.lineTo(zone.x + zone.width / 2 + 4, zone.y + 10);
+            ctx.fill();
+        }
+
         // Zone border
         ctx.strokeStyle = zone.occupied
             ? '#0f0'
@@ -766,6 +933,24 @@ function drawFragments(ctx) {
         }
         ctx.fillStyle = gradient;
         ctx.fillRect(f.x, f.y, f.width, f.height);
+
+        // Orientation bar (top edge — rotates with fragment to show orientation)
+        if (!f.aligned) {
+            const barH = 5;
+            const barGrad = ctx.createLinearGradient(f.x, f.y, f.x + f.width, f.y);
+            barGrad.addColorStop(0, f.color);
+            barGrad.addColorStop(0.5, '#fff');
+            barGrad.addColorStop(1, f.color);
+            ctx.fillStyle = barGrad;
+            ctx.fillRect(f.x + 2, f.y + 2, f.width - 4, barH);
+            // Small triangle marker below bar
+            ctx.beginPath();
+            ctx.moveTo(f.x + f.width / 2 - 5, f.y + barH + 3);
+            ctx.lineTo(f.x + f.width / 2, f.y + barH + 7);
+            ctx.lineTo(f.x + f.width / 2 + 5, f.y + barH + 3);
+            ctx.fillStyle = f.color;
+            ctx.fill();
+        }
 
         // Inner border pattern (decorative alien lines)
         if (f.borderPattern) {
@@ -1029,7 +1214,7 @@ function showAlignmentSuccess() {
     // Build full message and encrypted code
     const alignedFrags = alignmentState.fragments.filter(f => f.aligned);
     alignedFrags.sort((a, b) => a.targetZone - b.targetZone);
-    const fullMessage = alignedFrags.map(f => f.message).join(' ');
+    const fullMessage = alignmentState.customRevealMessage || alignedFrags.map(f => f.message).join(' ');
     const encryptedCode = alignedFrags.map(f => f.encrypted).join(' | ');
 
     // Update label
@@ -1115,7 +1300,7 @@ function animateCodeTransformation(encrypted, decoded, messageEl, labelEl) {
                 </div>
             `;
             if (labelEl) {
-                labelEl.textContent = 'DECODED MESSAGE:';
+                labelEl.textContent = alignmentState.singleFragmentKey ? 'DECODED SIGNAL:' : 'DECODED MESSAGE:';
                 labelEl.style.color = '#0f0';
             }
         }
@@ -1146,7 +1331,10 @@ function completeAlignment(success) {
 
     // Handle completion
     if (success) {
-        if (alignmentState.isTutorial) {
+        if (alignmentState.singleFragmentKey) {
+            // Single-fragment mode — callback handles fragment collection
+            log('FRAGMENT ALIGNED — Signal decoded!', 'highlight');
+        } else if (alignmentState.isTutorial) {
             gameState.tutorialCompleted = true;
             log('Alignment training complete!', 'info');
         } else {

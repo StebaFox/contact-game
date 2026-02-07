@@ -10,15 +10,27 @@ import { playClick, playAnalysisSound, playContactSound, playSecurityBeep, playT
 import { startTuningMinigame } from './tuning-minigame.js';
 import { startPatternRecognitionGame } from './pattern-minigame.js';
 import { startDecryptionMinigame } from './decryption-minigame.js';
-import { startAlignmentTutorial } from './alignment-minigame.js';
+import { startAlignmentTutorial, startSingleFragmentAlignment } from './alignment-minigame.js';
 import { startTriangulationMinigame } from './triangulation-minigame.js';
 import { sendFirstContactEmail, addMailMessage } from './mailbox.js';
 import { checkAndShowDayComplete } from './day-report.js';
 import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
 import { unlockInvestigation, onFragmentCollected } from './investigation.js';
+import { updateStarCatalogDisplay } from '../ui/starmap.js';
 
 // Ross 128 star index - requires decryption
 const ROSS_128_INDEX = 8;
+
+// Convert a star ID to a numeric seed (handles string IDs from dynamic stars)
+function numericSeed(id) {
+    if (typeof id === 'number') return id + 1;
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+        hash = ((hash << 5) - hash) + id.charCodeAt(i);
+        hash = Math.abs(hash | 0);
+    }
+    return hash || 1;
+}
 
 // External function references
 let drawStarVisualizationFn = null;
@@ -102,7 +114,30 @@ export function initiateScan() {
     if (drawStarVisualizationFn && !star.isDynamic) drawStarVisualizationFn(star, 'analysis-star-visual');
 
     showView('analysis-view');
-    startTuningMinigame(star);
+
+    // Deep space (dynamic) signals skip tuning/verification — show encrypted result directly
+    if (star.isDynamic && star.hasIntelligence) {
+        generateSignal(star, true);
+        startSignalAnimation();
+
+        document.getElementById('scan-btn').textContent = '✓ SCAN COMPLETE';
+        document.getElementById('analyze-btn').disabled = true;
+
+        setTimeout(() => {
+            const contactBox = document.getElementById('contact-protocol-box');
+            const contactContent = document.getElementById('contact-protocol-content');
+            contactBox.style.display = 'block';
+            contactContent.innerHTML = '';
+
+            const display = document.createElement('div');
+            display.style.cssText = 'text-align: left; font-size: 14px; line-height: 1.8;';
+            contactContent.appendChild(display);
+
+            showDynamicEncryptedResult(star, display);
+        }, 1500);
+    } else {
+        startTuningMinigame(star);
+    }
 }
 
 // Direct decryption for Ross 128 (bypasses scanning pipeline)
@@ -224,7 +259,7 @@ function startCrashSequence() {
     const h = canvas.height;
 
     let frame = 0;
-    const totalFrames = 180; // ~3 seconds at 60fps
+    const totalFrames = 270; // ~4.5 seconds at 60fps
 
     const codeChars = '0123456789ABCDEFabcdef!@#$%^&*<>{}[]|/\\';
     function randomCode(len) {
@@ -277,15 +312,16 @@ function startCrashSequence() {
         const progress = frame / totalFrames;
 
         // Background: increasingly dark
-        const bgAlpha = Math.min(0.95, 0.3 + progress * 0.65);
+        const bgAlpha = Math.min(0.95, 0.2 + progress * 0.75);
         ctx.fillStyle = `rgba(0, 0, 0, ${bgAlpha})`;
         ctx.fillRect(0, 0, w, h);
 
-        // Phase 1: Random code text
-        if (progress < 0.7) {
-            const textIntensity = Math.min(1, progress * 3);
-            const lineCount = Math.floor(textIntensity * 30);
-            ctx.font = '14px VT323, monospace';
+        // Phase 1: Random code text — slow buildup, then intensifies
+        if (progress < 0.75) {
+            const textIntensity = Math.min(1, progress * 2);
+            const lineCount = Math.floor(textIntensity * 40);
+            const fontSize = 14 + Math.floor(progress * 8);
+            ctx.font = `${fontSize}px VT323, monospace`;
             for (let i = 0; i < lineCount; i++) {
                 const colors = ['#0f0', '#0ff', '#f0f', '#ff0', '#f00'];
                 ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
@@ -296,43 +332,47 @@ function startCrashSequence() {
             ctx.globalAlpha = 1;
         }
 
-        // Phase 2: Geometric shapes
-        if (progress > 0.2 && progress < 0.8) {
-            const shapeCount = Math.floor((progress - 0.2) * 20);
+        // Phase 2: Geometric shapes — earlier start, more buildup
+        if (progress > 0.15 && progress < 0.85) {
+            const shapeProg = (progress - 0.15) / 0.7;
+            const shapeCount = Math.floor(shapeProg * shapeProg * 25);
             for (let i = 0; i < shapeCount; i++) {
                 const colors = ['#0ff', '#f0f', '#ff0', '#f00', '#0f0'];
                 ctx.globalAlpha = Math.random() * 0.6 + 0.1;
+                const size = 20 + Math.random() * (60 + shapeProg * 60);
                 drawShape(
                     shapes[Math.floor(Math.random() * shapes.length)],
                     Math.random() * w, Math.random() * h,
-                    20 + Math.random() * 80,
+                    size,
                     colors[Math.floor(Math.random() * colors.length)]
                 );
             }
             ctx.globalAlpha = 1;
         }
 
-        // Phase 3: Horizontal scan line distortion
-        if (progress > 0.5 && progress < 0.9) {
-            for (let i = 0; i < 10; i++) {
+        // Phase 3: Horizontal scan line distortion — wider range
+        if (progress > 0.4 && progress < 0.92) {
+            const distortionIntensity = Math.min(1, (progress - 0.4) * 3);
+            const barCount = Math.floor(5 + distortionIntensity * 12);
+            for (let i = 0; i < barCount; i++) {
                 const y = Math.random() * h;
-                const barHeight = 2 + Math.random() * 8;
-                const shift = (Math.random() - 0.5) * 100;
-                ctx.fillStyle = `rgba(${Math.random() > 0.5 ? '255, 0, 0' : '0, 255, 255'}, ${Math.random() * 0.4})`;
+                const barHeight = 2 + Math.random() * (6 + distortionIntensity * 6);
+                const shift = (Math.random() - 0.5) * (60 + distortionIntensity * 80);
+                ctx.fillStyle = `rgba(${Math.random() > 0.5 ? '255, 0, 0' : '0, 255, 255'}, ${Math.random() * 0.4 + distortionIntensity * 0.1})`;
                 ctx.fillRect(shift, y, w, barHeight);
             }
         }
 
         // Phase 4: Color bleaching
-        if (progress > 0.7 && progress < 0.95) {
-            const bleachAlpha = (progress - 0.7) * 2;
+        if (progress > 0.75 && progress < 0.95) {
+            const bleachAlpha = (progress - 0.75) * 2.5;
             ctx.fillStyle = `rgba(${Math.floor(Math.random() * 100)}, ${Math.floor(Math.random() * 50)}, ${Math.floor(Math.random() * 100)}, ${bleachAlpha * 0.3})`;
             ctx.fillRect(0, 0, w, h);
         }
 
         // Phase 5: Fade to black
-        if (progress > 0.9) {
-            const fadeAlpha = (progress - 0.9) * 10;
+        if (progress > 0.92) {
+            const fadeAlpha = (progress - 0.92) * 12.5;
             ctx.fillStyle = `rgba(0, 0, 0, ${fadeAlpha})`;
             ctx.fillRect(0, 0, w, h);
         }
@@ -352,15 +392,16 @@ function startCrashSequence() {
         }
     }
 
-    // Second static burst midway
-    setTimeout(() => playStaticBurst(), 1000);
+    // Additional static bursts for buildup
+    setTimeout(() => playStaticBurst(), 1200);
+    setTimeout(() => playStaticBurst(), 2800);
 
     renderCrashFrame();
 }
 
 // Natural phenomena waveform patterns (5 types)
 function drawNaturalWaveform(ctx, width, height, type, starId, offset) {
-    const seed = starId + 1;
+    const seed = numericSeed(starId);
     switch (type) {
         case 0: // Pulsar - sharp periodic spikes
             for (let x = 0; x < width; x++) {
@@ -420,7 +461,7 @@ function drawNaturalWaveform(ctx, width, height, type, starId, offset) {
 
 // Natural phenomena spectrogram column (5 types)
 function drawNaturalSpectrogramColumn(ctx, x, specHeight, type, starId, offset) {
-    const seed = starId + 1;
+    const seed = numericSeed(starId);
     switch (type) {
         case 0: { // Pulsar - periodic bright horizontal sweeps
             const period = 40 + (seed % 5) * 8;
@@ -519,7 +560,7 @@ function drawNaturalSpectrogramColumn(ctx, x, specHeight, type, starId, offset) 
 
 // False positive spectrogram column - regular, artificial-looking
 function drawFalsePositiveSpectrogramColumn(ctx, x, specHeight, starId, offset) {
-    const seed = starId + 1;
+    const seed = numericSeed(starId);
     const numHarmonics = 4 + (seed % 3); // 4-6 evenly spaced bands
     const spacing = specHeight / (numHarmonics + 1);
     const pulseFreq = 0.08 + (seed % 4) * 0.02;
@@ -550,7 +591,7 @@ function drawFalsePositiveSpectrogramColumn(ctx, x, specHeight, starId, offset) 
 
 // Enhanced alien spectrogram column
 function drawAlienSpectrogramColumn(ctx, x, specHeight, starId, offset) {
-    const starSeed = starId + 1;
+    const starSeed = numericSeed(starId);
     const band1Pos = 0.2 + (starSeed % 3) * 0.1;
     const band2Pos = 0.4 + (starSeed % 4) * 0.1;
     const band3Pos = 0.6 + (starSeed % 5) * 0.08;
@@ -617,7 +658,7 @@ export function generateSignal(star, analyzed = false) {
         }
     } else if (hasIntelligence) {
         // Intelligent signal pattern - complex multi-frequency
-        const starSeed = star.id + 1;
+        const starSeed = numericSeed(star.id);
         const freq1 = 0.008 + (starSeed % 3) * 0.002;
         const freq2 = 0.001 + (starSeed % 5) * 0.0005;
         const freq3 = 0.02 + (starSeed % 7) * 0.003;
@@ -642,7 +683,7 @@ export function generateSignal(star, analyzed = false) {
         // False positive - suspiciously clean, regular sine wave
         waveCtx.strokeStyle = '#c80';
         waveCtx.shadowColor = '#c80';
-        const freq = 0.04 + (star.id % 3) * 0.01;
+        const freq = 0.04 + (numericSeed(star.id) % 3) * 0.01;
         for (let x = 0; x < width; x++) {
             const noise = (Math.random() - 0.5) * 4;
             const signal = Math.sin(x * freq) * 45;
@@ -652,7 +693,7 @@ export function generateSignal(star, analyzed = false) {
         }
     } else {
         // Natural phenomena - varied by star type
-        const phenomenonType = star.id % 5;
+        const phenomenonType = numericSeed(star.id) % 5;
         drawNaturalWaveform(waveCtx, width, height, phenomenonType, star.id, 0);
     }
 
@@ -689,7 +730,7 @@ export function generateSignal(star, analyzed = false) {
         }
     } else {
         // Natural phenomena - varied by star type
-        const phenomenonType = star.id % 5;
+        const phenomenonType = numericSeed(star.id) % 5;
         for (let x = 0; x < specWidth; x++) {
             drawNaturalSpectrogramColumn(specCtx, x, specHeight, phenomenonType, star.id, x);
         }
@@ -755,7 +796,7 @@ export function startSignalAnimation() {
 
             gameState.signalOffset += 1.0;
 
-            const starSeed = star.id + 1;
+            const starSeed = numericSeed(star.id);
             const freq1 = 0.008 + (starSeed % 3) * 0.002;
             const freq2 = 0.001 + (starSeed % 5) * 0.0005;
             const freq3 = 0.02 + (starSeed % 7) * 0.003;
@@ -787,7 +828,7 @@ export function startSignalAnimation() {
 
             gameState.signalOffset += 0.8;
 
-            const freq = 0.04 + (star.id % 3) * 0.01;
+            const freq = 0.04 + (numericSeed(star.id) % 3) * 0.01;
             for (let x = 0; x < width; x++) {
                 const xPos = x + gameState.signalOffset;
                 const noise = (Math.random() - 0.5) * 4;
@@ -810,7 +851,7 @@ export function startSignalAnimation() {
 
             gameState.signalOffset += 0.5;
 
-            const phenomenonType = star.id % 5;
+            const phenomenonType = numericSeed(star.id) % 5;
             drawNaturalWaveform(waveCtx, width, height, phenomenonType, star.id, gameState.signalOffset);
             waveCtx.stroke();
         }
@@ -840,7 +881,7 @@ export function startSignalAnimation() {
         } else if (star.isFalsePositive) {
             drawFalsePositiveSpectrogramColumn(specCtx, x, specHeight, star.id, gameState.signalOffset);
         } else {
-            const phenomenonType = star.id % 5;
+            const phenomenonType = numericSeed(star.id) % 5;
             drawNaturalSpectrogramColumn(specCtx, x, specHeight, phenomenonType, star.id, gameState.signalOffset);
         }
 
@@ -1068,8 +1109,8 @@ function showVerifiedSignalResult(star, display) {
         return;
     }
 
-    // Check dynamic stars requiring decryption (SRC-7024, NEXUS POINT)
-    if (star.isDynamic && (star.id === 'src7024' || star.id === 'nexusPoint')) {
+    // Check dynamic stars requiring decryption (SRC-7024, NEXUS POINT, GENESIS POINT)
+    if (star.isDynamic && (star.id === 'src7024' || star.id === 'nexusPoint' || star.id === 'genesis')) {
         showDynamicEncryptedResult(star, display);
         return;
     }
@@ -1249,7 +1290,9 @@ function showEncryptedSignalResult(star, display) {
                         () => {
                             log('DECRYPTION COMPLETE - Signal decoded!', 'highlight');
                             gameState.decryptionComplete = true;
+                            gameState.scanResults.set(8, { type: 'verified_signal' });
                             autoSave();
+                            updateStarCatalogDisplay();
 
                             // Launch alignment tutorial if not completed
                             if (!gameState.tutorialCompleted) {
@@ -1304,13 +1347,15 @@ function showEncryptedSignalResult(star, display) {
     }
 }
 
-// Show encrypted result for dynamic stars (SRC-7024 and NEXUS POINT)
+// Show encrypted result for dynamic stars (SRC-7024, NEXUS POINT, GENESIS POINT)
 function showDynamicEncryptedResult(star, display) {
     const isSrc7024 = star.id === 'src7024';
-    const difficulty = isSrc7024 ? 'easy' : 'medium';
-    const fragmentKey = star.id; // 'src7024' or 'nexusPoint'
-    const fragmentLabel = isSrc7024 ? 'SRC-7024 signal data' : 'NEXUS POINT deep space data';
-    const fragmentNum = isSrc7024 ? 1 : 2;
+    const isGenesis = star.id === 'genesis';
+    const difficulty = isSrc7024 ? 'easy' : (isGenesis ? 'hard' : 'medium');
+    const fragmentKey = isGenesis ? 'synthesis' : star.id;
+    const fragmentLabel = isSrc7024 ? 'SRC-7024 signal data'
+        : (isGenesis ? 'GENESIS POINT primordial data' : 'NEXUS POINT deep space data');
+    const fragmentNum = isSrc7024 ? 1 : (isGenesis ? 4 : 2);
 
     gameState.scanResults.set(star.id, { type: 'encrypted_signal' });
     autoSave();
@@ -1318,16 +1363,19 @@ function showDynamicEncryptedResult(star, display) {
     const resultDiv = document.createElement('div');
     resultDiv.style.cssText = 'margin-top: 20px; padding: 15px; border: 2px solid #ff0; background: rgba(255, 255, 0, 0.1);';
 
-    const borderColor = isSrc7024 ? '#0ff' : '#f0f';
+    const borderColor = isSrc7024 ? '#0ff' : (isGenesis ? '#0f0' : '#f0f');
+    const originLabel = isSrc7024 ? 'NON-CATALOGED' : (isGenesis ? 'PRIMORDIAL' : 'EXTRAGALACTIC');
+    const warningLabel = isSrc7024 ? 'Multi-layered encoding detected'
+        : (isGenesis ? 'Pre-cosmic temporal encoding detected' : 'Ultra-dense data compression detected');
     resultDiv.innerHTML = `
         <div style="color: ${borderColor}; font-size: 18px; text-shadow: 0 0 10px ${borderColor}; margin-bottom: 10px;">
             ⚠ ENCRYPTED SIGNAL DETECTED ⚠
         </div>
         <div style="color: #0ff; font-size: 14px;">
-            Signal verified as ${isSrc7024 ? 'NON-CATALOGED' : 'EXTRAGALACTIC'} origin<br>
+            Signal verified as ${originLabel} origin<br>
             Distance: ${star.distance} light years<br><br>
             <span style="color: #f0f; text-shadow: 0 0 5px #f0f;">
-                WARNING: ${isSrc7024 ? 'Multi-layered encoding detected' : 'Ultra-dense data compression detected'}<br>
+                WARNING: ${warningLabel}<br>
                 Standard protocols cannot decode content
             </span><br><br>
             <span style="color: #0f0;">
@@ -1365,35 +1413,92 @@ function showDynamicEncryptedResult(star, display) {
                 startDecryptionMinigame(
                     // Success callback
                     () => {
-                        log(`DECRYPTION COMPLETE - Fragment ${fragmentNum} decoded!`, 'highlight');
-
-                        // Collect fragment
-                        if (!gameState.fragments.sources[fragmentKey]) {
-                            gameState.fragments.collected.push(fragmentKey);
-                            gameState.fragments.sources[fragmentKey] = true;
-                            log(`FRAGMENT ${fragmentNum} ACQUIRED: ${fragmentLabel}`, 'highlight');
-                        }
-
-                        // Mark scan as complete
-                        gameState.scanResults.set(star.id, { type: 'verified_signal' });
-
-                        // Fragment 1 (SRC-7024): Unlock investigation page
                         if (isSrc7024) {
-                            unlockInvestigation();
-                            onFragmentCollected();
-                            // Schedule scientist emails about triangulation
-                            scheduleTriangulationEmails();
+                            // SRC-7024: Chain into alignment minigame (3 sub-frags, easy)
+                            log('DECRYPTION COMPLETE — Initiating fragment alignment...', 'highlight');
+                            startSingleFragmentAlignment(
+                                'src7024',
+                                '\u03A8\u2234\u232C\u2609 \u25C6 \u221E\u27D0\u238E\u2B21 \u25C6 \u2609\u232C\u2234\u03A8',
+                                // Alignment success
+                                () => {
+                                    if (!gameState.fragments.sources[fragmentKey]) {
+                                        gameState.fragments.collected.push(fragmentKey);
+                                        gameState.fragments.sources[fragmentKey] = true;
+                                        log(`FRAGMENT ${fragmentNum} ACQUIRED: ${fragmentLabel}`, 'highlight');
+                                    }
+                                    gameState.scanResults.set(star.id, { type: 'verified_signal' });
+                                    autoSave();
+                                    showView('starmap-view');
+                                    document.getElementById('analyze-btn').disabled = false;
+                                    scheduleSrc7024PostAlignmentEmails();
+                                },
+                                // Alignment cancel
+                                () => {
+                                    showView('starmap-view');
+                                    log('Fragment alignment aborted.', 'warning');
+                                    document.getElementById('analyze-btn').disabled = false;
+                                },
+                                { fragmentCount: 3, difficulty: 'easy' }
+                            );
+                        } else if (isGenesis) {
+                            // GENESIS POINT: Chain into alignment minigame (6 sub-frags, hard)
+                            log('DECRYPTION COMPLETE — Initiating fragment alignment...', 'highlight');
+                            startSingleFragmentAlignment(
+                                'synthesis',
+                                '\u03A3\u221E\u2295\u2297 \u25C6 \u2B21\u03A8\u25CA\u03A9 \u25C6 \u2297\u2295\u221E\u03A3',
+                                // Alignment success
+                                () => {
+                                    if (!gameState.fragments.sources[fragmentKey]) {
+                                        gameState.fragments.collected.push(fragmentKey);
+                                        gameState.fragments.sources[fragmentKey] = true;
+                                        log(`FRAGMENT ${fragmentNum} ACQUIRED: ${fragmentLabel}`, 'highlight');
+                                    }
+                                    gameState.scanResults.set(star.id, { type: 'verified_signal' });
+                                    onFragmentCollected();
+                                    schedulePostGenesisEmails();
+                                    autoSave();
+                                    showView('starmap-view');
+                                    document.getElementById('analyze-btn').disabled = false;
+                                    checkAndShowDayComplete();
+                                },
+                                // Alignment cancel
+                                () => {
+                                    showView('starmap-view');
+                                    log('Fragment alignment aborted.', 'warning');
+                                    document.getElementById('analyze-btn').disabled = false;
+                                },
+                                { fragmentCount: 6, difficulty: 'hard' }
+                            );
                         } else {
-                            // Fragment 2 (NEXUS POINT): Update investigation
-                            onFragmentCollected();
-                            // Schedule emails about pre-Big Bang constants
-                            schedulePreBigBangEmails();
+                            // NEXUS POINT: Chain into alignment minigame (4 sub-frags, medium)
+                            log('DECRYPTION COMPLETE — Initiating fragment alignment...', 'highlight');
+                            startSingleFragmentAlignment(
+                                'nexusPoint',
+                                '\u03A9\u2235\u238E\u26A1 \u25C7 \u039B\u2080\u221E\u210F \u25C7 \u26A1\u238E\u2235\u03A9',
+                                // Alignment success
+                                () => {
+                                    if (!gameState.fragments.sources[fragmentKey]) {
+                                        gameState.fragments.collected.push(fragmentKey);
+                                        gameState.fragments.sources[fragmentKey] = true;
+                                        log(`FRAGMENT ${fragmentNum} ACQUIRED: ${fragmentLabel}`, 'highlight');
+                                    }
+                                    gameState.scanResults.set(star.id, { type: 'verified_signal' });
+                                    onFragmentCollected();
+                                    schedulePreBigBangEmails();
+                                    autoSave();
+                                    showView('starmap-view');
+                                    document.getElementById('analyze-btn').disabled = false;
+                                    checkAndShowDayComplete();
+                                },
+                                // Alignment cancel
+                                () => {
+                                    showView('starmap-view');
+                                    log('Fragment alignment aborted.', 'warning');
+                                    document.getElementById('analyze-btn').disabled = false;
+                                },
+                                { fragmentCount: 4, difficulty: 'medium' }
+                            );
                         }
-
-                        autoSave();
-                        showView('starmap-view');
-                        document.getElementById('analyze-btn').disabled = false;
-                        checkAndShowDayComplete();
                     },
                     // Cancel callback
                     () => {
@@ -1455,6 +1560,40 @@ function scheduleTriangulationEmails() {
     }, 45000);
 }
 
+// Schedule post-alignment emails for SRC-7024, then unlock investigation
+function scheduleSrc7024PostAlignmentEmails() {
+    const name = gameState.playerName;
+
+    setTimeout(() => {
+        addMailMessage(
+            'Dr. Marcus Webb - Xenolinguistics',
+            'SRC-7024 Fragment Analysis',
+            `Dr. ${name},\n\nThe aligned fragment data is extraordinary. The encoding has definite positional structure — these aren't random symbols. The mathematical sequences embed what appear to be spatial coordinates.\n\nWhatever sent this signal wanted us to find something specific.\n\n- Marcus`
+        );
+    }, 8000);
+
+    setTimeout(() => {
+        addMailMessage(
+            'Dr. Eleanor Chen - Radio Astronomy',
+            'Triangulation Vectors in SRC-7024 Data',
+            `${name},\n\nCross-referencing the SRC-7024 fragment with pulsar timing arrays — these look like triangulation vectors. Three reference points, all pointing to a single location in deep space.\n\nThis is big.\n\n- Eleanor`
+        );
+    }, 18000);
+
+    setTimeout(() => {
+        addMailMessage(
+            'Dr. James Whitmore - SETI Director',
+            '[URGENT] PROJECT LIGHTHOUSE — Investigation Page Activated',
+            `Dr. ${name},\n\nDr. Chen and Dr. Webb both confirm: the SRC-7024 data contains triangulation vectors pointing to an unknown location in deep space.\n\nI've authorized the creation of a dedicated investigation workspace — PROJECT LIGHTHOUSE. You'll find it in your navigation panel.\n\nIf these coordinates are real, we need to triangulate NOW.\n\nThis could change everything.\n\n- James Whitmore\n  SETI Program Director`
+        );
+
+        // Unlock investigation page after this email arrives
+        unlockInvestigation();
+        onFragmentCollected();
+        checkAndShowDayComplete();
+    }, 28000);
+}
+
 // Schedule scientist emails about pre-Big Bang constants (after Fragment 2)
 function schedulePreBigBangEmails() {
     const name = gameState.playerName;
@@ -1474,6 +1613,40 @@ function schedulePreBigBangEmails() {
             `Dr. ${name},\n\nDr. Okonkwo is right. The temporal markers in Fragment 2 point to events before the Big Bang. I keep coming back to the 82 Eridani signal — that civilization mentioned "what came before."\n\nWe need their data. If they've decoded another piece of this message, combining it with ours might reveal the full picture.\n\nHave you established contact with 82 Eridani yet?\n\n- Marcus`
         );
     }, 40000);
+}
+
+// Schedule emails after all 3 fragments collected, guiding to genesis triangulation
+function scheduleGenesisTriangulationEmails() {
+    const name = gameState.playerName;
+
+    setTimeout(() => {
+        addMailMessage(
+            'Dr. Eleanor Chen - Radio Astronomy',
+            'All Three Fragments — Pattern Emerging',
+            `${name},\n\nWith all three fragments decoded, I ran a cross-correlation analysis. The data from SRC-7024, NEXUS POINT, and 82 Eridani aren't just pieces of a message — they contain a SECOND set of triangulation vectors.\n\nThese vectors don't point to any known object. They converge on a position that predates our earliest sky surveys.\n\nCheck PROJECT LIGHTHOUSE. We need to triangulate this immediately.\n\n- Eleanor`
+        );
+    }, 10000);
+
+    setTimeout(() => {
+        addMailMessage(
+            'Dr. Marcus Webb - Xenolinguistics',
+            'RE: Fragment Cross-Analysis — "The Origin Point"',
+            `Dr. ${name},\n\nEleanor is right. These three fragments, when combined, contain precise triangulation data pointing to what the encoding describes as a "genesis coordinate."\n\nWhatever created these signals is directing us to the source — the very origin of the message.\n\nUse the investigation page to run the triangulation. I believe this is the final piece.\n\n- Marcus`
+        );
+    }, 25000);
+}
+
+// Schedule emails after GENESIS POINT synthesis fragment collected
+function schedulePostGenesisEmails() {
+    const name = gameState.playerName;
+
+    setTimeout(() => {
+        addMailMessage(
+            'Dr. James Whitmore - SETI Director',
+            '[PRIORITY] All Fragments Decoded — Final Decryption Ready',
+            `Dr. ${name},\n\nThis is it. All four fragments have been decoded and aligned.\n\nThe complete message is now reconstructable. Our quantum processors are standing by for the final decryption sequence.\n\nOpen PROJECT LIGHTHOUSE and initiate the final decryption when you're ready. Whatever this message says... we'll face it together.\n\n- James Whitmore\n  SETI Program Director`
+        );
+    }, 5000);
 }
 
 // Initiate contact
@@ -1679,19 +1852,31 @@ function displayContactMessage(messageData, star) {
                 startDecryptionMinigame(
                     // Success callback
                     () => {
-                        log('DECRYPTION COMPLETE - Fragment 3 decoded!', 'highlight');
-
-                        // Collect Fragment 3
-                        if (!gameState.fragments.sources.eridani82) {
-                            gameState.fragments.collected.push('eridani82');
-                            gameState.fragments.sources.eridani82 = true;
-                            log('FRAGMENT 3 ACQUIRED: 82 Eridani collaborative data', 'highlight');
-                        }
-
-                        onFragmentCollected();
-                        autoSave();
-                        showView('starmap-view');
-                        checkAndShowDayComplete();
+                        // Chain into alignment minigame (5 sub-frags, hard)
+                        log('DECRYPTION COMPLETE — Initiating fragment alignment...', 'highlight');
+                        startSingleFragmentAlignment(
+                            'eridani82',
+                            '\u2206\u25CA\u2B21\u2727 \u25CF \u221E\u2295\u2234\u2297 \u25CF \u2727\u2B21\u25CA\u2206',
+                            // Alignment success
+                            () => {
+                                if (!gameState.fragments.sources.eridani82) {
+                                    gameState.fragments.collected.push('eridani82');
+                                    gameState.fragments.sources.eridani82 = true;
+                                    log('FRAGMENT 3 ACQUIRED: 82 Eridani collaborative data', 'highlight');
+                                }
+                                onFragmentCollected();
+                                scheduleGenesisTriangulationEmails();
+                                autoSave();
+                                showView('starmap-view');
+                                checkAndShowDayComplete();
+                            },
+                            // Alignment cancel
+                            () => {
+                                log('Fragment alignment aborted.', 'warning');
+                                showView('contact-view');
+                            },
+                            { fragmentCount: 5, difficulty: 'hard' }
+                        );
                     },
                     // Cancel callback
                     () => {

@@ -3,6 +3,16 @@
 // All sound effects, music, and audio management
 // ═════════════════════════════════════════════════════════════════════════════
 
+// Hash a string star ID to a numeric seed
+function hashStarId(id) {
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+        hash = ((hash << 5) - hash) + id.charCodeAt(i);
+        hash = Math.abs(hash | 0);
+    }
+    return hash || 1;
+}
+
 // Audio state (module-level)
 let audioContext = null;
 let tuningOscillator = null;
@@ -647,7 +657,7 @@ export function startAlienSignalSound(star) {
         alienSignalGain.connect(audioContext.destination);
 
         // Use star ID to create unique sound for each alien signal
-        const starSeed = star ? (star.id + 1) : 1;
+        const starSeed = star ? (typeof star.id === 'number' ? star.id + 1 : hashStarId(star.id)) : 1;
         const fundamental = 40 + (starSeed % 5) * 5; // Varies 40-60Hz
         const harmonicPattern = [
             [1, 1.5, 2, 3, 4.5],      // Pattern 0

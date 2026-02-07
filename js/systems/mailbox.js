@@ -135,6 +135,12 @@ export function addMailMessage(from, subject, body, preview = null) {
     gameState.unreadMailCount++;
     updateMailIndicator();
 
+    // If mailbox is currently open, refresh it so the new message appears
+    const activeView = document.querySelector('.view.active');
+    if (activeView && activeView.id === 'mailbox-view') {
+        updateMailboxDisplay();
+    }
+
     log(`New message received from ${from}`, 'highlight');
     playEmailNotification();
 }

@@ -428,7 +428,7 @@ export function selectStar(starId) {
             <div style="color: #ff0; text-shadow: 0 0 5px #ff0; font-size: 14px;">⚠ ENCRYPTED SIGNAL</div>
             <div style="color: #0ff; font-size: 12px; margin-top: 8px;">EXTRASOLAR ORIGIN - ENCODED</div>
             <div style="color: #0f0; font-size: 12px; margin-top: 8px; text-shadow: 0 0 5px #0f0;">QUANTUM DECRYPTION: AVAILABLE</div>
-            <button id="direct-decrypt-btn" class="btn" style="margin-top: 8px; background: rgba(0, 255, 0, 0.1); border: 1px solid #0f0; color: #0f0; padding: 4px 10px; font-family: 'VT323', monospace; font-size: 13px; cursor: pointer; display: inline-block; width: auto; text-shadow: 0 0 5px #0f0; animation: pulse 2s infinite;">BEGIN DECRYPTION</button>
+            <button id="direct-decrypt-btn" class="btn" style="margin-top: 8px; background: rgba(0, 255, 0, 0.1); border: 1px solid #0f0; color: #0f0; padding: 8px 18px; font-family: 'VT323', monospace; font-size: 18px; cursor: pointer; display: inline-block; width: auto; text-shadow: 0 0 5px #0f0; animation: pulse 2s infinite;">BEGIN DECRYPTION</button>
         </div>`;
     } else if (hasContact) {
         statusBadge = '<div style="color: #f0f; text-shadow: 0 0 5px #f0f; margin-top: 12px; padding-top: 12px; border-top: 2px solid #0f0; font-size: 14px;">★ CONTACT ESTABLISHED</div>';
@@ -661,7 +661,7 @@ function selectDynamicStar(dStar) {
     // Draw distinct visual based on type
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
-    const color = dStar.dynamicType === 'signal' ? '#0ff' : '#f0f';
+    const color = dStar.dynamicType === 'signal' ? '#0ff' : (dStar.dynamicType === 'genesis' ? '#0f0' : '#f0f');
 
     for (let r = 50; r > 5; r -= 5) {
         ctx.strokeStyle = color;
@@ -720,6 +720,11 @@ export function startScanSequence() {
     }
 
     showView('analysis-view');
+
+    // Reset scan button to enabled state (may be disabled from prior scans or crash sequence)
+    const scanBtn = document.getElementById('scan-btn');
+    scanBtn.disabled = false;
+    scanBtn.textContent = 'INITIATE SCAN';
 
     document.getElementById('analyze-btn').disabled = true;
     document.getElementById('analysis-text').innerHTML =
@@ -896,6 +901,44 @@ export function renderStarMap() {
                     ctx.shadowBlur = 5;
                     ctx.shadowColor = '#0ff';
                     ctx.fillText('SRC-7024', parallaxX, parallaxY + 20);
+                    ctx.shadowBlur = 0;
+                }
+            } else if (dStar.dynamicType === 'genesis') {
+                // GENESIS POINT: Pulsing green/gold hexagonal shape
+                const size = (isSelected ? 8 : 6) * growScale;
+                const goldPulse = (Math.sin(Date.now() * 0.005) + 1) / 2;
+
+                ctx.fillStyle = `rgba(${Math.floor(50 + 200 * goldPulse)}, 255, ${Math.floor(50 * goldPulse)}, ${0.6 + pulse * 0.4})`;
+                ctx.shadowColor = '#0f0';
+                ctx.shadowBlur = 15 + pulse * 10;
+
+                // Hexagonal shape
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2 - Math.PI / 6;
+                    const sx = parallaxX + Math.cos(angle) * size;
+                    const sy = parallaxY + Math.sin(angle) * size;
+                    if (i === 0) ctx.moveTo(sx, sy);
+                    else ctx.lineTo(sx, sy);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                // Outer ring
+                ctx.strokeStyle = `rgba(0, 255, 0, ${0.3 + pulse * 0.3})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(parallaxX, parallaxY, size + 4, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Label
+                if (growScale > 0.5) {
+                    ctx.fillStyle = `rgba(0, 255, 0, ${0.7 * growScale})`;
+                    ctx.font = '16px VT323';
+                    ctx.textAlign = 'center';
+                    ctx.shadowBlur = 5;
+                    ctx.shadowColor = '#0f0';
+                    ctx.fillText('GENESIS POINT', parallaxX, parallaxY + 20);
                     ctx.shadowBlur = 0;
                 }
             } else if (dStar.dynamicType === 'nexus') {

@@ -7,7 +7,6 @@ import { gameState } from '../core/game-state.js';
 import { showView, log } from '../ui/rendering.js';
 import { playClick } from './audio.js';
 import { startTriangulationMinigame } from './triangulation-minigame.js';
-import { startFinalAlignment } from './alignment-minigame.js';
 import { startDecryptionMinigame } from './decryption-minigame.js';
 import { autoSave } from '../core/save-system.js';
 import { checkAndShowDayComplete } from './day-report.js';
@@ -15,6 +14,9 @@ import { checkAndShowDayComplete } from './day-report.js';
 // ─────────────────────────────────────────────────────────────────────────────
 // Investigation State
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Dedicated return view for investigation (not shared with mailbox)
+let investigationReturnView = 'starmap-view';
 
 let investigationState = {
     canvas: null,
@@ -71,11 +73,11 @@ const FRAGMENT_CONTENT = {
         parsedPercent: 89
     },
     synthesis: {
-        title: 'FRAGMENT 4: SYNTHESIS',
+        title: 'FRAGMENT 4: GENESIS POINT',
         decodedContent: [
-            'UNIFIED FIELD: ████████████',
+            'ORIGIN: PRE-COSMIC SOURCE',
             'DIMENSIONAL BRIDGE: ACTIVE',
-            'MSG INTEGRITY: 100%',
+            'TEMPORAL: T₋∞ (BEFORE TIME)',
             '▓▓▓▓▓▓▓▓▓▓▓ 100% PARSED',
             '',
             'Complete message reconstructed.',
@@ -85,16 +87,18 @@ const FRAGMENT_CONTENT = {
     }
 };
 
-// Shape names for each fragment count
-const SHAPE_NAMES = ['VOID', 'POINT', 'LINE', 'SQUARE', 'HYPERCUBE'];
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Public API
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function openInvestigation() {
-    gameState.previousView = 'starmap-view';
+    const currentView = document.querySelector('.view.active')?.id || 'starmap-view';
+    // Only capture return view from "real" views — not mailbox or other overlays
+    if (currentView !== 'investigation-view' && currentView !== 'mailbox-view') {
+        investigationReturnView = currentView;
+    }
     showView('investigation-view');
+    hideInvestigationIndicator();
     updateFragmentCards();
     updateShapeDisplay();
     startShapeAnimation();
@@ -102,7 +106,7 @@ export function openInvestigation() {
 
 export function closeInvestigation() {
     stopShapeAnimation();
-    showView(gameState.previousView || 'starmap-view');
+    showView(investigationReturnView);
 }
 
 export function unlockInvestigation() {
@@ -147,38 +151,67 @@ function updateFragmentCards() {
     const fragments = gameState.fragments;
     const fragCount = fragments.collected.length;
 
-    // Fragment 1: SRC-7024
+    // Progressive reveal — only show cards when the previous fragment is collected
+    const frag2Visible = !!fragments.sources.src7024;
+    const frag3Visible = !!fragments.sources.nexusPoint;
+    const frag4Visible = fragCount >= 3;
+
+    // Fragment 1: SRC-7024 — always visible
     updateCard(1, 'src7024', fragments.sources.src7024, {
         actionLabel: 'TRIANGULATE COORDINATES',
         actionId: 'frag1-action',
         showAction: fragments.sources.src7024 && !fragments.sources.nexusPoint && !gameState.cmbDetected
     });
 
-    // Fragment 2: NEXUS POINT
-    updateCard(2, 'nexusPoint', fragments.sources.nexusPoint, {});
+    // Fragment 2: NEXUS POINT — visible after fragment 1 collected
+    updateCard(2, 'nexusPoint', fragments.sources.nexusPoint, {
+        visible: frag2Visible
+    });
 
-    // Fragment 3: 82 ERIDANI
-    updateCard(3, 'eridani82', fragments.sources.eridani82, {});
+    // Fragment 3: 82 ERIDANI — visible after fragment 2 collected
+    updateCard(3, 'eridani82', fragments.sources.eridani82, {
+        visible: frag3Visible
+    });
 
-    // Fragment 4: SYNTHESIS
-    const canSynthesize = fragCount >= 3 && !fragments.sources.synthesis;
+    // Fragment 4: GENESIS POINT — visible after all 3 fragments collected
+    const hasGenesis = gameState.dynamicStars.some(s => s.id === 'genesis');
     updateCard(4, 'synthesis', fragments.sources.synthesis, {
-        lockedText: fragCount < 3 ? `[REQUIRES 3 DECODED FRAGMENTS — ${fragCount}/3]` : null
+        visible: frag4Visible,
+        lockedText: hasGenesis
+            ? '[SCAN GENESIS POINT TO DECODE]'
+            : (fragCount >= 3 ? '[TRIANGULATE TO LOCATE SOURCE]' : `[REQUIRES 3 DECODED FRAGMENTS — ${fragCount}/3]`)
     });
 
     // Update action buttons
     const actionBtn = document.getElementById('investigation-action-btn');
     if (actionBtn) {
-        if (canSynthesize) {
+        // Only allow triangulation after the guidance emails have arrived
+        const hasTriangulationEmail = gameState.mailboxMessages?.some(
+            msg => msg.subject && msg.subject.includes('Pattern Emerging')
+        );
+        const canTriangulate = fragCount >= 3 && !fragments.sources.synthesis && !hasGenesis && hasTriangulationEmail;
+        const awaitingGenesisScan = hasGenesis && !fragments.sources.synthesis;
+
+        if (canTriangulate) {
             actionBtn.style.display = '';
-            actionBtn.textContent = 'INITIATE SYNTHESIS SEQUENCE';
+            actionBtn.textContent = 'TRIANGULATE SIGNAL ORIGIN';
+            actionBtn.style.opacity = '';
             actionBtn.onclick = () => {
                 playClick();
-                startSynthesis();
+                startGenesisTriangulation();
+            };
+        } else if (awaitingGenesisScan) {
+            actionBtn.style.display = '';
+            actionBtn.textContent = '► SCAN GENESIS POINT ON STARMAP';
+            actionBtn.style.opacity = '0.7';
+            actionBtn.onclick = () => {
+                playClick();
+                closeInvestigation();
             };
         } else if (fragments.sources.synthesis) {
             actionBtn.style.display = '';
             actionBtn.textContent = 'INITIATE FINAL DECRYPTION';
+            actionBtn.style.opacity = '';
             actionBtn.onclick = () => {
                 playClick();
                 startFinalDecryption();
@@ -193,23 +226,38 @@ function updateFragmentCards() {
     if (shapeProgress) shapeProgress.textContent = `FRAGMENTS: ${fragCount}/4`;
 
     const shapeForm = document.getElementById('shape-form');
-    if (shapeForm) shapeForm.textContent = `CURRENT FORM: ${SHAPE_NAMES[Math.min(fragCount, 4)]}`;
+    if (shapeForm) shapeForm.style.display = 'none';
 }
 
 function updateCard(cardNum, sourceKey, isDecoded, options = {}) {
     const card = document.getElementById(`fragment-card-${cardNum}`);
     const status = document.getElementById(`frag${cardNum}-status`);
     const body = document.getElementById(`frag${cardNum}-body`);
+    const header = card?.querySelector('.fragment-header');
     if (!card || !body) return;
+
+    // Hide card if not yet revealed (avoids spoilers)
+    if (options.visible === false) {
+        card.style.display = 'none';
+        return;
+    }
+    card.style.display = '';
+
+    // Update header — show real title only when decoded, otherwise hide source name
+    const content = FRAGMENT_CONTENT[sourceKey];
+    if (header) {
+        const statusSpan = `<span class="fragment-status" id="frag${cardNum}-status">${isDecoded ? '■' : '□'}</span>`;
+        header.innerHTML = isDecoded
+            ? `${statusSpan} ${content.title}`
+            : `${statusSpan} FRAGMENT ${cardNum}: ???`;
+    }
 
     // Remove existing classes
     card.classList.remove('decoded', 'available');
 
     if (isDecoded) {
         card.classList.add('decoded');
-        if (status) status.textContent = '■';
 
-        const content = FRAGMENT_CONTENT[sourceKey];
         let html = '<div class="fragment-decoded-content">';
         content.decodedContent.forEach(line => {
             html += `<div>${line}</div>`;
@@ -234,7 +282,6 @@ function updateCard(cardNum, sourceKey, isDecoded, options = {}) {
             }
         }
     } else {
-        if (status) status.textContent = '□';
         const lockedText = options.lockedText || '[AWAITING DATA]';
         body.innerHTML = `<div class="fragment-locked">${lockedText}</div>`;
     }
@@ -311,26 +358,44 @@ export function addNexusPoint() {
     log('NEW TARGET DETECTED: NEXUS POINT', 'highlight');
 }
 
+export function addGenesisPoint() {
+    if (gameState.dynamicStars.find(s => s.id === 'genesis')) return;
+
+    const genesisPoint = {
+        id: 'genesis',
+        name: 'GENESIS POINT',
+        isDynamic: true,
+        dynamicType: 'genesis',
+        coordinates: '03h 19m 28s / -16° 42\' 58"',
+        distance: '???',
+        starType: 'PRIMORDIAL SOURCE',
+        starClass: 'PRE-COSMIC',
+        temperature: 'N/A',
+        hasIntelligence: true,
+        isFalsePositive: false,
+        x: 0.15,
+        y: 0.70,
+        addedAt: Date.now()
+    };
+    gameState.dynamicStars.push(genesisPoint);
+    log('NEW TARGET DETECTED: GENESIS POINT', 'highlight');
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Synthesis & Final Decryption
+// Final Decryption
 // ─────────────────────────────────────────────────────────────────────────────
 
-function startSynthesis() {
-    log('INITIATING SYNTHESIS SEQUENCE...', 'highlight');
-    // Final alignment puzzle (hardest difficulty)
-    startFinalAlignment(
+function startGenesisTriangulation() {
+    log('INITIATING GENESIS TRIANGULATION...', 'highlight');
+    startTriangulationMinigame(
         () => {
-            // Success — Fragment 4 collected
-            gameState.fragments.collected.push('synthesis');
-            gameState.fragments.sources.synthesis = true;
-            log('FRAGMENT 4 ACQUIRED: Synthesis complete!', 'highlight');
-            onFragmentCollected();
+            log('TRIANGULATION COMPLETE - Primordial source located!', 'highlight');
+            addGenesisPoint();
             autoSave();
-            // Return to investigation page to see the result
-            openInvestigation();
+            showView('starmap-view');
         },
         () => {
-            log('Synthesis aborted.', 'warning');
+            log('Triangulation aborted.', 'warning');
             openInvestigation();
         }
     );
@@ -379,6 +444,39 @@ function stopShapeAnimation() {
     }
 }
 
+function drawBackgroundCode(ctx, w, h) {
+    const time = Date.now() * 0.001;
+    const codeLines = [
+        '\u03BB=1420.405MHz', '\u0394\u03BD=0.003Hz', 'SNR=47.3dB',
+        'RA:11h47m44s', 'DEC:+00\u00B048\'16"', 'T=-1.2\u00D710\u00B9\u2070yr',
+        'COORD_PARSE...', 'VEC_ALIGN:OK', 'HASH:7F4A2C91',
+        '\u03A8\u2234\u232C\u2609\u25C6\u221E\u27D0\u238E\u2B21', 'FREQ_LOCK:ON', 'BW=2.4kHz',
+        'FFT_SIZE=8192', 'WINDOW:HANN', 'OVERLAP=75%',
+        'BASELINE:42m', 'GAIN:+38dBi', 'Tsys=25K',
+        '\u03C0\u00B7\u0394=3.14159', '\u039B\u2080=6.674e-11', '\u210F/2\u03C0=1.055e-34',
+        'SIGNAL_LOCK', 'DRIFT:+0.02Hz/s', 'EPOCH:J1995.0'
+    ];
+
+    ctx.font = '10px "VT323", monospace';
+    const lineHeight = 14;
+    const cols = 3;
+    const colWidth = w / cols;
+    const totalHeight = codeLines.length * lineHeight;
+
+    for (let col = 0; col < cols; col++) {
+        const scrollOffset = (time * 12 + col * 40) % totalHeight;
+        for (let i = 0; i < codeLines.length; i++) {
+            let y = i * lineHeight - scrollOffset;
+            if (y < -lineHeight) y += totalHeight;
+            if (y > h) continue;
+            const alpha = 0.06 + 0.02 * Math.sin(time * 0.8 + i + col * 2);
+            ctx.fillStyle = `rgba(0, 255, 0, ${alpha})`;
+            ctx.textAlign = 'left';
+            ctx.fillText(codeLines[(i + col * 7) % codeLines.length], col * colWidth + 5, y);
+        }
+    }
+}
+
 function renderShape() {
     const canvas = investigationState.canvas;
     const ctx = investigationState.ctx;
@@ -390,6 +488,9 @@ function renderShape() {
     // Clear
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, w, h);
+
+    // Background data code (subtle, behind the shape)
+    drawBackgroundCode(ctx, w, h);
 
     // Update rotation
     investigationState.rotationX += 0.008;
@@ -418,10 +519,11 @@ function renderShape() {
     ctx.strokeStyle = `rgba(0, 255, 0, ${0.7 + 0.3 * glow})`;
     ctx.lineWidth = 1.5;
 
-    if (fragCount === 0) {
-        // Void — static noise particles
-        drawVoidParticles(ctx, w, h, glow);
-    } else if (fragCount === 1) {
+    // Always draw floating particles as background layer
+    drawVoidParticles(ctx, w, h, glow);
+
+    // Draw evolving shape on top
+    if (fragCount === 1) {
         // Pulsing point
         drawPoint(ctx, cx, cy, scale, glow);
     } else if (fragCount === 2) {
@@ -456,7 +558,7 @@ function drawVoidParticles(ctx, w, h, glow) {
 }
 
 function drawPoint(ctx, cx, cy, scale, glow) {
-    const pulse = 3 + 4 * Math.sin(investigationState.glowPulse);
+    const pulse = Math.max(0.5, 3 + 4 * Math.sin(investigationState.glowPulse));
     ctx.fillStyle = `rgba(0, 255, 0, ${0.8 * glow})`;
     ctx.beginPath();
     ctx.arc(cx, cy, pulse, 0, Math.PI * 2);

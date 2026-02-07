@@ -76,7 +76,7 @@ import {
 import { startTuningMinigame, setTuningFunctions, setupTuningSliders } from './systems/tuning-minigame.js';
 import { startPatternRecognitionGame, setPatternFunctions } from './systems/pattern-minigame.js';
 import { startDecryptionMinigame, isDecryptionComplete } from './systems/decryption-minigame.js';
-import { startAlignmentTutorial, startFinalAlignment, isAlignmentTutorialComplete, isFinalPuzzleComplete } from './systems/alignment-minigame.js';
+import { startAlignmentTutorial, startFinalAlignment, startSingleFragmentAlignment, isAlignmentTutorialComplete, isFinalPuzzleComplete } from './systems/alignment-minigame.js';
 import { startTriangulationMinigame, isTriangulationActive } from './systems/triangulation-minigame.js';
 import {
     openInvestigation,
@@ -85,6 +85,7 @@ import {
     onFragmentCollected,
     addSRC7024,
     addNexusPoint,
+    addGenesisPoint,
     pulseInvestigationIndicator
 } from './systems/investigation.js';
 
@@ -125,7 +126,8 @@ function setupModuleConnections() {
         unlockInvestigation: unlockInvestigation,
         onFragmentCollected: onFragmentCollected,
         addSRC7024: addSRC7024,
-        addNexusPoint: addNexusPoint
+        addNexusPoint: addNexusPoint,
+        addGenesisPoint: addGenesisPoint
     });
 
     // Tuning minigame needs signal functions
@@ -374,6 +376,7 @@ export {
     startDecryptionMinigame,
     startAlignmentTutorial,
     startFinalAlignment,
+    startSingleFragmentAlignment,
     isAlignmentTutorialComplete,
     isFinalPuzzleComplete,
     startTriangulationMinigame,
@@ -384,6 +387,7 @@ export {
     onFragmentCollected,
     addSRC7024,
     addNexusPoint,
+    addGenesisPoint,
     pulseInvestigationIndicator
 };
 

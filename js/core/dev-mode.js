@@ -36,6 +36,7 @@ let unlockInvestigationFn = null;
 let onFragmentCollectedFn = null;
 let addSRC7024Fn = null;
 let addNexusPointFn = null;
+let addGenesisPointFn = null;
 
 // Set external functions (called from main.js)
 export function setDevFunctions(fns) {
@@ -57,6 +58,7 @@ export function setDevFunctions(fns) {
     onFragmentCollectedFn = fns.onFragmentCollected;
     addSRC7024Fn = fns.addSRC7024;
     addNexusPointFn = fns.addNexusPoint;
+    addGenesisPointFn = fns.addGenesisPoint;
 }
 
 // Initialize dev mode
@@ -136,9 +138,11 @@ export function showDevPanel() {
             <button data-action="openInvestigation">Open Investigation</button>
             <button data-action="addSRC7024">Add SRC-7024</button>
             <button data-action="addNexusPoint">Add NEXUS POINT</button>
+            <button data-action="addGenesisPoint">Add GENESIS POINT</button>
             <button data-action="giveFragment1">Give Fragment 1 (SRC-7024)</button>
             <button data-action="giveFragment2">Give Fragment 2 (Nexus)</button>
             <button data-action="giveFragment3">Give Fragment 3 (Eridani)</button>
+            <button data-action="giveFragment4">Give Fragment 4 (Genesis)</button>
             <button data-action="giveAllFragments">Give All Fragments</button>
 
             <div class="dev-section">STAR ACTIONS</div>
@@ -251,9 +255,11 @@ export function showDevPanel() {
                 case 'openInvestigation': devOpenInvestigation(); break;
                 case 'addSRC7024': devAddSRC7024(); break;
                 case 'addNexusPoint': devAddNexusPoint(); break;
+                case 'addGenesisPoint': devAddGenesisPoint(); break;
                 case 'giveFragment1': devGiveFragment('src7024'); break;
                 case 'giveFragment2': devGiveFragment('nexusPoint'); break;
                 case 'giveFragment3': devGiveFragment('eridani82'); break;
+                case 'giveFragment4': devGiveFragment('synthesis'); break;
                 case 'giveAllFragments': devGiveAllFragments(); break;
                 case 'showFinalMessage': devShowFinalMessage(); break;
                 case 'triggerEndState': devTriggerEndState(); break;
@@ -607,6 +613,11 @@ function devAddSRC7024() {
 function devAddNexusPoint() {
     if (addNexusPointFn) addNexusPointFn();
     log('DEV: NEXUS POINT added to starmap', 'highlight');
+}
+
+function devAddGenesisPoint() {
+    if (addGenesisPointFn) addGenesisPointFn();
+    log('DEV: GENESIS POINT added to starmap', 'highlight');
 }
 
 function devGiveFragment(fragmentKey) {
