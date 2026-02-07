@@ -1602,17 +1602,43 @@ function schedulePreBigBangEmails() {
         addMailMessage(
             'Dr. Sarah Okonkwo - Astrobiology',
             'NEXUS POINT Data — Impossible Constants',
-            `${name},\n\nI've been reviewing the NEXUS POINT fragment. These physical constants don't match our universe. They describe different initial conditions — as if someone is describing the parameters of a DIFFERENT cosmos.\n\nThe temporal markers... they predate the Big Bang by billions of years. This is impossible unless there was something before.\n\n- Sarah`
+            `${name},\n\nI've been reviewing the NEXUS POINT fragment. These physical constants don't match our universe. They describe different initial conditions — as if someone is describing the parameters of a DIFFERENT cosmos.\n\nThe temporal markers predate the Big Bang by billions of years. This is impossible unless there was something before.\n\nTwo fragments down, but the message is still incomplete. If there are more pieces hidden in the remaining signals, we need to find them. Keep scanning — any star could be carrying another fragment.\n\n- Sarah`
         );
     }, 20000);
 
-    setTimeout(() => {
-        addMailMessage(
-            'Dr. Marcus Webb - Xenolinguistics',
-            'RE: NEXUS POINT Analysis — "Before Time"',
-            `Dr. ${name},\n\nDr. Okonkwo is right. The temporal markers in Fragment 2 point to events before the Big Bang. I keep coming back to the 82 Eridani signal — that civilization mentioned "what came before."\n\nWe need their data. If they've decoded another piece of this message, combining it with ours might reveal the full picture.\n\nHave you established contact with 82 Eridani yet?\n\n- Marcus`
-        );
-    }, 40000);
+    // Only hint at 82 Eridani if the player hasn't found it after scanning half the Day 3 stars
+    scheduleEridaniHintIfNeeded();
+}
+
+// Check periodically if the player needs a hint about 82 Eridani
+function scheduleEridaniHintIfNeeded() {
+    const ERIDANI_INDEX = 26;
+    const DAY3_STARS = [20, 21, 22, 23, 24, 25, 26, 27, 28];
+    const CHECK_INTERVAL = 15000; // Check every 15s
+    const SCAN_THRESHOLD = 5; // Half of 9 Day 3 stars
+
+    const checkTimer = setInterval(() => {
+        // Stop checking if fragment already found
+        if (gameState.fragments.sources.eridani82) {
+            clearInterval(checkTimer);
+            return;
+        }
+
+        const day3Scanned = DAY3_STARS.filter(id => gameState.scanResults.has(id)).length;
+
+        if (day3Scanned >= SCAN_THRESHOLD && !gameState.scanResults.has(ERIDANI_INDEX)) {
+            clearInterval(checkTimer);
+            const name = gameState.playerName;
+            addMailMessage(
+                'Dr. Marcus Webb - Xenolinguistics',
+                'RE: NEXUS POINT Analysis — "Before Time"',
+                `Dr. ${name},\n\nDr. Okonkwo is right. The temporal markers in Fragment 2 point to events before the Big Bang. I keep coming back to the 82 Eridani signal — that civilization mentioned "what came before."\n\nWe need their data. If they've decoded another piece of this message, combining it with ours might reveal the full picture.\n\nHave you established contact with 82 Eridani yet?\n\n- Marcus`
+            );
+        }
+    }, CHECK_INTERVAL);
+
+    // Safety: stop checking after 10 minutes regardless
+    setTimeout(() => clearInterval(checkTimer), 600000);
 }
 
 // Schedule emails after all 3 fragments collected, guiding to genesis triangulation
