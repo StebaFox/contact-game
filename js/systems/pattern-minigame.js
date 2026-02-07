@@ -75,41 +75,72 @@ const FILTER_NAMES = [
 ];
 
 // Each fake filter renderer produces a different visual pattern
+// These need to be convincing enough to look like real signals
 function fakeFilterRenderer(y, h, off, seed, filterSeed) {
-    // Generate different-looking structured noise per filter
     const s = seed + filterSeed * 73;
-    const variant = filterSeed % 4;
+    const variant = filterSeed % 6;
 
     switch (variant) {
         case 0: {
-            // Drifting diagonal streaks
+            // Drifting diagonal streaks - looks like a sweeping signal
             const phase = (y + off * 0.3) * 0.08 + s;
-            const streak = Math.pow(Math.max(0, Math.sin(phase)), 4);
-            return streak * 0.5;
+            const streak = Math.pow(Math.max(0, Math.sin(phase)), 3);
+            return streak * 0.65;
         }
         case 1: {
-            // Random horizontal bands that shift
-            const bandSeed = Math.floor(y / 12) * 31 + s;
-            const bandPhase = Math.sin(bandSeed + off * 0.02);
-            return bandPhase > 0.3 ? (bandPhase - 0.3) * 0.7 : 0;
+            // Horizontal bands - looks like frequency-locked signals
+            const bandCenter1 = h * (0.3 + Math.sin(s) * 0.1);
+            const bandCenter2 = h * (0.6 + Math.cos(s) * 0.1);
+            const bw = 5;
+            let sig = 0;
+            const d1 = Math.abs(y - bandCenter1);
+            const d2 = Math.abs(y - bandCenter2);
+            if (d1 < bw) sig += (1 - d1 / bw) * 0.7;
+            if (d2 < bw) sig += (1 - d2 / bw) * 0.55;
+            const mod = Math.sin(off * 0.05 + s) * 0.3 + 0.7;
+            return Math.min(1, sig * mod);
         }
         case 2: {
-            // Interference fringes
-            const fringe = Math.sin(y * 0.12 + off * 0.05) * Math.sin(y * 0.07 - off * 0.03 + s);
-            return Math.max(0, fringe) * 0.6;
+            // Interference fringes - complex moire pattern
+            const fringe1 = Math.sin(y * 0.12 + off * 0.05) * Math.sin(y * 0.07 - off * 0.03 + s);
+            const fringe2 = Math.sin(y * 0.09 + off * 0.02 + s * 0.5) * 0.3;
+            return Math.max(0, fringe1 + fringe2) * 0.6;
         }
         case 3: {
-            // Spotty clusters
-            const cx = Math.sin(off * 0.04 + s) * h * 0.3 + h * 0.5;
-            const dist = Math.abs(y - cx);
-            const spot = dist < 10 ? (1 - dist / 10) * 0.55 : 0;
-            const cx2 = Math.sin(off * 0.03 + s + 2) * h * 0.25 + h * 0.4;
-            const dist2 = Math.abs(y - cx2);
-            const spot2 = dist2 < 8 ? (1 - dist2 / 8) * 0.4 : 0;
-            return spot + spot2;
+            // Spotty clusters with more blobs
+            let sig = 0;
+            for (let i = 0; i < 3; i++) {
+                const cx = Math.sin(off * (0.03 + i * 0.01) + s + i * 2) * h * 0.3 + h * (0.3 + i * 0.2);
+                const dist = Math.abs(y - cx);
+                const radius = 7 + i * 3;
+                if (dist < radius) sig += (1 - dist / radius) * 0.5;
+            }
+            return Math.min(1, sig);
         }
-        default:
+        case 4: {
+            // Pulsating single band - looks like a natural signal
+            const center = h * (0.45 + Math.sin(s * 0.3) * 0.15);
+            const dist = Math.abs(y - center);
+            const width = 6 + Math.sin(off * 0.03) * 2;
+            if (dist < width) {
+                const pulse = Math.sin(off * 0.08 + s) * 0.3 + 0.7;
+                return (1 - dist / width) * 0.7 * pulse;
+            }
             return 0;
+        }
+        case 5:
+        default: {
+            // Multi-band harmonic - looks like an alien signal
+            let sig = 0;
+            const spacing = h / 5;
+            for (let i = 1; i <= 3; i++) {
+                const center = spacing * (i + 0.5) + Math.sin(s + i) * 5;
+                const dist = Math.abs(y - center);
+                if (dist < 4) sig += (1 - dist / 4) * 0.6;
+            }
+            const mod = Math.sin(off * 0.06 + s * 2) * 0.35 + 0.65;
+            return Math.min(1, sig * mod);
+        }
     }
 }
 
@@ -351,6 +382,10 @@ function generateFrame() {
     for (let fi = 0; fi < numFilters; fi++) {
         const filter = patternState.filters[fi];
 
+        // Clear canvas before rendering each filter to prevent old data bleeding through
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, w, h);
+
         for (let x = 0; x < w; x++) {
             // Calculate real pattern intensity (only for correct filter)
             let patternIntensity = 0;
@@ -398,27 +433,50 @@ function drawFilterColumn(ctx, x, height, patternIntensity, columnOffset, noiseG
         const n11 = noiseGrid[idx + noiseGridW + 1] || 0;
         const smoothNoise = (n00 * (1 - fx) + n10 * fx) * (1 - fy) + (n01 * (1 - fx) + n11 * fx) * fy;
 
-        // Base noise layer
-        const baseIntensity = smoothNoise * 0.3 + rnd * 0.15;
-        let r = Math.floor(baseIntensity * 6);
-        let g = Math.floor(baseIntensity * 35);
-        let b = Math.floor(baseIntensity * 45);
-        let a = 0.2 + baseIntensity * 0.3;
+        // Base noise layer - deliberately noisy so signals don't stand out easily
+        const rnd2 = Math.random();
+        const baseIntensity = smoothNoise * 0.45 + rnd * 0.25 + rnd2 * 0.1;
+        let r = Math.floor(baseIntensity * 12);
+        let g = Math.floor(baseIntensity * 55);
+        let b = Math.floor(baseIntensity * 70);
+        let a = 0.35 + baseIntensity * 0.4;
 
-        // Background texture bands
+        // Multiple overlapping band structures at different scales
         const bandNoise1 = Math.sin(y * 0.08 + columnOffset * 0.003) * 0.5 + 0.5;
         const bandNoise2 = Math.sin(y * 0.15 + columnOffset * 0.005 + seed) * 0.5 + 0.5;
-        const bandContrib = (bandNoise1 * bandNoise2) * 0.12;
-        g += Math.floor(bandContrib * 25);
-        b += Math.floor(bandContrib * 35);
-        a += bandContrib * 0.15;
+        const bandNoise3 = Math.sin(y * 0.04 + columnOffset * 0.002 - seed * 0.5) * 0.5 + 0.5;
+        const bandNoise4 = Math.sin(y * 0.22 - columnOffset * 0.004 + seed * 1.3) * 0.5 + 0.5;
+        const bandContrib = (bandNoise1 * bandNoise2) * 0.18 + (bandNoise3 * bandNoise4) * 0.12;
+        g += Math.floor(bandContrib * 45);
+        b += Math.floor(bandContrib * 55);
+        a += bandContrib * 0.2;
 
-        // Hot pixel speckles
-        if (rnd > 0.988) {
-            const spk = rnd * 0.5;
-            g = Math.max(g, Math.floor(spk * 100));
-            b = Math.max(b, Math.floor(spk * 120));
-            a = Math.max(a, spk + 0.15);
+        // Wandering bright patches (slow-moving blobs)
+        const blobX = Math.sin(columnOffset * 0.006 + seed * 0.7) * 0.4 + 0.5;
+        const blobY = Math.sin(y * 0.02 + columnOffset * 0.004) * 0.5 + 0.5;
+        const blobDist = Math.abs(blobX - x / 500) + Math.abs(blobY - y / height);
+        if (blobDist < 0.3) {
+            const blobStr = (0.3 - blobDist) / 0.3 * 0.25;
+            g += Math.floor(blobStr * 60);
+            b += Math.floor(blobStr * 40);
+            a += blobStr * 0.15;
+        }
+
+        // Hot pixel speckles (more frequent)
+        if (rnd > 0.975) {
+            const spk = rnd * 0.6;
+            g = Math.max(g, Math.floor(spk * 120));
+            b = Math.max(b, Math.floor(spk * 140));
+            a = Math.max(a, spk + 0.2);
+        }
+
+        // Vertical streaks (random column brightness variation)
+        const colBrightness = Math.sin(x * 0.13 + seed * 3) * 0.5 + 0.5;
+        if (colBrightness > 0.7) {
+            const streak = (colBrightness - 0.7) * 0.4;
+            g += Math.floor(streak * 30);
+            b += Math.floor(streak * 35);
+            a += streak * 0.1;
         }
 
         if (filter.isCorrect) {
@@ -451,11 +509,12 @@ function drawFilterColumn(ctx, x, height, patternIntensity, columnOffset, noiseG
             }
         } else {
             // WRONG FILTER: show fake structured patterns across the whole width
+            // Make fakes strong enough to be convincing decoys
             const fakeSig = fakeFilterRenderer(y, height, columnOffset, seed, filter.filterSeed);
             if (fakeSig > 0) {
-                g = Math.max(g, Math.floor(fakeSig * 140));
-                b = Math.max(b, Math.floor(fakeSig * 110));
-                a = Math.max(a, fakeSig * 0.6 + 0.1);
+                g = Math.max(g, Math.floor(fakeSig * 180));
+                b = Math.max(b, Math.floor(fakeSig * 150));
+                a = Math.max(a, fakeSig * 0.75 + 0.15);
             }
         }
 

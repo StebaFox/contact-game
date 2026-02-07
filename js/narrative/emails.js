@@ -108,7 +108,7 @@ Let me know if you're interested in collaborating.
 Daily backup completed successfully.
 
 Files archived: 2,847
-Total size: 1.2 TB
+Total size: 847 MB
 Integrity check: PASSED
 
 Note: Anomalous data patterns flagged in sectors 7-12. Manual review recommended.
@@ -162,6 +162,24 @@ Sorry about this. If it helps, the vending machine in B-wing is also running on 
 - Rick Vasquez
 Facilities & Infrastructure
 Sector 7`
+};
+
+// Email sent at start of Day 2 - Ross 128 decryption now available
+export const ROSS128_DECRYPT_EMAIL = {
+    from: 'Dr. James Whitmore - SETI Director',
+    subject: '[URGENT] Quantum Processor Online - Ross 128 Signal',
+    body: `Dr. {PLAYER_NAME},
+
+Your clearance elevation has been processed. With Level 5 access, you now have authorization to activate the quantum decryption system.
+
+That encrypted signal you found yesterday from Ross 128 - we need you to go back and decrypt it. This is TOP PRIORITY.
+
+Whatever is in that signal, Washington wants answers. Re-scan Ross 128 and initiate the decryption sequence.
+
+Don't keep us waiting.
+
+- James Whitmore
+  SETI Program Director`
 };
 
 // Special email sent when first alien signal is discovered

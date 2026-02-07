@@ -13,9 +13,9 @@ export const STAR_NAMES = [
     "UV CETI",          // Luyten 726-8, flare star
     "ROSS 154",         // Nearby red dwarf
     "ROSS 248",         // Nearby red dwarf
-    "EPSILON ERIDANI",  // Prime SETI target, sun-like
+    "ROSS 128",         // Nearby quiet red dwarf - Day 1 anomaly
     "LACAILLE 9352",    // Nearby red dwarf
-    "ROSS 128",         // Nearby quiet red dwarf
+    "EPSILON ERIDANI",  // Prime SETI target, sun-like
     "61 CYGNI",         // Historic binary system
     "PROCYON",          // Nearby bright star
     "STRUVE 2398",      // Binary red dwarf system
@@ -33,7 +33,8 @@ export const STAR_NAMES = [
     "GLIESE 674",       // Distant red dwarf
     "GLIESE 832",       // Distant red dwarf
     "82 ERIDANI",       // Sun-like, more distant
-    "DELTA PAVONIS"     // Sun-like, SETI target
+    "DELTA PAVONIS",    // Sun-like, SETI target
+    "VEGA"              // Bright A-type star, SETI target
 ];
 
 // Star type information (real astronomical data for 1995)
@@ -46,9 +47,9 @@ export const STAR_TYPES = [
     { type: "M5.5V", class: "Flare Star", temp: "2,700K" },     // UV CETI
     { type: "M3.5V", class: "Red Dwarf", temp: "3,200K" },      // ROSS 154
     { type: "M5.5V", class: "Red Dwarf", temp: "2,800K" },      // ROSS 248
-    { type: "K2V", class: "Orange Dwarf", temp: "5,100K" },     // EPSILON ERIDANI
-    { type: "M1V", class: "Red Dwarf", temp: "3,600K" },        // LACAILLE 9352
     { type: "M4V", class: "Red Dwarf", temp: "3,200K" },        // ROSS 128
+    { type: "M1V", class: "Red Dwarf", temp: "3,600K" },        // LACAILLE 9352
+    { type: "K2V", class: "Orange Dwarf", temp: "5,100K" },     // EPSILON ERIDANI
     { type: "K5V", class: "Orange Dwarf", temp: "4,500K" },     // 61 CYGNI
     { type: "F5IV", class: "Yellow-White", temp: "6,500K" },    // PROCYON
     { type: "M3V", class: "Red Dwarf", temp: "3,300K" },        // STRUVE 2398
@@ -66,7 +67,8 @@ export const STAR_TYPES = [
     { type: "M3V", class: "Red Dwarf", temp: "3,400K" },        // GLIESE 674
     { type: "M1.5V", class: "Red Dwarf", temp: "3,600K" },      // GLIESE 832
     { type: "G8V", class: "Yellow Dwarf", temp: "5,400K" },     // 82 ERIDANI
-    { type: "G8IV", class: "Yellow Subgiant", temp: "5,500K" }  // DELTA PAVONIS
+    { type: "G8IV", class: "Yellow Subgiant", temp: "5,500K" }, // DELTA PAVONIS
+    { type: "A0V", class: "White Main Seq", temp: "9,600K" }   // VEGA
 ];
 
 // Catalog dates (when first catalogued or measured precisely)
@@ -79,9 +81,9 @@ export const DISCOVERY_DATES = [
     "1948",     // UV CETI
     "1925",     // ROSS 154
     "1925",     // ROSS 248
-    "ANTIQ",    // EPSILON ERIDANI (antiquity)
-    "1752",     // LACAILLE 9352
     "1926",     // ROSS 128
+    "1752",     // LACAILLE 9352
+    "ANTIQ",    // EPSILON ERIDANI (antiquity)
     "1792",     // 61 CYGNI (parallax measured)
     "ANTIQ",    // PROCYON (antiquity)
     "1835",     // STRUVE 2398
@@ -99,7 +101,8 @@ export const DISCOVERY_DATES = [
     "1969",     // GLIESE 674
     "1978",     // GLIESE 832
     "ANTIQ",    // 82 ERIDANI (antiquity)
-    "ANTIQ"     // DELTA PAVONIS (antiquity)
+    "ANTIQ",    // DELTA PAVONIS (antiquity)
+    "ANTIQ"     // VEGA (antiquity)
 ];
 
 // Real astronomical coordinates (RA in hours/min/sec, DEC in degrees/min/sec)
@@ -112,9 +115,9 @@ export const STAR_COORDINATES = [
     { ra: { h: 1, m: 39, s: 1 }, dec: { deg: -17, m: 57, s: 1 } },     // UV CETI
     { ra: { h: 18, m: 49, s: 49 }, dec: { deg: -23, m: 50, s: 10 } },  // ROSS 154
     { ra: { h: 23, m: 41, s: 55 }, dec: { deg: 44, m: 10, s: 40 } },   // ROSS 248
-    { ra: { h: 3, m: 32, s: 56 }, dec: { deg: -9, m: 27, s: 30 } },    // EPSILON ERIDANI
-    { ra: { h: 23, m: 5, s: 52 }, dec: { deg: -35, m: 51, s: 11 } },   // LACAILLE 9352
     { ra: { h: 11, m: 47, s: 44 }, dec: { deg: 0, m: 48, s: 16 } },    // ROSS 128
+    { ra: { h: 23, m: 5, s: 52 }, dec: { deg: -35, m: 51, s: 11 } },   // LACAILLE 9352
+    { ra: { h: 3, m: 32, s: 56 }, dec: { deg: -9, m: 27, s: 30 } },    // EPSILON ERIDANI
     { ra: { h: 21, m: 6, s: 54 }, dec: { deg: 38, m: 44, s: 58 } },    // 61 CYGNI
     { ra: { h: 7, m: 39, s: 18 }, dec: { deg: 5, m: 13, s: 30 } },     // PROCYON
     { ra: { h: 18, m: 42, s: 47 }, dec: { deg: 59, m: 37, s: 49 } },   // STRUVE 2398
@@ -132,7 +135,8 @@ export const STAR_COORDINATES = [
     { ra: { h: 17, m: 28, s: 40 }, dec: { deg: -46, m: 53, s: 43 } },  // GLIESE 674
     { ra: { h: 21, m: 33, s: 34 }, dec: { deg: -49, m: 0, s: 32 } },   // GLIESE 832
     { ra: { h: 3, m: 19, s: 56 }, dec: { deg: -43, m: 4, s: 11 } },    // 82 ERIDANI
-    { ra: { h: 20, m: 8, s: 44 }, dec: { deg: -66, m: 10, s: 55 } }    // DELTA PAVONIS
+    { ra: { h: 20, m: 8, s: 44 }, dec: { deg: -66, m: 10, s: 55 } },   // DELTA PAVONIS
+    { ra: { h: 18, m: 36, s: 56 }, dec: { deg: 38, m: 47, s: 1 } }    // VEGA
 ];
 
 // Distances in light years (real astronomical data)
@@ -145,9 +149,9 @@ export const STAR_DISTANCES = [
     8.73,       // UV CETI
     9.69,       // ROSS 154
     10.32,      // ROSS 248
-    10.50,      // EPSILON ERIDANI
-    10.74,      // LACAILLE 9352
     11.01,      // ROSS 128
+    10.74,      // LACAILLE 9352
+    10.50,      // EPSILON ERIDANI
     11.41,      // 61 CYGNI
     11.46,      // PROCYON
     11.52,      // STRUVE 2398
@@ -165,7 +169,8 @@ export const STAR_DISTANCES = [
     14.84,      // GLIESE 674
     16.08,      // GLIESE 832
     19.77,      // 82 ERIDANI
-    19.92       // DELTA PAVONIS
+    19.92,      // DELTA PAVONIS
+    25.04       // VEGA
 ];
 
 // Index of the first weak signal star (for game logic)

@@ -919,9 +919,10 @@ export function updateStarmapArrayStats() {
         }
     }
 
-    // Show/hide scan button based on alignment (but not during alignment animation)
-    if (scanBtn) {
-        if (star && codeLength > 0 && alignedCount >= codeLength && !gameState.dishArray.alignmentInProgress) {
+    // Show/hide scan button based on alignment for weak signals
+    // (non-weak stars manage this button in selectStar directly)
+    if (scanBtn && codeLength > 0) {
+        if (star && alignedCount >= codeLength && !gameState.dishArray.alignmentInProgress) {
             scanBtn.style.display = 'block';
         } else {
             scanBtn.style.display = 'none';

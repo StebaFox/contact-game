@@ -1349,6 +1349,29 @@ canvas.active {
     text-shadow: 0 0 2px #ff0;
 }
 
+.mail-item.read {
+    border-color: #030;
+    background: rgba(0, 255, 0, 0.02);
+    opacity: 0.6;
+}
+
+.mail-item.read:hover {
+    opacity: 0.85;
+}
+
+.mail-item.read .mail-from {
+    color: #088;
+}
+
+.mail-item.read .mail-subject {
+    color: #060;
+    text-shadow: none;
+}
+
+.mail-item.read .mail-preview {
+    color: #666;
+}
+
 .mail-header {
     display: flex;
     justify-content: space-between;

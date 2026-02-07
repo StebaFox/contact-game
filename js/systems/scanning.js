@@ -17,7 +17,7 @@ import { checkAndShowDayComplete } from './day-report.js';
 import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
 
 // Ross 128 star index - requires decryption
-const ROSS_128_INDEX = 10;
+const ROSS_128_INDEX = 8;
 
 // Day 3 stars that provide fragments or trigger triangulation
 const GLIESE_832_INDEX = 25;  // Megastructure beacon - gives fragment
@@ -38,15 +38,23 @@ export function initiateScan() {
     stopNaturalPhenomenaSound();
     stopAlienSignalSound();
 
+    // Clear cached data for Ross 128 if decryption is pending (Day 2 rescan)
+    if (star.id === ROSS_128_INDEX && !gameState.decryptionComplete &&
+        gameState.scanResults.get(star.id)?.type === 'encrypted_signal') {
+        gameState.scannedSignals.delete(star.id);
+        gameState.scanResults.delete(star.id);
+        gameState.analyzedStars.delete(star.id);
+    }
+
     // Check for cached scan data
     if (gameState.scannedSignals.has(star.id)) {
-        log(`Loading previous scan data for ${star.name}`, 'highlight');
+        log(`Retrieving archived scan data: ${star.name}`, 'highlight');
 
         const cachedSignal = gameState.scannedSignals.get(star.id);
         gameState.currentSignal = cachedSignal;
 
         document.getElementById('analysis-text').innerHTML =
-            '<p>LOADING CACHED SCAN DATA...</p>';
+            '<p>LOADING ARCHIVED SCAN DATA...</p>';
 
         const waveCanvas = document.getElementById('waveform-canvas');
         const waveCtx = waveCanvas.getContext('2d');
@@ -57,9 +65,12 @@ export function initiateScan() {
         specCtx.putImageData(cachedSignal.spectrogramData, 0, 0);
 
         startSignalAnimation();
-        log('Cached scan data loaded');
+        log('Archived scan data loaded');
         document.getElementById('analyze-btn').disabled = false;
-        document.getElementById('scan-btn').disabled = false;
+        // Keep scan button disabled and mark as complete
+        const scanBtn = document.getElementById('scan-btn');
+        scanBtn.disabled = true;
+        scanBtn.textContent = '✓ SCAN COMPLETE';
         return;
     }
 
@@ -70,6 +81,17 @@ export function initiateScan() {
     document.getElementById('scan-btn').disabled = true;
     document.getElementById('analysis-text').innerHTML =
         '<p>INITIALIZING SCAN...</p><p>CALIBRATING RECEIVERS...</p>';
+
+    // Clear previous spectrogram/waveform data to prevent persistence from prior scans
+    const waveCanvas = document.getElementById('waveform-canvas');
+    const waveCtx = waveCanvas.getContext('2d');
+    waveCtx.fillStyle = '#000';
+    waveCtx.fillRect(0, 0, waveCanvas.width, waveCanvas.height);
+
+    const specCanvas = document.getElementById('spectrogram-canvas');
+    const specCtx = specCanvas.getContext('2d');
+    specCtx.fillStyle = '#000';
+    specCtx.fillRect(0, 0, specCanvas.width, specCanvas.height);
 
     // Update target info
     document.getElementById('target-name').textContent = star.name;
@@ -869,114 +891,165 @@ function showVerifiedSignalResult(star, display) {
 
 // Show encrypted signal result (Ross 128 before decryption)
 function showEncryptedSignalResult(star, display) {
+    // Day 1: Signal detected but decryption NOT available
+    const isDay1 = gameState.currentDay === 1;
+
+    gameState.scanResults.set(star.id, {
+        type: 'encrypted_signal'
+    });
+    autoSave();
+
     const resultDiv = document.createElement('div');
     resultDiv.style.cssText = 'margin-top: 20px; padding: 15px; border: 2px solid #ff0; background: rgba(255, 255, 0, 0.1);';
 
-    resultDiv.innerHTML = `
-        <div style="color: #ff0; font-size: 18px; text-shadow: 0 0 10px #ff0; margin-bottom: 10px;">
-            ⚠ ENCRYPTED SIGNAL DETECTED ⚠
-        </div>
-        <div style="color: #0ff; font-size: 14px;">
-            Signal verified as EXTRASOLAR origin<br>
-            Distance: ${star.distance} light years<br><br>
-            <span style="color: #f0f; text-shadow: 0 0 5px #f0f;">
-                WARNING: Signal contains complex encoding<br>
-                Standard protocols cannot decode content
-            </span><br><br>
-            <span style="color: #0f0;">
-                QUANTUM DECRYPTION SYSTEM: AVAILABLE
-            </span>
-        </div>
-    `;
+    if (isDay1) {
+        // Day 1: No decryption available - clearance too low
+        resultDiv.innerHTML = `
+            <div style="color: #ff0; font-size: 18px; text-shadow: 0 0 10px #ff0; margin-bottom: 10px;">
+                ⚠ ENCRYPTED SIGNAL DETECTED ⚠
+            </div>
+            <div style="color: #0ff; font-size: 14px;">
+                Signal verified as EXTRASOLAR origin<br>
+                Distance: ${star.distance} light years<br><br>
+                <span style="color: #f0f; text-shadow: 0 0 5px #f0f;">
+                    WARNING: Signal contains complex encoding<br>
+                    Standard protocols cannot decode content
+                </span><br><br>
+                <span style="color: #f00;">
+                    QUANTUM DECRYPTION SYSTEM: UNAVAILABLE<br>
+                    REQUIRES ELEVATED CLEARANCE (LEVEL 5+)
+                </span><br><br>
+                <span style="color: #0f0; font-size: 12px;">
+                    Signal data archived for future analysis.<br>
+                    Request clearance elevation in daily report.
+                </span>
+            </div>
+        `;
 
-    display.appendChild(resultDiv);
-    playSecurityBeep('warning');
+        display.appendChild(resultDiv);
+        playSecurityBeep('warning');
 
-    setTimeout(() => {
-        const decryptDiv = document.createElement('div');
-        decryptDiv.style.cssText = 'margin-top: 20px; text-align: center;';
-
-        const question = document.createElement('p');
-        question.textContent = 'INITIATE QUANTUM DECRYPTION?';
-        question.style.cssText = 'color: #ff0; text-shadow: 0 0 5px #ff0; font-size: 18px; margin-bottom: 15px;';
-        decryptDiv.appendChild(question);
-
-        const buttonContainer = document.createElement('div');
-
-        const yesBtn = document.createElement('button');
-        yesBtn.textContent = 'DECRYPT';
-        yesBtn.className = 'btn';
-        yesBtn.style.cssText = 'background: rgba(0, 255, 0, 0.1); border: 2px solid #0f0; color: #0f0; margin: 5px; padding: 8px 20px;';
-        yesBtn.addEventListener('click', () => {
-            playClick();
-            buttonContainer.remove();
-            question.textContent = '[INITIALIZING QUANTUM PROCESSOR...]';
-
-            setTimeout(() => {
+        setTimeout(() => {
+            const returnBtn = document.createElement('button');
+            returnBtn.textContent = 'RETURN TO ARRAY';
+            returnBtn.className = 'btn';
+            returnBtn.style.cssText = 'margin-top: 15px; background: rgba(0, 255, 0, 0.1); border: 2px solid #0f0; color: #0f0;';
+            returnBtn.addEventListener('click', () => {
+                playClick();
                 document.getElementById('contact-protocol-box').style.display = 'none';
-                startDecryptionMinigame(
-                    // Success callback
-                    () => {
-                        log('DECRYPTION COMPLETE - Signal decoded!', 'highlight');
-                        // Award first fragment
-                        if (!gameState.fragments.sources.ross128) {
-                            gameState.fragments.collected.push('ross128');
-                            gameState.fragments.sources.ross128 = true;
-                            log('FRAGMENT ACQUIRED: Ross 128 signal data', 'highlight');
-                        }
+                document.getElementById('analyze-btn').disabled = false;
+                showView('starmap-view');
+                log(`Encrypted signal from ${star.name} archived - elevated clearance required`);
+                checkAndShowDayComplete();
+            });
+            display.appendChild(returnBtn);
+        }, 1500);
+    } else {
+        // Day 2+: Decryption available
+        resultDiv.innerHTML = `
+            <div style="color: #ff0; font-size: 18px; text-shadow: 0 0 10px #ff0; margin-bottom: 10px;">
+                ⚠ ENCRYPTED SIGNAL DETECTED ⚠
+            </div>
+            <div style="color: #0ff; font-size: 14px;">
+                Signal verified as EXTRASOLAR origin<br>
+                Distance: ${star.distance} light years<br><br>
+                <span style="color: #f0f; text-shadow: 0 0 5px #f0f;">
+                    WARNING: Signal contains complex encoding<br>
+                    Standard protocols cannot decode content
+                </span><br><br>
+                <span style="color: #0f0;">
+                    QUANTUM DECRYPTION SYSTEM: AVAILABLE
+                </span>
+            </div>
+        `;
 
-                        // Launch alignment tutorial if not completed
-                        // Start immediately - alignment has its own full-screen overlay
-                        if (!gameState.tutorialCompleted) {
-                            log('INITIALIZING ALIGNMENT TRAINING...', 'info');
-                            startAlignmentTutorial(
-                                () => {
-                                    log('Training complete! Return to Ross 128 to establish contact.', 'info');
-                                    showView('starmap-view');
-                                    document.getElementById('analyze-btn').disabled = false;
-                                },
-                                () => {
-                                    log('Training skipped. Return to Ross 128 to establish contact.', 'info');
-                                    gameState.tutorialCompleted = true; // Mark as done if skipped
-                                    showView('starmap-view');
-                                    document.getElementById('analyze-btn').disabled = false;
-                                }
-                            );
-                        } else {
-                            // Tutorial already done, just continue
+        display.appendChild(resultDiv);
+        playSecurityBeep('warning');
+
+        setTimeout(() => {
+            const decryptDiv = document.createElement('div');
+            decryptDiv.style.cssText = 'margin-top: 20px; text-align: center;';
+
+            const question = document.createElement('p');
+            question.textContent = 'INITIATE QUANTUM DECRYPTION?';
+            question.style.cssText = 'color: #ff0; text-shadow: 0 0 5px #ff0; font-size: 18px; margin-bottom: 15px;';
+            decryptDiv.appendChild(question);
+
+            const buttonContainer = document.createElement('div');
+
+            const yesBtn = document.createElement('button');
+            yesBtn.textContent = 'DECRYPT';
+            yesBtn.className = 'btn';
+            yesBtn.style.cssText = 'background: rgba(0, 255, 0, 0.1); border: 2px solid #0f0; color: #0f0; margin: 5px; padding: 8px 20px;';
+            yesBtn.addEventListener('click', () => {
+                playClick();
+                buttonContainer.remove();
+                question.textContent = '[INITIALIZING QUANTUM PROCESSOR...]';
+
+                setTimeout(() => {
+                    document.getElementById('contact-protocol-box').style.display = 'none';
+                    startDecryptionMinigame(
+                        // Success callback
+                        () => {
+                            log('DECRYPTION COMPLETE - Signal decoded!', 'highlight');
+                            // Award first fragment
+                            if (!gameState.fragments.sources.ross128) {
+                                gameState.fragments.collected.push('ross128');
+                                gameState.fragments.sources.ross128 = true;
+                                log('FRAGMENT ACQUIRED: Ross 128 signal data', 'highlight');
+                            }
+
+                            // Launch alignment tutorial if not completed
+                            if (!gameState.tutorialCompleted) {
+                                log('INITIALIZING ALIGNMENT TRAINING...', 'info');
+                                startAlignmentTutorial(
+                                    () => {
+                                        log('Training complete! Return to Ross 128 to establish contact.', 'info');
+                                        showView('starmap-view');
+                                        document.getElementById('analyze-btn').disabled = false;
+                                    },
+                                    () => {
+                                        log('Training skipped. Return to Ross 128 to establish contact.', 'info');
+                                        gameState.tutorialCompleted = true;
+                                        showView('starmap-view');
+                                        document.getElementById('analyze-btn').disabled = false;
+                                    }
+                                );
+                            } else {
+                                showView('starmap-view');
+                                log('Return to Ross 128 to establish contact.', 'info');
+                                document.getElementById('analyze-btn').disabled = false;
+                            }
+                        },
+                        // Cancel callback
+                        () => {
                             showView('starmap-view');
-                            log('Return to Ross 128 to establish contact.', 'info');
+                            log('Decryption aborted.', 'warning');
                             document.getElementById('analyze-btn').disabled = false;
                         }
-                    },
-                    // Cancel callback
-                    () => {
-                        showView('starmap-view');
-                        log('Decryption aborted.', 'warning');
-                        document.getElementById('analyze-btn').disabled = false;
-                    }
-                );
-            }, 1500);
-        });
+                    );
+                }, 1500);
+            });
 
-        const noBtn = document.createElement('button');
-        noBtn.textContent = 'ABORT';
-        noBtn.className = 'btn';
-        noBtn.style.cssText = 'background: rgba(255, 0, 0, 0.1); border: 2px solid #f00; color: #f00; margin: 5px; padding: 8px 20px;';
-        noBtn.addEventListener('click', () => {
-            playClick();
-            buttonContainer.remove();
-            question.textContent = '[DECRYPTION ABORTED]';
-            question.style.cssText = 'color: #f00; text-shadow: 0 0 5px #f00; font-size: 16px;';
-            log('Quantum decryption aborted by operator');
-            document.getElementById('analyze-btn').disabled = false;
-        });
+            const noBtn = document.createElement('button');
+            noBtn.textContent = 'ABORT';
+            noBtn.className = 'btn';
+            noBtn.style.cssText = 'background: rgba(255, 0, 0, 0.1); border: 2px solid #f00; color: #f00; margin: 5px; padding: 8px 20px;';
+            noBtn.addEventListener('click', () => {
+                playClick();
+                buttonContainer.remove();
+                question.textContent = '[DECRYPTION ABORTED]';
+                question.style.cssText = 'color: #f00; text-shadow: 0 0 5px #f00; font-size: 16px;';
+                log('Quantum decryption aborted by operator');
+                document.getElementById('analyze-btn').disabled = false;
+            });
 
-        buttonContainer.appendChild(yesBtn);
-        buttonContainer.appendChild(noBtn);
-        decryptDiv.appendChild(buttonContainer);
-        display.appendChild(decryptDiv);
-    }, 1500);
+            buttonContainer.appendChild(yesBtn);
+            buttonContainer.appendChild(noBtn);
+            decryptDiv.appendChild(buttonContainer);
+            display.appendChild(decryptDiv);
+        }, 1500);
+    }
 }
 
 // Initiate contact

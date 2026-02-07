@@ -48,7 +48,8 @@ const weakSignalConfig = {
     24: { requiredPower: 6 },   // GLIESE 674 (false positive) - easy
     25: { requiredPower: 11 },  // GLIESE 832 - hard
     26: { requiredPower: 7 },   // 82 ERIDANI - medium
-    27: { requiredPower: 9 }    // DELTA PAVONIS (false positive) - medium
+    27: { requiredPower: 9 },   // DELTA PAVONIS (false positive) - medium
+    28: { requiredPower: 7 }    // VEGA - medium
 };
 
 // Generate background stars for parallax effect
@@ -160,14 +161,48 @@ export function updateStarCatalogDisplay() {
             return;
         }
 
+        // Check if this is Ross 128 needing decryption on Day 2
+        const ross128NeedsDecrypt = starId === 8 && !gameState.decryptionComplete &&
+            gameState.scanResults.get(starId)?.type === 'encrypted_signal' &&
+            gameState.currentDay >= 2;
+
         if (isFutureDay) {
             // Hide future day stars completely
             item.style.display = 'none';
+        } else if (isPreviousDay && ross128NeedsDecrypt) {
+            // Special: Ross 128 on Day 2 - highlighted for rescan/decryption
+            item.style.display = 'block';
+            item.style.opacity = '1';
+            item.style.pointerEvents = 'auto';
+
+            // Remove old indicators
+            const oldIndicator = item.querySelector('.analyzed-indicator');
+            if (oldIndicator) oldIndicator.remove();
+
+            // Add decrypt indicator
+            if (!item.querySelector('.decrypt-indicator')) {
+                const indicator = document.createElement('div');
+                indicator.className = 'decrypt-indicator';
+                indicator.style.cssText = 'color: #ff0; font-size: 10px; margin-top: 4px; animation: warningPulse 1.5s ease-in-out infinite;';
+                indicator.textContent = '⚠ ENCRYPTED - RESCAN TO DECRYPT';
+                item.appendChild(indicator);
+            }
+
+            const statusEl = item.querySelector('.star-status');
+            if (statusEl) {
+                statusEl.dataset.status = 'encrypted';
+                statusEl.textContent = '⚠ DECRYPT';
+                statusEl.style.color = '#ff0';
+            }
         } else if (isPreviousDay) {
             // Show previous day stars (dimmed, already analyzed)
             item.style.display = 'block';
             item.style.opacity = '0.5';
             item.style.pointerEvents = 'auto';
+
+            // Remove decrypt indicator if present
+            const decryptIndicator = item.querySelector('.decrypt-indicator');
+            if (decryptIndicator) decryptIndicator.remove();
 
             // Add "ANALYZED" indicator if not present
             if (!item.querySelector('.analyzed-indicator')) {
@@ -383,6 +418,15 @@ export function selectStar(starId) {
                 <div style="color: #f0f; text-shadow: 0 0 5px #f0f; font-size: 14px;">★ VERIFIED SIGNAL</div>
                 <div style="color: #ff0; font-size: 12px; margin-top: 8px;">EXTRASOLAR ORIGIN</div>
             </div>`;
+        } else if (scanResult.type === 'encrypted_signal') {
+            const canDecrypt = gameState.currentDay >= 2;
+            statusBadge = `<div style="margin-top: 12px; padding-top: 12px; border-top: 2px solid #ff0; animation: warningPulse 1.5s ease-in-out infinite;">
+                <div style="color: #ff0; text-shadow: 0 0 5px #ff0; font-size: 14px;">⚠ ENCRYPTED SIGNAL</div>
+                <div style="color: #0ff; font-size: 12px; margin-top: 8px;">EXTRASOLAR ORIGIN - ENCODED</div>
+                ${canDecrypt ?
+                    '<div style="color: #0f0; font-size: 12px; margin-top: 8px; text-shadow: 0 0 5px #0f0;">QUANTUM DECRYPTION: AVAILABLE<br>RESCAN TO DECRYPT</div>' :
+                    '<div style="color: #f00; font-size: 12px; margin-top: 8px;">DECRYPTION: REQUIRES LEVEL 5</div>'}
+            </div>`;
         }
     } else if (isAnalyzed) {
         statusBadge = '<div style="color: #ff0; text-shadow: 0 0 5px #ff0; margin-top: 12px; padding-top: 12px; border-top: 2px solid #0f0; font-size: 14px;">✓ ANALYZED</div>';
@@ -472,6 +516,11 @@ export function selectStar(starId) {
                 statusEl.className = 'starmap-array-status';
                 statusEl.style.color = '#ff0';
             }
+        }
+        // Show BEGIN ANALYSIS button for non-complete stars
+        const starmapScanBtn = document.getElementById('starmap-array-scan-btn');
+        if (starmapScanBtn) {
+            starmapScanBtn.style.display = !isComplete ? 'block' : 'none';
         }
         // Reset dish visuals to all aligned for normal signals
         gameState.dishArray.dishes.forEach(d => {
@@ -605,8 +654,18 @@ export function renderStarMap() {
         const parallaxX = star.x + gameState.parallaxOffsetX * 0.3;
         const parallaxY = star.y + gameState.parallaxOffsetY * 0.3;
 
+        // Check if this is Ross 128 needing decryption
+        const isRoss128Decrypt = star.id === 8 && isPreviousDay && !gameState.decryptionComplete &&
+            gameState.scanResults.get(star.id)?.type === 'encrypted_signal';
+
         // Star color based on status
-        if (isPreviousDay) {
+        if (isRoss128Decrypt) {
+            // Ross 128 on Day 2 - pulsing yellow highlight
+            const pulse = (Math.sin(Date.now() * 0.004) + 1) / 2;
+            ctx.globalAlpha = 0.7 + pulse * 0.3;
+            ctx.fillStyle = '#ff0';
+            ctx.shadowColor = '#ff0';
+        } else if (isPreviousDay) {
             // Previous day stars are dimmed
             ctx.globalAlpha = 0.4;
             if (isContacted) {
@@ -627,14 +686,15 @@ export function renderStarMap() {
             ctx.shadowColor = '#fff';
         }
 
-        ctx.shadowBlur = isSelected && !isPreviousDay ? 15 : (isPreviousDay ? 5 : 10);
+        const isHighlighted = !isPreviousDay || isRoss128Decrypt;
+        ctx.shadowBlur = isSelected && isHighlighted ? 15 : (isHighlighted ? 10 : 5);
 
         // Draw star (pixel art style)
-        const size = isSelected && !isPreviousDay ? 5 : 3;
+        const size = isSelected && isHighlighted ? 5 : 3;
         ctx.fillRect(parallaxX - size / 2, parallaxY - size / 2, size, size);
 
         // Draw cross pattern (smaller for previous day)
-        if (!isPreviousDay) {
+        if (isHighlighted) {
             ctx.fillRect(parallaxX - size - 2, parallaxY - 1, 2, 2);
             ctx.fillRect(parallaxX + size, parallaxY - 1, 2, 2);
             ctx.fillRect(parallaxX - 1, parallaxY - size - 2, 2, 2);
@@ -889,6 +949,15 @@ export function setupNavigationButtons() {
         document.getElementById('star-details').innerHTML = '<div class="detail-label">SELECT A TARGET</div>';
         clearStarVisualization();
 
+        // Reset scan button for next star
+        const scanBtn = document.getElementById('scan-btn');
+        scanBtn.disabled = false;
+        scanBtn.textContent = 'INITIATE SCAN';
+
+        // Hide starmap analysis button
+        const starmapScanBtn = document.getElementById('starmap-array-scan-btn');
+        if (starmapScanBtn) starmapScanBtn.style.display = 'none';
+
         // Stop ambient sounds
         stopNaturalPhenomenaSound();
         stopAlienSignalSound();
@@ -920,6 +989,15 @@ export function setupNavigationButtons() {
         // Reset star info panel
         document.getElementById('star-details').innerHTML = '<div class="detail-label">SELECT A TARGET</div>';
         clearStarVisualization();
+
+        // Reset scan button for next star
+        const scanBtn = document.getElementById('scan-btn');
+        scanBtn.disabled = false;
+        scanBtn.textContent = 'INITIATE SCAN';
+
+        // Hide starmap analysis button
+        const starmapScanBtn = document.getElementById('starmap-array-scan-btn');
+        if (starmapScanBtn) starmapScanBtn.style.display = 'none';
 
         // Stop ambient sounds
         stopNaturalPhenomenaSound();

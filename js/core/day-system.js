@@ -48,8 +48,8 @@ export const DAY_CONFIG = {
     3: {
         title: 'DAY 3: COSMIC TRIANGULATION',
         subtitle: 'Locate the source of the ancient signal',
-        availableStars: [20, 21, 22, 23, 24, 25, 26, 27],
-        starsRequired: 8,
+        availableStars: [20, 21, 22, 23, 24, 25, 26, 27, 28],
+        starsRequired: 9,
         prerequisites: ['day2Complete', 'decryptionComplete'],
         objectives: [
             'Survey remaining star systems',
@@ -200,7 +200,7 @@ export function getCurrentDayConfig() {
         return {
             title: 'DEMO MODE',
             subtitle: 'All content unlocked',
-            availableStars: Array.from({ length: 28 }, (_, i) => i),
+            availableStars: Array.from({ length: 29 }, (_, i) => i),
             starsRequired: 0,
             objectives: ['Explore freely'],
             bootMessages: ['DEMO MODE ACTIVE', 'ALL SYSTEMS UNLOCKED']
@@ -247,7 +247,7 @@ export function getStarStatus(starIndex) {
 
 export function getAvailableStars() {
     if (gameState.demoMode || gameState.currentDay === 0) {
-        return Array.from({ length: 28 }, (_, i) => i);
+        return Array.from({ length: 29 }, (_, i) => i);
     }
 
     const config = getCurrentDayConfig();

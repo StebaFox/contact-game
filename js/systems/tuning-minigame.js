@@ -343,7 +343,10 @@ function completeTuningScan(star) {
         if (startSignalAnimationFn) startSignalAnimationFn();
         log('Signal acquisition complete');
         document.getElementById('analyze-btn').disabled = false;
-        document.getElementById('scan-btn').disabled = false;
+        // Keep scan button disabled and mark as complete
+        const scanBtn = document.getElementById('scan-btn');
+        scanBtn.disabled = true;
+        scanBtn.textContent = '✓ SCAN COMPLETE';
     }, 1000);
 }
 

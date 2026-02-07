@@ -22,11 +22,6 @@ export function openMailbox() {
     showView('mailbox-view');
     updateMailboxDisplay();
 
-    // Mark all messages as read
-    gameState.mailboxMessages.forEach(msg => msg.read = true);
-    gameState.unreadMailCount = 0;
-    updateMailIndicator();
-
     log('Accessing secure mailbox...');
 }
 
@@ -62,7 +57,7 @@ export function updateMailboxDisplay() {
             .slice()
             .reverse() // Show newest first
             .map((msg, index) => `
-                <div class="mail-item ${msg.read ? '' : 'unread'}" data-index="${gameState.mailboxMessages.length - 1 - index}">
+                <div class="mail-item ${msg.read ? 'read' : 'unread'}" data-index="${gameState.mailboxMessages.length - 1 - index}">
                     <div class="mail-header">
                         <div class="mail-from">${msg.from}</div>
                         <div class="mail-date">${msg.date}</div>
@@ -73,11 +68,24 @@ export function updateMailboxDisplay() {
                 </div>
             `).join('');
 
-        // Add click handlers to expand/collapse messages
+        // Add click handlers to expand/collapse and mark as read
         document.querySelectorAll('.mail-item').forEach(item => {
             item.addEventListener('click', function() {
                 this.classList.toggle('expanded');
                 playClick();
+
+                // Mark as read on first click
+                if (this.classList.contains('unread')) {
+                    const msgIndex = parseInt(this.dataset.index);
+                    const msg = gameState.mailboxMessages[msgIndex];
+                    if (msg && !msg.read) {
+                        msg.read = true;
+                        gameState.unreadMailCount = Math.max(0, gameState.unreadMailCount - 1);
+                        updateMailIndicator();
+                    }
+                    this.classList.remove('unread');
+                    this.classList.add('read');
+                }
             });
         });
     }

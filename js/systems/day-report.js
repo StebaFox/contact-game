@@ -10,6 +10,8 @@ import { autoSave } from '../core/save-system.js';
 import { getDayProgress, advanceDay, DAY_CONFIG, checkDayComplete } from '../core/day-system.js';
 import { startFinalAlignment } from './alignment-minigame.js';
 import { showFinalMessage } from '../narrative/final-message.js';
+import { addMailMessage } from './mailbox.js';
+import { ROSS128_DECRYPT_EMAIL } from '../narrative/emails.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Check Day Completion
@@ -606,6 +608,14 @@ function showDayTransition() {
             }, 100);
             module.initializeStarmapSequence();
             log(`Day ${gameState.currentDay} - Dr. ${gameState.playerName} reporting for duty`, 'highlight');
+
+            // Send Ross 128 decryption email on Day 2 start
+            if (gameState.currentDay === 2 && !gameState.decryptionComplete) {
+                setTimeout(() => {
+                    const body = ROSS128_DECRYPT_EMAIL.body.replace(/{PLAYER_NAME}/g, gameState.playerName);
+                    addMailMessage(ROSS128_DECRYPT_EMAIL.from, ROSS128_DECRYPT_EMAIL.subject, body);
+                }, 5000);
+            }
         });
     }, 3000);
 }

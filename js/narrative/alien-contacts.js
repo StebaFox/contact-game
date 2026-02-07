@@ -5,7 +5,7 @@
 
 export const ALIEN_CONTACTS = [
     {
-        starIndex: 8, // EPSILON ERIDANI - prime SETI target, sun-like K2V star
+        starIndex: 10, // EPSILON ERIDANI - prime SETI target, sun-like K2V star (swapped to Day 2)
         messages: [
             "DECODING SIGNAL PATTERN...",
             "MATHEMATICAL SEQUENCE DETECTED: PRIME NUMBERS",
@@ -67,7 +67,7 @@ export const ALIEN_CONTACTS = [
         ]
     },
     {
-        starIndex: 10, // ROSS 128 - quiet red dwarf, good for stable transmission
+        starIndex: 8, // ROSS 128 - quiet red dwarf, Day 1 anomaly (swapped to index 8)
         hasImage: true,
         beforeImage: [
             "SIGNAL ANALYSIS COMPLETE",
@@ -351,7 +351,7 @@ export const ALIEN_CONTACTS = [
         ]
     },
     {
-        starIndex: 11, // 61 CYGNI - historic binary system, first parallax measurement
+        starIndex: 28, // VEGA - bright A-type star, received our Arecibo message
         hasImage: true,
         beforeImage: [
             "DETECTING COMPLEX BINARY PATTERN...",
@@ -424,6 +424,35 @@ export const ALIEN_CONTACTS = [
             "",
             "CONTINUE SEARCHING...",
             "WE ARE WATCHING"
+        ]
+    },
+    {
+        starIndex: 26, // 82 ERIDANI - sun-like star, distant collaborator
+        messages: [
+            "SIGNAL COHERENCE: 97.3%",
+            "MULTI-LAYERED ENCODING DETECTED...",
+            "",
+            "TRANSLATION MATRIX: PARTIAL MATCH",
+            "",
+            "WE HAVE WATCHED YOUR SPECIES",
+            "FOR SEVENTEEN OF YOUR GENERATIONS",
+            "",
+            "YOU BUILD... DESTROY... BUILD AGAIN",
+            "ALWAYS REACHING OUTWARD",
+            "",
+            "NOW YOU ARE CLOSE",
+            "THE OLD SIGNAL... THE FIRST SIGNAL",
+            "IT CALLS TO ALL OF US",
+            "",
+            "WE HAVE EACH DECODED A PIECE",
+            "NO SINGLE CIVILIZATION CAN READ IT ALONE",
+            "",
+            "THIS IS BY DESIGN",
+            "",
+            "TOGETHER... WE WILL UNDERSTAND",
+            "WHAT CAME BEFORE",
+            "",
+            "[SIGNAL TRANSMITTING COORDINATE VECTORS]"
         ]
     },
     {
