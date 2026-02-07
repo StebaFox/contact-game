@@ -18,6 +18,7 @@ let renderStarmapArrayFn = null;
 let updateStarmapArrayStatsFn = null;
 let drawStarVisualizationFn = null;
 let stopSignalAnimationFn = null;
+let updateTelemetryFn = null;
 
 export function setStarmapFunctions(fns) {
     setArrayTargetFn = fns.setArrayTarget;
@@ -27,6 +28,7 @@ export function setStarmapFunctions(fns) {
     if (fns.drawStarVisualization) {
         drawStarVisualizationFn = fns.drawStarVisualization;
     }
+    if (fns.updateTelemetry) updateTelemetryFn = fns.updateTelemetry;
 }
 
 // False positive star indices (Day 1: 4, 7, 9; Day 2: 14, 18; Day 3: 24, 27)
@@ -337,6 +339,11 @@ export function selectStar(starId) {
     gameState.currentStar = star;
     gameState.selectedStarId = starId;
 
+    // Highlight selected star in catalog
+    document.querySelectorAll('.star-item').forEach(item => item.classList.remove('selected'));
+    const selectedItem = document.querySelector(`.star-item[data-star-id="${starId}"]`);
+    if (selectedItem) selectedItem.classList.add('selected');
+
     // Play selection sounds
     playSelectStar();
     playStaticBurst();
@@ -442,13 +449,38 @@ export function selectStar(starId) {
         }
     } else {
         if (arrayBtn) arrayBtn.style.display = 'none';
-        // Clear array target when selecting non-weak signal star or complete star
-        if (gameState.dishArray.currentTargetStar) {
-            gameState.dishArray.currentTargetStar = null;
-            gameState.dishArray.requiredPower = 0;
-            if (renderStarmapArrayFn) renderStarmapArrayFn();
-            if (updateStarmapArrayStatsFn) updateStarmapArrayStatsFn();
+        // Clear array target and show ready state for non-weak signal stars
+        gameState.dishArray.currentTargetStar = null;
+        gameState.dishArray.requiredPower = 0;
+        gameState.dishArray.codeRequired = false;
+        gameState.dishArray.alignmentCode = '';
+        gameState.dishArray.inputCode = '';
+        // Hide code section and keypad
+        const codeSection = document.getElementById('array-code-section');
+        if (codeSection) codeSection.style.display = 'none';
+        // Update telemetry to show current star
+        if (updateTelemetryFn) updateTelemetryFn(star);
+        // Show ready status for non-complete stars, default for complete
+        const statusEl = document.getElementById('starmap-array-status');
+        if (statusEl) {
+            if (!isComplete) {
+                statusEl.textContent = 'ARRAY READY';
+                statusEl.className = 'starmap-array-status';
+                statusEl.style.color = '#0f0';
+            } else {
+                statusEl.textContent = 'SCAN COMPLETE';
+                statusEl.className = 'starmap-array-status';
+                statusEl.style.color = '#ff0';
+            }
         }
+        // Reset dish visuals to all aligned for normal signals
+        gameState.dishArray.dishes.forEach(d => {
+            d.isAligned = !isComplete;
+            d.isAligning = false;
+            d.isMalfunctioning = false;
+        });
+        if (renderStarmapArrayFn) renderStarmapArrayFn();
+        if (updateStarmapArrayStatsFn) updateStarmapArrayStatsFn();
     }
 
     log(`Target acquired: ${star.name}`);
@@ -820,6 +852,9 @@ export function setupNavigationButtons() {
         gameState.showScanConfirm = false;
         gameState.selectedStarId = null;
 
+        // Clear catalog selection highlight
+        document.querySelectorAll('.star-item').forEach(item => item.classList.remove('selected'));
+
         // Reset star info panel
         document.getElementById('star-details').innerHTML = '<div class="detail-label">SELECT A TARGET</div>';
         clearStarVisualization();
@@ -848,6 +883,9 @@ export function setupNavigationButtons() {
         gameState.currentSignal = null;
         gameState.showScanConfirm = false;
         gameState.selectedStarId = null;
+
+        // Clear catalog selection highlight
+        document.querySelectorAll('.star-item').forEach(item => item.classList.remove('selected'));
 
         // Reset star info panel
         document.getElementById('star-details').innerHTML = '<div class="detail-label">SELECT A TARGET</div>';

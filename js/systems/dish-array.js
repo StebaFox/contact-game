@@ -5,7 +5,7 @@
 
 import { gameState } from '../core/game-state.js';
 import { log } from '../ui/rendering.js';
-import { playClick, playStaticBurst, playLockAchieved, playMachineSound, stopMachineSound, playDishRotationSound, playDishAlignedSound, playDoorShutSound } from './audio.js';
+import { playClick, playStaticBurst, playLockAchieved, playMachineSound, stopMachineSound, getMachineSoundDuration, playDishRotationSound, playDishAlignedSound, playDoorShutSound } from './audio.js';
 import { STAR_NAMES, STAR_COORDINATES } from '../narrative/stars.js';
 import { startRerouteMinigame } from './reroute-minigame.js';
 
@@ -164,6 +164,11 @@ export function alignDishesFromCode(code) {
 
 // Internal function to run the alignment sequence (can be resumed after malfunction)
 function startDishAlignmentSequence(code, startIndex, malfunctionIndex) {
+    // Reset malfunction flag when resuming after repair (malfunctionIndex === -1)
+    if (malfunctionIndex === -1) {
+        malfunctionTriggeredThisAlignment = false;
+    }
+
     const statusEl = document.getElementById('starmap-array-status');
     const confirmedEl = document.getElementById('array-code-confirmed');
     const codeSectionEl = document.getElementById('array-code-section');
@@ -184,22 +189,28 @@ function startDishAlignmentSequence(code, startIndex, malfunctionIndex) {
     // Show flashing "ALIGNING" text
     if (aligningTextEl) aligningTextEl.style.display = 'block';
 
-    // Play machine sound (only on first start)
+    // Get actual sound duration and calculate per-dish timing to fit within it
+    // Leave 500ms buffer at end so last dish is done before the clunk
+    const remainingDishes = code.length - startIndex;
+    const soundDuration = getMachineSoundDuration();
+    const animationBudget = soundDuration - 500;
+    const delayPerDish = Math.floor(animationBudget / remainingDishes);
+
+    // Callback for when machine sound naturally finishes (the clunk)
+    const noMalfunction = malfunctionIndex < startIndex || malfunctionIndex === -1;
+    const onSoundEnded = noMalfunction ? () => finishAlignment() : null;
+
+    // Play machine sound with end callback
     if (startIndex === 0) {
-        playMachineSound();
+        playMachineSound(onSoundEnded);
         log('Initiating dish array alignment sequence...', 'highlight');
     } else {
-        playMachineSound();
+        playMachineSound(onSoundEnded);
         log('Resuming dish alignment...', 'info');
     }
 
-    // Calculate timing for remaining dishes
-    const delayPerDish = 1400; // Matches rotation sound duration (1.2s) + aligned beep
-    const remainingDishes = code.length - startIndex;
-    const totalDuration = remainingDishes * delayPerDish;
-
     // Animate telemetry values during alignment
-    animateTelemetryDuringAlignment(totalDuration);
+    animateTelemetryDuringAlignment(soundDuration);
 
     // Flash each dish in sequence
     let delay = 0;
@@ -218,7 +229,6 @@ function startDishAlignmentSequence(code, startIndex, malfunctionIndex) {
             // Always start the dish aligning (flashing green)
             dish.isAligning = true;
             renderStarmapArray();
-            playDishRotationSound();
 
             // Check if this dish should malfunction mid-alignment
             if (dishIndex === malfunctionIndex && !malfunctionTriggeredThisAlignment) {
@@ -231,23 +241,16 @@ function startDishAlignmentSequence(code, startIndex, malfunctionIndex) {
                 return;
             }
 
-            // After rotation sound, mark as aligned with confirmation sound
+            // After rotation, mark as aligned with confirmation sound
             setTimeout(() => {
                 dish.isAligning = false;
                 dish.isAligned = true;
                 renderStarmapArray();
                 updateStarmapArrayStats();
                 playDishAlignedSound();
-            }, 1000);
+            }, delayPerDish - 400);
         }, delay);
         delay += delayPerDish;
-    }
-
-    // After all dishes aligned, update status (only if no malfunction pending)
-    if (malfunctionIndex < startIndex || malfunctionIndex === -1) {
-        setTimeout(() => {
-            finishAlignment();
-        }, delay);
     }
 }
 
@@ -403,13 +406,11 @@ function showMalfunctionPopup(code, dishIndex, dishLabel) {
     });
 }
 
-// Finish the alignment sequence
+// Finish the alignment sequence (called when machine sound ends)
 function finishAlignment() {
     const statusEl = document.getElementById('starmap-array-status');
     const codeSectionEl = document.getElementById('array-code-section');
     const aligningTextEl = document.getElementById('array-aligning-text');
-
-    stopMachineSound();
 
     // Hide the flashing text
     if (aligningTextEl) aligningTextEl.style.display = 'none';
@@ -418,21 +419,19 @@ function finishAlignment() {
     if (codeSectionEl) codeSectionEl.style.display = 'none';
     log('Dish array alignment complete', 'success');
 
-    // Play acknowledgement sound after fade out completes
-    setTimeout(() => {
-        playLockAchieved();
+    // Play acknowledgement sound immediately — the clunk just played
+    playLockAchieved();
 
-        // Clear the flag so button can now appear
-        gameState.dishArray.alignmentInProgress = false;
+    // Clear the flag so button can now appear
+    gameState.dishArray.alignmentInProgress = false;
 
-        // Show status and scan button together with the acknowledgement sound
-        if (statusEl) {
-            statusEl.textContent = 'ARRAY ALIGNED - READY FOR SCAN';
-            statusEl.className = 'starmap-array-status ready';
-        }
-        updateArrayStatus();
-        updateStarmapArrayStats();
-    }, 1000);
+    // Show status and scan button
+    if (statusEl) {
+        statusEl.textContent = 'ARRAY ALIGNED - READY FOR SCAN';
+        statusEl.className = 'starmap-array-status ready';
+    }
+    updateArrayStatus();
+    updateStarmapArrayStats();
 }
 
 // Set up alignment code for a weak signal star
@@ -845,10 +844,12 @@ export function updateStarmapArrayStats() {
     if (boostEl) boostEl.textContent = calculateSignalBoost().toFixed(1) + 'x';
 
     // Status is managed by code input flow, only update if not in code mode
+    // Only show default "select target" text when no star is selected at all
     if (statusEl && !gameState.dishArray.codeRequired) {
-        if (!star) {
-            statusEl.textContent = 'SELECT WEAK SIGNAL TARGET';
+        if (!star && !gameState.currentStar) {
+            statusEl.textContent = 'SELECT TARGET';
             statusEl.className = 'starmap-array-status';
+            statusEl.style.color = '';
         }
     }
 

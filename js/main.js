@@ -60,7 +60,8 @@ import {
     resetArray,
     setArrayTarget,
     renderStarmapArray,
-    updateStarmapArrayStats
+    updateStarmapArrayStats,
+    updateTelemetry
 } from './systems/dish-array.js';
 import {
     initiateScan,
@@ -89,7 +90,8 @@ function setupModuleConnections() {
         setArrayTarget: setArrayTarget,
         renderStarmapArray: renderStarmapArray,
         updateStarmapArrayStats: updateStarmapArrayStats,
-        stopSignalAnimation: stopSignalAnimation
+        stopSignalAnimation: stopSignalAnimation,
+        updateTelemetry: updateTelemetry
     });
 
     // Dev mode needs various functions

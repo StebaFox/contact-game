@@ -309,24 +309,58 @@ export function playLockAchieved() {
 }
 
 // Play machine/alignment sound effect
-export function playMachineSound() {
-    if (masterVolume === 0) return;
-
+export function playMachineSound(onEnded) {
     if (!machineSound) {
         machineSound = document.getElementById('machine-sound');
     }
 
     if (machineSound) {
+        // Remove any previous ended listener
+        machineSound.onended = null;
+
+        if (masterVolume === 0) {
+            // If muted, still fire callback after the sound's natural duration
+            if (onEnded) {
+                const dur = (machineSound.duration || 8.76) * 1000;
+                setTimeout(onEnded, dur);
+            }
+            return;
+        }
+
         machineSound.currentTime = 0;
         machineSound.volume = masterVolume * 0.5;
+
+        // Fire callback when sound naturally finishes
+        if (onEnded) {
+            machineSound.onended = () => {
+                machineSound.onended = null;
+                onEnded();
+            };
+        }
+
         machineSound.play().catch(err => {
             console.log('Machine sound play prevented:', err);
         });
+    } else if (onEnded) {
+        // No sound element - fire callback after fallback delay
+        setTimeout(onEnded, 8760);
     }
+}
+
+// Get the machine sound's actual duration in ms
+export function getMachineSoundDuration() {
+    if (!machineSound) {
+        machineSound = document.getElementById('machine-sound');
+    }
+    if (machineSound && machineSound.duration && isFinite(machineSound.duration)) {
+        return machineSound.duration * 1000;
+    }
+    return 8760; // fallback
 }
 
 // Stop machine sound with fade out
 export function stopMachineSound() {
+    if (machineSound) machineSound.onended = null; // Clear callback
     if (machineSound && !machineSound.paused) {
         // Fade out over 1 second
         const fadeOutDuration = 1000;
@@ -745,4 +779,34 @@ export function playSecurityBeep(type = 'normal') {
 
     oscillator.start();
     oscillator.stop(audioContext.currentTime + 0.15);
+}
+
+// Email notification - short ring/chime
+export function playEmailNotification() {
+    if (!audioContext || masterVolume === 0) return;
+
+    const now = audioContext.currentTime;
+
+    // Two-tone ring: high-low-high pattern
+    const tones = [
+        { freq: 1400, start: 0, dur: 0.08 },
+        { freq: 1800, start: 0.1, dur: 0.08 },
+        { freq: 1400, start: 0.2, dur: 0.06 },
+        { freq: 1800, start: 0.28, dur: 0.12 }
+    ];
+
+    tones.forEach(({ freq, start, dur }) => {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.07 * masterVolume, now + start);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + start + dur);
+
+        osc.start(now + start);
+        osc.stop(now + start + dur);
+    });
 }

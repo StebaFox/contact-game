@@ -5,7 +5,7 @@
 
 import { gameState } from '../core/game-state.js';
 import { showView, log } from '../ui/rendering.js';
-import { playClick } from '../systems/audio.js';
+import { playClick, playEmailNotification } from '../systems/audio.js';
 import { RANDOM_EMAILS, FIRST_CONTACT_EMAIL } from '../narrative/emails.js';
 
 // Open the mailbox view
@@ -104,7 +104,7 @@ export function addMailMessage(from, subject, body, preview = null) {
     updateMailIndicator();
 
     log(`New message received from ${from}`, 'highlight');
-    playSecurityBeep('normal');
+    playEmailNotification();
 }
 
 // Update the unread mail indicator
