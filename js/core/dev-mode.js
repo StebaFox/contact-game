@@ -109,14 +109,16 @@ export function showDevPanel() {
             <div class="dev-section">NAVIGATION</div>
             <button data-action="skipToStarmap">Skip to Starmap</button>
             <button data-action="showSignalScan">Signal Scan View</button>
-            <button data-action="showTuningGame">Tuning Mini-game</button>
-            <button data-action="showPatternGame">Pattern Mini-game</button>
-            <button data-action="showDecryption">Decryption Game</button>
+            <button data-action="showMailbox">Mailbox</button>
+
+            <div class="dev-section">MINIGAMES</div>
+            <button data-action="showTuningGame">Tuning</button>
+            <button data-action="showPatternGame">Pattern Recognition</button>
+            <button data-action="showDecryption">Decryption</button>
             <button data-action="showAlignmentTutorial">Alignment Tutorial</button>
             <button data-action="showFinalAlignment">Final Alignment</button>
-            <button data-action="showTriangulation">Triangulation Game</button>
-            <button data-action="showReroute">Reroute Minigame</button>
-            <button data-action="showMailbox">Mailbox</button>
+            <button data-action="showTriangulation">Triangulation</button>
+            <button data-action="showReroute">Reroute (Power)</button>
 
             <div class="dev-section">STAR ACTIONS</div>
             <button data-action="markAllScanned">Mark All Scanned</button>

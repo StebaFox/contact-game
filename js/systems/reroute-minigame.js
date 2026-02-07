@@ -39,17 +39,26 @@ let rerouteState = {
     onCancel: null,
 
     // Malfunctioning dish info
-    dishLabel: null
+    dishLabel: null,
+
+    // Trap state
+    trapTriggered: false
 };
 
 // Node types
 const NODE_TYPES = {
-    JUNCTION_L: 'junction_l',  // L-shaped pipe, rotatable
-    JUNCTION_I: 'junction_i',  // I-shaped pipe (straight), rotatable
-    SOURCE: 'source',          // Power input (always powered)
-    TARGET: 'target',          // Must receive power to win
-    BLOWN: 'blown'             // Blown circuit - blocks power flow
+    JUNCTION_L: 'junction_l',        // L-shaped pipe, rotatable
+    JUNCTION_I: 'junction_i',        // I-shaped pipe (straight), rotatable
+    JUNCTION_CROSS: 'junction_cross', // + shaped, all 4 directions, not rotatable
+    SOURCE: 'source',                // Power input (always powered)
+    TARGET: 'target',                // Must receive power to win (dead end)
+    BLOWN: 'blown',                  // Blown circuit - blocks power flow
+    TRAP: 'trap'                     // Overload - if powered, breaker trips (puzzle resets)
 };
+
+// Grid dimensions
+const GRID_COLS = 6;
+const GRID_ROWS = 6;
 
 // =============================================================================
 // Start Reroute Minigame
@@ -70,6 +79,7 @@ export function startRerouteMinigame(dishLabel, onSuccess, onCancel) {
     rerouteState.sparkParticles = [];
     rerouteState.originalPath = [];
     rerouteState.blownNodeIdx = null;
+    rerouteState.trapTriggered = false;
     previousPoweredCount = 0;
 
     // Create UI
@@ -154,15 +164,16 @@ function createRerouteUI(dishLabel) {
                 font-size: 12px;
                 text-align: center;
             ">
-                Click <span style="color: #ff0;">JUNCTIONS</span> to rotate |
-                Route around <span style="color: #f80;">BLOWN CIRCUIT</span> from <span style="color: #0f0;">SOURCE</span> to <span style="color: #0ff;">TARGET</span>
+                <span style="color: #ff0;">L-click</span> rotate ← | <span style="color: #ff0;">R-click</span> rotate → |
+                Route around <span style="color: #f80;">BLOWN CIRCUIT</span> to <span style="color: #0ff;">OUTPUT</span> |
+                Avoid <span style="color: #f0f;">OVERLOAD</span> nodes
             </div>
 
             <!-- Canvas Container -->
             <div style="padding: 15px; background: #000;">
                 <canvas id="reroute-canvas" style="
                     width: 100%;
-                    height: 300px;
+                    height: 400px;
                     border: 1px solid #300;
                     background: #000;
                     cursor: pointer;
@@ -223,8 +234,9 @@ function setupCanvas() {
     rerouteState.canvas.height = rect.height * window.devicePixelRatio;
     rerouteState.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
-    // Click handler
+    // Click handlers - left click rotates left, right click rotates right
     rerouteState.canvas.addEventListener('click', handleClick);
+    rerouteState.canvas.addEventListener('contextmenu', handleRightClick);
 }
 
 // =============================================================================
@@ -236,8 +248,8 @@ function generatePuzzle() {
     const width = rect.width;
     const height = rect.height;
 
-    const cols = 5;
-    const rows = 4;
+    const cols = GRID_COLS;
+    const rows = GRID_ROWS;
     const spacingX = width / (cols + 1);
     const spacingY = height / (rows + 1);
 
@@ -329,7 +341,7 @@ function generatePuzzle() {
     }
 
     const sourceIdx = getIdx(0, 1);
-    const targetIdx = getIdx(4, 2);
+    const targetIdx = getIdx(5, 4);
 
     // Generate puzzle with retry logic
     let genAttempts = 0;
@@ -358,6 +370,21 @@ function generatePuzzle() {
             solutionInfo.set(solutionPath[i], info);
         }
 
+        // Step 4b: Build junction info for original path (source -> blown)
+        // These nodes keep their rotation to show the original broken route
+        const originalPathInfo = new Map();
+        const blownPathIndex = originalPath.indexOf(blownIdx);
+        for (let i = 1; i < blownPathIndex; i++) {
+            const info = getJunctionInfo(originalPath[i - 1], originalPath[i], originalPath[i + 1]);
+            originalPathInfo.set(originalPath[i], info);
+        }
+
+        // Collect all path node IDs (for trap/cross placement exclusion)
+        const pathNodeIds = new Set([
+            ...originalPath,
+            ...solutionPath
+        ]);
+
         // Step 5: Create all nodes
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
@@ -366,6 +393,7 @@ function generatePuzzle() {
                 const id = row * cols + col;
 
                 let type, rotation = 0;
+                let keepRotation = false;
 
                 if (id === sourceIdx) {
                     type = NODE_TYPES.SOURCE;
@@ -374,8 +402,20 @@ function generatePuzzle() {
                 } else if (id === blownIdx) {
                     type = NODE_TYPES.BLOWN;
                 } else if (solutionInfo.has(id)) {
+                    // Solution path node - use solution type for solvability
                     type = solutionInfo.get(id).type;
                     rotation = solutionInfo.get(id).rotation;
+
+                    // If also on original pre-blown path, start at original rotation
+                    if (originalPathInfo.has(id)) {
+                        rotation = originalPathInfo.get(id).rotation;
+                        keepRotation = true;
+                    }
+                } else if (originalPathInfo.has(id)) {
+                    // Only on original pre-blown path (not solution)
+                    type = originalPathInfo.get(id).type;
+                    rotation = originalPathInfo.get(id).rotation;
+                    keepRotation = true;
                 } else {
                     // Non-path node: random junction type
                     type = Math.random() < 0.35 ? NODE_TYPES.JUNCTION_I : NODE_TYPES.JUNCTION_L;
@@ -385,48 +425,137 @@ function generatePuzzle() {
                 rerouteState.nodes.push({
                     id, x, y, type, rotation, radius: 20,
                     col, row,
-                    solutionRotation: solutionInfo.has(id) ? solutionInfo.get(id).rotation : null
+                    solutionRotation: solutionInfo.has(id) ? solutionInfo.get(id).rotation : null,
+                    keepRotation
                 });
             }
+        }
+
+        // Step 5b: Place trap nodes (2-3) adjacent to solution path for real danger
+        // Prefer nodes next to the solution path so players must route carefully
+        const nonPathSet = new Set();
+        rerouteState.nodes.forEach(n => {
+            if (!pathNodeIds.has(n.id) && !n.keepRotation &&
+                n.type !== NODE_TYPES.SOURCE && n.type !== NODE_TYPES.TARGET && n.type !== NODE_TYPES.BLOWN) {
+                nonPathSet.add(n.id);
+            }
+        });
+
+        // Find non-path nodes adjacent to solution path (high threat positions)
+        const solutionAdjacentIds = new Set();
+        for (const pathId of solutionPath) {
+            for (const neighborId of getNeighbors(pathId)) {
+                if (nonPathSet.has(neighborId)) {
+                    solutionAdjacentIds.add(neighborId);
+                }
+            }
+        }
+
+        const trapCount = 2 + Math.floor(Math.random() * 2); // 2 or 3
+        const placedTrapIds = [];
+
+        // First: place traps adjacent to solution path (dangerous positions)
+        const adjacentCandidates = shuffle([...solutionAdjacentIds]);
+        for (const id of adjacentCandidates) {
+            if (placedTrapIds.length >= trapCount) break;
+            // Ensure traps are spread apart (at least 2 cells apart)
+            const node = rerouteState.nodes[id];
+            const tooClose = placedTrapIds.some(tid => {
+                const t = rerouteState.nodes[tid];
+                return Math.abs(t.col - node.col) + Math.abs(t.row - node.row) < 2;
+            });
+            if (!tooClose) {
+                node.type = NODE_TYPES.TRAP;
+                node.rotation = 0;
+                placedTrapIds.push(id);
+            }
+        }
+
+        // Fallback: fill remaining trap slots from any non-path node
+        if (placedTrapIds.length < trapCount) {
+            const fallback = shuffle([...nonPathSet].filter(id => !placedTrapIds.includes(id)));
+            for (const id of fallback) {
+                if (placedTrapIds.length >= trapCount) break;
+                const node = rerouteState.nodes[id];
+                const tooClose = placedTrapIds.some(tid => {
+                    const t = rerouteState.nodes[tid];
+                    return Math.abs(t.col - node.col) + Math.abs(t.row - node.row) < 2;
+                });
+                if (!tooClose) {
+                    node.type = NODE_TYPES.TRAP;
+                    node.rotation = 0;
+                    placedTrapIds.push(id);
+                }
+            }
+        }
+
+        // Step 5c: Place cross junction nodes (1-2) on remaining non-path, non-trap positions
+        const crossCandidates = rerouteState.nodes.filter(n =>
+            !pathNodeIds.has(n.id) && !n.keepRotation &&
+            n.type !== NODE_TYPES.SOURCE && n.type !== NODE_TYPES.TARGET &&
+            n.type !== NODE_TYPES.BLOWN && n.type !== NODE_TYPES.TRAP
+        );
+        const crossCount = 1 + Math.floor(Math.random() * 2); // 1 or 2
+        const shuffledCross = shuffle([...crossCandidates]);
+        for (let i = 0; i < shuffledCross.length && i < crossCount; i++) {
+            const node = rerouteState.nodes[shuffledCross[i].id];
+            node.type = NODE_TYPES.JUNCTION_CROSS;
+            node.rotation = 0;
         }
 
         // Step 6: Store path info for rendering
         rerouteState.originalPath = originalPath;
         rerouteState.blownNodeIdx = blownIdx;
 
-        // Step 7: Scramble all junction rotations
-        for (const node of rerouteState.nodes) {
-            if (node.type === NODE_TYPES.JUNCTION_L || node.type === NODE_TYPES.JUNCTION_I) {
-                node.rotation = Math.floor(Math.random() * 4);
-            }
-        }
-
-        // Step 8: Setup references and connections
+        // Step 7: Setup references and connections (needed for solvability check)
         rerouteState.sourceNode = rerouteState.nodes.find(n => n.type === NODE_TYPES.SOURCE);
         rerouteState.targetNode = rerouteState.nodes.find(n => n.type === NODE_TYPES.TARGET);
         generateConnections(cols, rows);
 
-        // Step 9: Calculate power and verify target is NOT powered
-        calculatePowerFlow();
-        if (!rerouteState.poweredNodes.has(rerouteState.targetNode.id)) {
-            return; // Good puzzle
+        // Step 8: Verify puzzle IS solvable before scrambling
+        // Set all solution path nodes to their solution rotations and check power reaches target
+        const solutionNodes = rerouteState.nodes.filter(n => n.solutionRotation !== null);
+        const savedRotations = solutionNodes.map(n => n.rotation);
+        solutionNodes.forEach(n => { n.rotation = n.solutionRotation; });
+        calculatePowerFlow(true);
+
+        const solvable = rerouteState.poweredNodes.has(rerouteState.targetNode.id);
+        const trapPoweredInSolution = rerouteState.nodes.some(n =>
+            n.type === NODE_TYPES.TRAP && rerouteState.poweredNodes.has(n.id)
+        );
+
+        // Restore rotations
+        solutionNodes.forEach((n, i) => { n.rotation = savedRotations[i]; });
+
+        if (!solvable || trapPoweredInSolution) {
+            // This layout can't be solved - retry from scratch
+            continue;
         }
 
-        // Re-scramble a few times before full retry
-        let rescrambles = 0;
-        while (rerouteState.poweredNodes.has(rerouteState.targetNode.id) && rescrambles < 10) {
+        // Step 9: Scramble junction rotations (but NOT original pre-blown path nodes)
+        // Then verify the scrambled state doesn't already win or trip a trap
+        let goodScramble = false;
+        for (let rescramble = 0; rescramble < 15; rescramble++) {
             for (const node of rerouteState.nodes) {
+                if (node.keepRotation) continue;
                 if (node.type === NODE_TYPES.JUNCTION_L || node.type === NODE_TYPES.JUNCTION_I) {
                     node.rotation = Math.floor(Math.random() * 4);
                 }
             }
-            calculatePowerFlow();
-            rescrambles++;
+            calculatePowerFlow(true);
+
+            const targetPowered = rerouteState.poweredNodes.has(rerouteState.targetNode.id);
+            const trapPowered = rerouteState.nodes.some(n =>
+                n.type === NODE_TYPES.TRAP && rerouteState.poweredNodes.has(n.id)
+            );
+
+            if (!targetPowered && !trapPowered) {
+                goodScramble = true;
+                break;
+            }
         }
 
-        if (!rerouteState.poweredNodes.has(rerouteState.targetNode.id)) {
-            return; // Found good scramble
-        }
+        if (goodScramble) return; // Good puzzle: solvable and starts in a non-winning state
     }
 
     console.warn('Reroute puzzle: exhausted retries, using last generated layout');
@@ -466,7 +595,7 @@ function generateConnections(cols, rows) {
 // Power Flow Calculation
 // =============================================================================
 
-function calculatePowerFlow() {
+function calculatePowerFlow(skipTrapCheck = false) {
     rerouteState.poweredNodes = new Set();
 
     if (!rerouteState.sourceNode) return;
@@ -478,6 +607,9 @@ function calculatePowerFlow() {
     while (queue.length > 0) {
         const currentId = queue.shift();
         const currentNode = rerouteState.nodes[currentId];
+
+        // Target is a dead end - power doesn't flow past it
+        if (currentNode.type === NODE_TYPES.TARGET) continue;
 
         // Find all connections from this node
         rerouteState.connections.forEach(conn => {
@@ -505,10 +637,24 @@ function calculatePowerFlow() {
     }
 
     // Check for power changes and play sounds
-    checkPowerChanges();
+    if (!skipTrapCheck) {
+        checkPowerChanges();
+    }
+
+    // Check trap condition (not during generation)
+    if (!skipTrapCheck && !rerouteState.trapTriggered) {
+        const trappedNode = rerouteState.nodes.find(n =>
+            n.type === NODE_TYPES.TRAP && rerouteState.poweredNodes.has(n.id)
+        );
+        if (trappedNode) {
+            triggerTrapReset(trappedNode);
+            return;
+        }
+    }
 
     // Check win condition
-    if (rerouteState.targetNode && rerouteState.poweredNodes.has(rerouteState.targetNode.id)) {
+    if (!skipTrapCheck && !rerouteState.trapTriggered &&
+        rerouteState.targetNode && rerouteState.poweredNodes.has(rerouteState.targetNode.id)) {
         // Victory!
         setTimeout(() => {
             if (rerouteState.active) {
@@ -519,13 +665,6 @@ function calculatePowerFlow() {
 }
 
 function canConnect(nodeA, nodeB, direction, aIsFrom) {
-    // Source and target always connect in all directions
-    if (nodeA.type === NODE_TYPES.SOURCE || nodeA.type === NODE_TYPES.TARGET) {
-        if (nodeB.type === NODE_TYPES.SOURCE || nodeB.type === NODE_TYPES.TARGET) {
-            return true;
-        }
-    }
-
     // Check if nodeA outputs in the required direction
     const aOutputs = getNodeOutputDirections(nodeA);
     const bOutputs = getNodeOutputDirections(nodeB);
@@ -555,14 +694,29 @@ function canConnect(nodeA, nodeB, direction, aIsFrom) {
 }
 
 function getNodeOutputDirections(node) {
-    // Source and target connect all directions
-    if (node.type === NODE_TYPES.SOURCE || node.type === NODE_TYPES.TARGET) {
+    // Source connects all directions (power out)
+    if (node.type === NODE_TYPES.SOURCE) {
+        return ['N', 'E', 'S', 'W'];
+    }
+
+    // Target connects all directions (receives from any side, but BFS won't propagate past it)
+    if (node.type === NODE_TYPES.TARGET) {
         return ['N', 'E', 'S', 'W'];
     }
 
     // Blown circuit - no connections
     if (node.type === NODE_TYPES.BLOWN) {
         return [];
+    }
+
+    // Trap - connects all directions (can receive power from any side)
+    if (node.type === NODE_TYPES.TRAP) {
+        return ['N', 'E', 'S', 'W'];
+    }
+
+    // Cross junction - all 4 directions always
+    if (node.type === NODE_TYPES.JUNCTION_CROSS) {
+        return ['N', 'E', 'S', 'W'];
     }
 
     // I-shaped junction (straight pipe)
@@ -587,11 +741,55 @@ function getNodeOutputDirections(node) {
 }
 
 // =============================================================================
+// Trap Reset
+// =============================================================================
+
+function triggerTrapReset(trapNode) {
+    rerouteState.trapTriggered = true;
+
+    // Play overload sound
+    playTrapOverloadSound();
+
+    // Big spark explosion on the trap
+    for (let i = 0; i < 30; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2 + Math.random() * 4;
+        rerouteState.sparkParticles.push({
+            x: trapNode.x,
+            y: trapNode.y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size: 2 + Math.random() * 3,
+            alpha: 1
+        });
+    }
+
+    // Update status
+    const statusEl = document.getElementById('reroute-status');
+    if (statusEl) {
+        statusEl.textContent = '⚠ OVERLOAD - BREAKER TRIPPED! RESETTING...';
+        statusEl.style.color = '#f00';
+    }
+
+    log('CIRCUIT OVERLOAD! Breaker tripped - resetting...', 'warning');
+
+    // After delay, regenerate puzzle
+    setTimeout(() => {
+        if (!rerouteState.active) return;
+        rerouteState.trapTriggered = false;
+        rerouteState.poweredNodes = new Set();
+        rerouteState.sparkParticles = [];
+        previousPoweredCount = 0;
+        generatePuzzle();
+    }, 2000);
+}
+
+// =============================================================================
 // Input Handling
 // =============================================================================
 
-function handleClick(e) {
-    if (!rerouteState.active) return;
+function handleNodeInteraction(e, rotationDirection) {
+    if (!rerouteState.active || rerouteState.trapTriggered) return;
 
     const rect = rerouteState.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -603,10 +801,14 @@ function handleClick(e) {
 
         if (dist < node.radius + 5) {
             if (node.type === NODE_TYPES.JUNCTION_L || node.type === NODE_TYPES.JUNCTION_I) {
-                node.rotation = (node.rotation + 1) % 4;
+                // +1 = clockwise (left click), +3 = counter-clockwise (right click)
+                node.rotation = (node.rotation + rotationDirection) % 4;
                 playRotateSound();
                 addSparkParticles(node.x, node.y);
                 calculatePowerFlow();
+            } else if (node.type === NODE_TYPES.JUNCTION_CROSS) {
+                // Cross junctions don't rotate - acknowledge click
+                playClick();
             } else if (node.type === NODE_TYPES.BLOWN) {
                 playErrorBlip();
                 // Small sparks to show it's broken
@@ -619,12 +821,23 @@ function handleClick(e) {
                         size: 1 + Math.random(), alpha: 0.8
                     });
                 }
+            } else if (node.type === NODE_TYPES.TRAP) {
+                playErrorBlip();
             } else {
                 playErrorBlip();
             }
             return;
         }
     }
+}
+
+function handleClick(e) {
+    handleNodeInteraction(e, 3); // Left click: rotate counter-clockwise (+3 ≡ -1 mod 4)
+}
+
+function handleRightClick(e) {
+    e.preventDefault(); // Suppress context menu
+    handleNodeInteraction(e, 1); // Right click: rotate clockwise
 }
 
 // =============================================================================
@@ -642,6 +855,13 @@ function animate() {
     // Clear
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, width, height);
+
+    // Red flash overlay during trap reset
+    if (rerouteState.trapTriggered) {
+        const flash = 0.15 + 0.1 * Math.sin(rerouteState.pulsePhase * 4);
+        ctx.fillStyle = `rgba(255, 0, 0, ${flash})`;
+        ctx.fillRect(0, 0, width, height);
+    }
 
     // Draw grid background
     drawGrid(ctx, width, height);
@@ -695,8 +915,9 @@ function drawConnections(ctx) {
         const bPowered = rerouteState.poweredNodes.has(nodeB.id);
         const bothPowered = aPowered && bPowered;
 
-        // Check if connection involves blown node
+        // Check if connection involves special nodes
         const hasBlown = nodeA.type === NODE_TYPES.BLOWN || nodeB.type === NODE_TYPES.BLOWN;
+        const hasTrap = nodeA.type === NODE_TYPES.TRAP || nodeB.type === NODE_TYPES.TRAP;
 
         // Check if this connection is active
         const isActive = !hasBlown && bothPowered && canConnect(nodeA, nodeB, conn.direction, true);
@@ -706,6 +927,11 @@ function drawConnections(ctx) {
             ctx.strokeStyle = 'rgba(255, 50, 0, 0.25)';
             ctx.lineWidth = 2;
             ctx.setLineDash([4, 4]);
+        } else if (isActive && hasTrap) {
+            // Active connection to trap - danger color
+            ctx.strokeStyle = `rgba(255, 0, 150, ${0.6 + 0.4 * Math.sin(rerouteState.pulsePhase)})`;
+            ctx.lineWidth = 4;
+            ctx.setLineDash([]);
         } else if (isActive) {
             ctx.strokeStyle = `rgba(0, 255, 0, ${0.6 + 0.4 * Math.sin(rerouteState.pulsePhase)})`;
             ctx.lineWidth = 4;
@@ -728,7 +954,7 @@ function drawConnections(ctx) {
             const px = nodeA.x + (nodeB.x - nodeA.x) * t;
             const py = nodeA.y + (nodeB.y - nodeA.y) * t;
 
-            ctx.fillStyle = '#0f0';
+            ctx.fillStyle = hasTrap ? '#f0f' : '#0f0';
             ctx.beginPath();
             ctx.arc(px, py, 3, 0, Math.PI * 2);
             ctx.fill();
@@ -758,6 +984,22 @@ function drawNodes(ctx) {
             const flicker = 0.5 + 0.5 * Math.sin(rerouteState.pulsePhase * 3 + node.id);
             ctx.fillStyle = `rgba(${Math.floor(150 + 105 * flicker)}, ${Math.floor(30 * flicker)}, 0, 0.4)`;
             ctx.strokeStyle = `rgb(${Math.floor(200 + 55 * flicker)}, ${Math.floor(50 * flicker)}, 0)`;
+        } else if (node.type === NODE_TYPES.TRAP) {
+            // Overload node - magenta/danger
+            const flicker = 0.5 + 0.5 * Math.sin(rerouteState.pulsePhase * 2 + node.id);
+            if (isPowered) {
+                ctx.fillStyle = `rgba(255, 0, 100, ${0.5 + flicker * 0.3})`;
+                ctx.strokeStyle = '#f0f';
+            } else {
+                ctx.fillStyle = `rgba(150, 0, 50, ${0.15 + flicker * 0.1})`;
+                ctx.strokeStyle = `rgba(255, 0, 150, ${0.4 + flicker * 0.2})`;
+            }
+        } else if (node.type === NODE_TYPES.JUNCTION_CROSS) {
+            // Cross junction - amber/gold
+            ctx.fillStyle = isPowered
+                ? `rgba(255, 200, 0, ${0.3 + pulse * 0.2})`
+                : 'rgba(150, 100, 0, 0.2)';
+            ctx.strokeStyle = isPowered ? '#fc0' : '#860';
         } else {
             // Junction (L or I)
             ctx.fillStyle = isPowered
@@ -770,10 +1012,16 @@ function drawNodes(ctx) {
         ctx.fill();
         ctx.stroke();
 
-        // Draw junction direction indicators (L and I shapes)
-        if (node.type === NODE_TYPES.JUNCTION_L || node.type === NODE_TYPES.JUNCTION_I) {
+        // Draw junction direction indicators
+        if (node.type === NODE_TYPES.JUNCTION_L || node.type === NODE_TYPES.JUNCTION_I ||
+            node.type === NODE_TYPES.JUNCTION_CROSS) {
             const dirs = getNodeOutputDirections(node);
-            ctx.strokeStyle = isPowered ? '#ff0' : '#880';
+
+            if (node.type === NODE_TYPES.JUNCTION_CROSS) {
+                ctx.strokeStyle = isPowered ? '#fc0' : '#860';
+            } else {
+                ctx.strokeStyle = isPowered ? '#ff0' : '#880';
+            }
             ctx.lineWidth = 3;
 
             dirs.forEach(dir => {
@@ -819,20 +1067,55 @@ function drawNodes(ctx) {
             }
         }
 
+        // Draw trap visuals (danger indicator ring)
+        if (node.type === NODE_TYPES.TRAP) {
+            const flicker = 0.5 + 0.5 * Math.sin(rerouteState.pulsePhase * 2 + node.id);
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, node.radius + 3, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(255, 0, 150, ${0.3 + flicker * 0.3})`;
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Occasional danger sparks when powered
+            if (isPowered && Math.random() < 0.05) {
+                for (let i = 0; i < 3; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    rerouteState.sparkParticles.push({
+                        x: node.x, y: node.y,
+                        vx: Math.cos(angle) * (1 + Math.random() * 2),
+                        vy: Math.sin(angle) * (1 + Math.random() * 2),
+                        size: 1.5 + Math.random(), alpha: 0.9
+                    });
+                }
+            }
+        }
+
         // Draw symbol text
-        ctx.fillStyle = isPowered ? '#fff' : '#888';
-        ctx.font = 'bold 14px "VT323", monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
         if (node.type === NODE_TYPES.SOURCE) {
+            ctx.fillStyle = isPowered ? '#fff' : '#888';
+            ctx.font = 'bold 14px "VT323", monospace';
             ctx.fillText('PWR', node.x, node.y);
         } else if (node.type === NODE_TYPES.TARGET) {
+            ctx.fillStyle = isPowered ? '#fff' : '#888';
+            ctx.font = 'bold 14px "VT323", monospace';
             ctx.fillText('OUT', node.x, node.y);
         } else if (node.type === NODE_TYPES.BLOWN) {
             ctx.fillStyle = '#f44';
             ctx.font = 'bold 11px "VT323", monospace';
             ctx.fillText('BRK', node.x, node.y);
+        } else if (node.type === NODE_TYPES.TRAP) {
+            ctx.fillStyle = isPowered ? '#fff' : '#f0f';
+            ctx.font = 'bold 11px "VT323", monospace';
+            ctx.fillText('OVL', node.x, node.y);
+        } else if (node.type === NODE_TYPES.JUNCTION_CROSS) {
+            ctx.fillStyle = isPowered ? '#fc0' : '#860';
+            ctx.font = 'bold 18px "VT323", monospace';
+            ctx.fillText('+', node.x, node.y);
         }
     });
 }
@@ -873,6 +1156,9 @@ function addSparkParticles(x, y) {
 function updateStatus() {
     const statusEl = document.getElementById('reroute-status');
     if (!statusEl) return;
+
+    // Don't overwrite trap message
+    if (rerouteState.trapTriggered) return;
 
     const powered = rerouteState.poweredNodes.size;
     const total = rerouteState.nodes.length;
@@ -1174,6 +1460,53 @@ function playPowerRestoreSound() {
                 beep.stop(ctx2.currentTime + 0.3);
             } catch (e) {}
         }, 800);
+    } catch (e) {}
+}
+
+function playTrapOverloadSound() {
+    try {
+        const vol = getMasterVolume();
+        const ctx = getRerouteAudioCtx();
+
+        // Electrical overload - descending buzz
+        const buzz = ctx.createOscillator();
+        const buzzGain = ctx.createGain();
+        buzz.connect(buzzGain);
+        buzzGain.connect(ctx.destination);
+        buzz.frequency.setValueAtTime(800, ctx.currentTime);
+        buzz.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.5);
+        buzz.type = 'sawtooth';
+        buzzGain.gain.setValueAtTime(0.15 * vol, ctx.currentTime);
+        buzzGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        buzz.start(ctx.currentTime);
+        buzz.stop(ctx.currentTime + 0.5);
+
+        // Pop/crack
+        const pop = ctx.createOscillator();
+        const popGain = ctx.createGain();
+        pop.connect(popGain);
+        popGain.connect(ctx.destination);
+        pop.frequency.value = 2000;
+        pop.type = 'square';
+        popGain.gain.setValueAtTime(0.12 * vol, ctx.currentTime);
+        popGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+        pop.start(ctx.currentTime);
+        pop.stop(ctx.currentTime + 0.03);
+
+        // Warning beeps
+        for (let i = 0; i < 3; i++) {
+            const beep = ctx.createOscillator();
+            const beepGain = ctx.createGain();
+            beep.connect(beepGain);
+            beepGain.connect(ctx.destination);
+            beep.frequency.value = 400;
+            beep.type = 'square';
+            const startTime = ctx.currentTime + 0.5 + i * 0.2;
+            beepGain.gain.setValueAtTime(0.06 * vol, startTime);
+            beepGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.08);
+            beep.start(startTime);
+            beep.stop(startTime + 0.08);
+        }
     } catch (e) {}
 }
 

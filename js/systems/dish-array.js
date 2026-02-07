@@ -5,12 +5,17 @@
 
 import { gameState } from '../core/game-state.js';
 import { log } from '../ui/rendering.js';
-import { playClick, playStaticBurst, playLockAchieved, playMachineSound, stopMachineSound, getMachineSoundDuration, playDishRotationSound, playDishAlignedSound, playDoorShutSound } from './audio.js';
+import { playClick, playStaticBurst, playLockAchieved, playMachineSound, stopMachineSound, getMachineSoundDuration, playDishRotationSound, playDishAlignedSound, playDoorShutSound, getMasterVolume } from './audio.js';
 import { STAR_NAMES, STAR_COORDINATES } from '../narrative/stars.js';
 import { startRerouteMinigame } from './reroute-minigame.js';
+import { addMailMessage } from './mailbox.js';
+import { POWER_FAILURE_EMAIL } from '../narrative/emails.js';
 
 // Track if malfunction has occurred this alignment (only trigger once per alignment)
 let malfunctionTriggeredThisAlignment = false;
+
+// Track if the player has seen their first malfunction (for budget email)
+let firstMalfunctionEmailSent = false;
 
 // Dish positions for full array view
 const DISH_POSITIONS = [
@@ -268,6 +273,15 @@ function triggerDishMalfunction(code, dishIndex, dishLabel) {
 
     log(`CRITICAL: Dish ${dishLabel} power circuit failure!`, 'warning');
 
+    // Send the budget email after first malfunction (delayed so it arrives after the drama)
+    if (!firstMalfunctionEmailSent) {
+        firstMalfunctionEmailSent = true;
+        setTimeout(() => {
+            const body = POWER_FAILURE_EMAIL.body.replace(/{PLAYER_NAME}/g, gameState.playerName);
+            addMailMessage(POWER_FAILURE_EMAIL.from, POWER_FAILURE_EMAIL.subject, body);
+        }, 15000);
+    }
+
     // Mark the dish as malfunctioning (flash red with X on the array map)
     const dish = gameState.dishArray.dishes.find(d => d.label === dishLabel);
     if (dish) {
@@ -377,8 +391,38 @@ function showMalfunctionPopup(code, dishIndex, dishLabel) {
 
     document.body.appendChild(popup);
 
+    // Play alarm beep in sync with the 0.5s blink animation
+    const alarmInterval = setInterval(() => {
+        // Stop if popup was removed
+        if (!document.getElementById('malfunction-popup')) {
+            clearInterval(alarmInterval);
+            return;
+        }
+        try {
+            const vol = getMasterVolume();
+            const actx = new (window.AudioContext || window.webkitAudioContext)();
+            // Two-tone alarm beep (high-low)
+            [620, 440].forEach((freq, i) => {
+                const osc = actx.createOscillator();
+                const gain = actx.createGain();
+                osc.connect(gain);
+                gain.connect(actx.destination);
+                osc.frequency.value = freq;
+                osc.type = 'square';
+                const t = actx.currentTime + i * 0.08;
+                gain.gain.setValueAtTime(0.06 * vol, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+                osc.start(t);
+                osc.stop(t + 0.07);
+            });
+            // Close context after beep finishes
+            setTimeout(() => actx.close().catch(() => {}), 300);
+        } catch (e) { /* audio not available */ }
+    }, 500);
+
     // Handle repair button click
     document.getElementById('malfunction-repair-btn').addEventListener('click', () => {
+        clearInterval(alarmInterval);
         playClick();
         popup.remove();
 
@@ -396,11 +440,33 @@ function showMalfunctionPopup(code, dishIndex, dishLabel) {
                 if (statusEl) statusEl.style.color = '';
                 startDishAlignmentSequence(code, dishIndex, -1);
             },
-            // On cancel/fail - still complete but note the issue
+            // On cancel/fail - stop alignment entirely, dish stays broken
             () => {
-                log(`Dish ${dishLabel} repair aborted - alignment continuing with reduced efficiency`, 'warning');
-                if (statusEl) statusEl.style.color = '';
-                startDishAlignmentSequence(code, dishIndex + 1, -1);
+                log(`Dish ${dishLabel} repair aborted - alignment halted`, 'warning');
+
+                // Restore malfunctioning state on the dish
+                const abortedDish = gameState.dishArray.dishes.find(d => d.label === dishLabel);
+                if (abortedDish) abortedDish.isMalfunctioning = true;
+
+                // Clear alignment-in-progress flag
+                gameState.dishArray.alignmentInProgress = false;
+
+                // Reset status
+                if (statusEl) {
+                    statusEl.textContent = `⚠ DISH ${dishLabel} POWER FAILURE`;
+                    statusEl.style.color = '#f00';
+                }
+
+                // Hide aligning text
+                const aligningTextEl = document.getElementById('array-aligning-text');
+                if (aligningTextEl) aligningTextEl.style.display = 'none';
+
+                // Stop machine sound if still playing
+                stopMachineSound();
+
+                // Re-show the malfunction popup so player can try repair again
+                renderStarmapArray();
+                showMalfunctionPopup(code, dishIndex, dishLabel);
             }
         );
     });

@@ -143,6 +143,27 @@ Note: Given recent... developments... this training is more relevant than ever.
     }
 ];
 
+// Email sent after first dish power failure
+export const POWER_FAILURE_EMAIL = {
+    from: 'FACILITIES MANAGEMENT',
+    subject: 'RE: RE: RE: Array Power Circuit Issues',
+    body: `Dr. {PLAYER_NAME},
+
+I know the circuit breakers have been tripping on the dish array. Trust me, we're aware.
+
+Long story short: Congress cut our maintenance budget by 40% this fiscal year. The power distribution units on dishes 1-6 are original equipment from 1977. Yes, NINETEEN SEVENTY-SEVEN. They were "temporary replacements" for the temporary replacements.
+
+Our electrician, Dave, says he's been holding Dish 4 together with zip ties and "positive thinking." His words, not mine.
+
+We've submitted an emergency procurement request for new breaker panels. Estimated approval time: 8-14 months. In the meantime, when a circuit trips, you'll need to manually reroute power through the backup grid.
+
+Sorry about this. If it helps, the vending machine in B-wing is also running on the same circuit. So if your dishes go down, at least you know someone's getting a free soda.
+
+- Rick Vasquez
+Facilities & Infrastructure
+Sector 7`
+};
+
 // Special email sent when first alien signal is discovered
 export const FIRST_CONTACT_EMAIL = {
     from: 'SECURITY CLEARANCE - LEVEL 5',

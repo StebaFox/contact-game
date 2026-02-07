@@ -1,6 +1,6 @@
 // ═════════════════════════════════════════════════════════════════════════════
 // PATTERN RECOGNITION MINIGAME
-// Frequency band selection puzzle
+// Signal Pattern Identification — cycle filters to isolate signal patterns
 // ═════════════════════════════════════════════════════════════════════════════
 
 import { gameState } from '../core/game-state.js';
@@ -21,294 +21,799 @@ export function setPatternFunctions(fns) {
     showVerifyPromptFn = fns.showVerifyPrompt;
 }
 
-// Start the pattern recognition game
+// ═════════════════════════════════════════════════════════════════════════════
+// INTERNAL STATE
+// ═════════════════════════════════════════════════════════════════════════════
+
+let patternState = {
+    active: false,
+    canvas: null,
+    ctx: null,
+    animationId: null,
+
+    // Filter system
+    filters: [],             // Array of filter objects
+    currentFilter: 0,        // Index of active filter
+    correctFilter: 0,        // Which filter reveals the pattern
+    filterImages: [],        // Pre-rendered ImageData per filter
+
+    // Pattern region (where the real signal is in the correct filter)
+    patternRegions: [],
+
+    // Mouse/touch drag
+    isDragging: false,
+    dragStartX: -1,
+    dragCurrentX: -1,
+    cursorX: -1,
+
+    // Captures
+    captures: [],
+
+    // Visual effects
+    scanlineY: 0,
+    resultFlash: 0,
+
+    // Star info
+    star: null,
+    signalType: 'natural',
+    naturalType: 0,
+    starSeed: 0,
+    generation: 0
+};
+
+// ═════════════════════════════════════════════════════════════════════════════
+// FILTER DEFINITIONS
+// ═════════════════════════════════════════════════════════════════════════════
+
+const FILTER_NAMES = [
+    'BROADBAND',
+    'LOW-PASS α',
+    'MID-BAND β',
+    'HIGH-PASS γ',
+    'HARMONIC δ',
+    'CROSS-CORR ε'
+];
+
+// Each fake filter renderer produces a different visual pattern
+function fakeFilterRenderer(y, h, off, seed, filterSeed) {
+    // Generate different-looking structured noise per filter
+    const s = seed + filterSeed * 73;
+    const variant = filterSeed % 4;
+
+    switch (variant) {
+        case 0: {
+            // Drifting diagonal streaks
+            const phase = (y + off * 0.3) * 0.08 + s;
+            const streak = Math.pow(Math.max(0, Math.sin(phase)), 4);
+            return streak * 0.5;
+        }
+        case 1: {
+            // Random horizontal bands that shift
+            const bandSeed = Math.floor(y / 12) * 31 + s;
+            const bandPhase = Math.sin(bandSeed + off * 0.02);
+            return bandPhase > 0.3 ? (bandPhase - 0.3) * 0.7 : 0;
+        }
+        case 2: {
+            // Interference fringes
+            const fringe = Math.sin(y * 0.12 + off * 0.05) * Math.sin(y * 0.07 - off * 0.03 + s);
+            return Math.max(0, fringe) * 0.6;
+        }
+        case 3: {
+            // Spotty clusters
+            const cx = Math.sin(off * 0.04 + s) * h * 0.3 + h * 0.5;
+            const dist = Math.abs(y - cx);
+            const spot = dist < 10 ? (1 - dist / 10) * 0.55 : 0;
+            const cx2 = Math.sin(off * 0.03 + s + 2) * h * 0.25 + h * 0.4;
+            const dist2 = Math.abs(y - cx2);
+            const spot2 = dist2 < 8 ? (1 - dist2 / 8) * 0.4 : 0;
+            return spot + spot2;
+        }
+        default:
+            return 0;
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// START GAME
+// ═════════════════════════════════════════════════════════════════════════════
+
 export function startPatternRecognitionGame(star) {
     gameState.patternGameActive = true;
-    gameState.patternGameBands = [];
-    gameState.patternGameCorrectIndices = [];
-    gameState.patternGameSelectedIndices = [];
     gameState.patternGameCompleted = false;
 
-    // Show pattern game interface
+    patternState.active = true;
+    patternState.captures = [];
+    patternState.resultFlash = 0;
+    patternState.scanlineY = 0;
+    patternState.isDragging = false;
+    patternState.dragStartX = -1;
+    patternState.cursorX = -1;
+    patternState.generation = 0;
+    patternState.star = star;
+    patternState.starSeed = star.id + 1;
+    patternState.currentFilter = 0;
+
+    // Determine signal visual type
+    if (star.hasIntelligence) {
+        patternState.signalType = 'alien';
+    } else if (star.isFalsePositive) {
+        patternState.signalType = 'false_positive';
+    } else {
+        patternState.signalType = 'natural';
+    }
+    patternState.naturalType = star.id % 5;
+
+    // Show UI
     document.getElementById('pattern-game').style.display = 'block';
     document.getElementById('analyze-btn').disabled = true;
 
-    // Generate 3 VISUALLY DISTINCT component waves
-    const component1 = {
-        freq: 0.006 + Math.random() * 0.004,
-        amp: 18 + Math.random() * 10,
-        phase: Math.random() * Math.PI * 2,
-        name: 'LOW'
-    };
+    // Setup canvas
+    patternState.canvas = document.getElementById('pattern-stream');
+    patternState.ctx = patternState.canvas.getContext('2d');
 
-    const component2 = {
-        freq: 0.018 + Math.random() * 0.008,
-        amp: 12 + Math.random() * 8,
-        phase: Math.random() * Math.PI * 2,
-        name: 'MEDIUM'
-    };
-
-    const component3 = {
-        freq: 0.040 + Math.random() * 0.015,
-        amp: 8 + Math.random() * 6,
-        phase: Math.random() * Math.PI * 2,
-        name: 'HIGH'
-    };
-
-    gameState.patternComponents = [component1, component2, component3];
-
-    // Generate reference pattern
-    const refCanvas = document.getElementById('reference-pattern');
-    generateReferencePattern(gameState.patternComponents, refCanvas);
-
-    // Generate 6-8 frequency bands
-    const numBands = 6 + Math.floor(Math.random() * 3);
-
-    // Randomly assign which 3 bands will have the correct components
-    const correctIndices = [];
-    while (correctIndices.length < 3) {
-        const idx = Math.floor(Math.random() * numBands);
-        if (!correctIndices.includes(idx)) {
-            correctIndices.push(idx);
+    // Reset capture slots
+    for (let i = 0; i < 3; i++) {
+        const slot = document.getElementById(`capture-slot-${i}`);
+        if (!slot) continue;
+        slot.classList.remove('captured');
+        const slotCanvas = slot.querySelector('canvas');
+        if (slotCanvas) {
+            const ctx = slotCanvas.getContext('2d');
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, slotCanvas.width, slotCanvas.height);
+            ctx.strokeStyle = '#333';
+            ctx.setLineDash([4, 4]);
+            ctx.strokeRect(2, 2, slotCanvas.width - 4, slotCanvas.height - 4);
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#333';
+            ctx.font = '11px "VT323", monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('EMPTY', slotCanvas.width / 2, slotCanvas.height / 2 + 4);
         }
     }
-    gameState.patternGameCorrectIndices = correctIndices;
 
-    // Assign each correct band one of the three components
-    const componentAssignments = {};
-    correctIndices.forEach((idx, i) => {
-        componentAssignments[idx] = i;
-    });
+    // Bind canvas and filter button events
+    bindCanvasEvents();
+    bindFilterButton();
 
-    // Generate band elements
-    const bandsContainer = document.getElementById('pattern-bands');
-    bandsContainer.innerHTML = '';
+    // Generate first frame
+    generateFrame();
 
-    for (let i = 0; i < numBands; i++) {
-        const bandDiv = document.createElement('div');
-        bandDiv.className = 'frequency-band';
-        bandDiv.dataset.bandIndex = i;
+    // Start animation loop
+    animate();
 
-        const label = document.createElement('div');
-        label.className = 'band-label';
-        const freq = 1420 + i * 150;
-        label.textContent = `BAND ${i + 1} (${freq}MHz)`;
+    document.getElementById('pattern-status').textContent = 'CYCLE FILTERS TO ISOLATE THE SIGNAL PATTERN';
+    log('Signal pattern analysis initiated — cycle through filters to find the signal', 'info');
+}
 
-        const canvas = document.createElement('canvas');
-        canvas.className = 'band-canvas';
-        canvas.width = 180;
-        canvas.height = 80;
+// ═════════════════════════════════════════════════════════════════════════════
+// FILTER BUTTON
+// ═════════════════════════════════════════════════════════════════════════════
 
-        const isCorrect = correctIndices.includes(i);
-        const componentIndex = isCorrect ? componentAssignments[i] : -1;
-        generateFrequencyBand(canvas, isCorrect, componentIndex, i, star);
+function bindFilterButton() {
+    const btn = document.getElementById('pattern-filter-btn');
+    btn.onclick = () => {
+        if (!patternState.active || patternState.captures.length >= 3) return;
+        if (patternState.resultFlash !== 0) return;
+        playClick();
+        cycleFilter();
+    };
+}
 
-        bandDiv.appendChild(label);
-        bandDiv.appendChild(canvas);
+function cycleFilter() {
+    patternState.currentFilter = (patternState.currentFilter + 1) % patternState.filters.length;
+    updateFilterLabel();
+}
 
-        // Click handler
-        bandDiv.addEventListener('click', () => {
-            if (gameState.patternGameCompleted || bandDiv.classList.contains('locked')) return;
+function updateFilterLabel() {
+    const label = document.getElementById('pattern-filter-label');
+    const filter = patternState.filters[patternState.currentFilter];
+    label.textContent = filter.name;
 
-            playClick();
-            const index = parseInt(bandDiv.dataset.bandIndex);
+    // Color hint: correct filter has no special color, all look the same
+    label.style.color = '#0ff';
+}
 
-            if (bandDiv.classList.contains('selected')) {
-                bandDiv.classList.remove('selected');
-                const idx = gameState.patternGameSelectedIndices.indexOf(index);
-                if (idx > -1) {
-                    gameState.patternGameSelectedIndices.splice(idx, 1);
+// ═════════════════════════════════════════════════════════════════════════════
+// CANVAS EVENT HANDLERS
+// ═════════════════════════════════════════════════════════════════════════════
+
+function bindCanvasEvents() {
+    const canvas = patternState.canvas;
+
+    canvas.onmousedown = null;
+    canvas.onmousemove = null;
+    canvas.onmouseup = null;
+    canvas.onmouseleave = null;
+    canvas.ontouchstart = null;
+    canvas.ontouchmove = null;
+    canvas.ontouchend = null;
+    canvas.onclick = null;
+
+    canvas.onmousedown = (e) => {
+        if (!patternState.active || patternState.captures.length >= 3) return;
+        if (patternState.resultFlash !== 0) return;
+        e.preventDefault();
+        const coords = getCanvasCoords(e);
+        patternState.isDragging = true;
+        patternState.dragStartX = coords.x;
+        patternState.dragCurrentX = coords.x;
+    };
+
+    canvas.onmousemove = (e) => {
+        const coords = getCanvasCoords(e);
+        patternState.cursorX = coords.x;
+        if (patternState.isDragging) {
+            patternState.dragCurrentX = coords.x;
+        }
+    };
+
+    canvas.onmouseup = (e) => {
+        if (!patternState.isDragging) return;
+        const coords = getCanvasCoords(e);
+        patternState.dragCurrentX = coords.x;
+        patternState.isDragging = false;
+        checkSelection();
+    };
+
+    canvas.onmouseleave = () => {
+        patternState.cursorX = -1;
+        if (patternState.isDragging) {
+            patternState.isDragging = false;
+            patternState.dragStartX = -1;
+        }
+    };
+
+    // Touch support
+    canvas.ontouchstart = (e) => {
+        if (!patternState.active || patternState.captures.length >= 3) return;
+        if (patternState.resultFlash !== 0) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const coords = getCanvasCoords(touch);
+        patternState.isDragging = true;
+        patternState.dragStartX = coords.x;
+        patternState.dragCurrentX = coords.x;
+    };
+
+    canvas.ontouchmove = (e) => {
+        if (!patternState.isDragging) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const coords = getCanvasCoords(touch);
+        patternState.dragCurrentX = coords.x;
+    };
+
+    canvas.ontouchend = () => {
+        if (!patternState.isDragging) return;
+        patternState.isDragging = false;
+        checkSelection();
+    };
+}
+
+function getCanvasCoords(e) {
+    const rect = patternState.canvas.getBoundingClientRect();
+    return {
+        x: (e.clientX - rect.left) * (patternState.canvas.width / rect.width),
+        y: (e.clientY - rect.top) * (patternState.canvas.height / rect.height)
+    };
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// FRAME GENERATION (multiple filter views per frame)
+// ═════════════════════════════════════════════════════════════════════════════
+
+function generateFrame() {
+    const canvas = patternState.canvas;
+    const ctx = patternState.ctx;
+    const w = canvas.width;
+    const h = canvas.height;
+
+    patternState.generation++;
+
+    // Progressive difficulty: more filters on later captures
+    const capturesDone = patternState.captures.length;
+    const numFilters = 3 + capturesDone; // 3, 4, 5
+
+    // Choose which filter is the correct one (shows the real pattern)
+    patternState.correctFilter = Math.floor(Math.random() * numFilters);
+
+    // Build filter list
+    patternState.filters = [];
+    const shuffledNames = [...FILTER_NAMES].sort(() => Math.random() - 0.5);
+    for (let i = 0; i < numFilters; i++) {
+        patternState.filters.push({
+            name: shuffledNames[i],
+            isCorrect: i === patternState.correctFilter,
+            filterSeed: patternState.generation * 31 + i * 17
+        });
+    }
+
+    // Pattern region for the correct filter
+    const patternWidth = 70 + Math.floor(Math.random() * 30);
+    const margin = 40;
+    const startX = margin + Math.floor(Math.random() * (w - patternWidth - margin * 2));
+    patternState.patternRegions = [{ startX, endX: startX + patternWidth }];
+
+    // Precompute smooth noise field (shared across all filters)
+    const noiseGridW = Math.ceil(w / 8) + 1;
+    const noiseGridH = Math.ceil(h / 8) + 1;
+    const noiseGrid = new Float32Array(noiseGridW * noiseGridH);
+    for (let i = 0; i < noiseGrid.length; i++) {
+        noiseGrid[i] = Math.random();
+    }
+
+    // Pre-render each filter view as an ImageData
+    patternState.filterImages = [];
+    const genSeed = patternState.generation * 137;
+    const fadeWidth = 12;
+
+    for (let fi = 0; fi < numFilters; fi++) {
+        const filter = patternState.filters[fi];
+
+        for (let x = 0; x < w; x++) {
+            // Calculate real pattern intensity (only for correct filter)
+            let patternIntensity = 0;
+            if (filter.isCorrect) {
+                for (const region of patternState.patternRegions) {
+                    if (x >= region.startX - fadeWidth && x <= region.endX + fadeWidth) {
+                        let fade = 1;
+                        if (x < region.startX) {
+                            fade = (x - (region.startX - fadeWidth)) / fadeWidth;
+                        } else if (x > region.endX) {
+                            fade = ((region.endX + fadeWidth) - x) / fadeWidth;
+                        }
+                        patternIntensity = Math.max(patternIntensity, Math.max(0, fade) * 0.85);
+                    }
                 }
-            } else {
-                bandDiv.classList.add('selected');
-                gameState.patternGameSelectedIndices.push(index);
-                checkPatternGameCompletion(star);
             }
-        });
 
-        bandsContainer.appendChild(bandDiv);
-        gameState.patternGameBands.push({ element: bandDiv, isCorrect, index: i });
+            drawFilterColumn(ctx, x, h, patternIntensity, x + genSeed, noiseGrid, noiseGridW, filter, capturesDone);
+        }
+
+        patternState.filterImages[fi] = ctx.getImageData(0, 0, w, h);
     }
 
-    log('Pattern recognition analysis initiated');
-    document.getElementById('pattern-status').textContent = 'SELECT 3 FREQUENCY BANDS THAT COMBINE TO CREATE THE TARGET PATTERN';
+    // Start on a random non-correct filter so player has to search
+    patternState.currentFilter = (patternState.correctFilter + 1 + Math.floor(Math.random() * (numFilters - 1))) % numFilters;
+    updateFilterLabel();
 }
 
-// Generate the reference pattern (combination of all 3 components)
-function generateReferencePattern(components, canvas) {
-    const ctx = canvas.getContext('2d');
-    const width = canvas.width;
-    const height = canvas.height;
+// Draw a single column for a specific filter view
+function drawFilterColumn(ctx, x, height, patternIntensity, columnOffset, noiseGrid, noiseGridW, filter, difficulty) {
+    const seed = patternState.starSeed;
+    const type = patternState.signalType;
 
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, width, height);
+    for (let y = 0; y < height; y++) {
+        const rnd = Math.random();
 
-    ctx.strokeStyle = '#0ff';
-    ctx.lineWidth = 2;
-    ctx.shadowBlur = 5;
-    ctx.shadowColor = '#0ff';
-    ctx.beginPath();
+        // Smooth noise lookup
+        const gx = x / 8, gy = y / 8;
+        const gx0 = Math.floor(gx), gy0 = Math.floor(gy);
+        const fx = gx - gx0, fy = gy - gy0;
+        const idx = gy0 * noiseGridW + gx0;
+        const n00 = noiseGrid[idx] || 0;
+        const n10 = noiseGrid[idx + 1] || 0;
+        const n01 = noiseGrid[idx + noiseGridW] || 0;
+        const n11 = noiseGrid[idx + noiseGridW + 1] || 0;
+        const smoothNoise = (n00 * (1 - fx) + n10 * fx) * (1 - fy) + (n01 * (1 - fx) + n11 * fx) * fy;
 
-    for (let x = 0; x < width; x++) {
-        let y = height / 2;
+        // Base noise layer
+        const baseIntensity = smoothNoise * 0.3 + rnd * 0.15;
+        let r = Math.floor(baseIntensity * 6);
+        let g = Math.floor(baseIntensity * 35);
+        let b = Math.floor(baseIntensity * 45);
+        let a = 0.2 + baseIntensity * 0.3;
 
-        components.forEach(comp => {
-            y += Math.sin(x * comp.freq + comp.phase) * comp.amp;
-        });
+        // Background texture bands
+        const bandNoise1 = Math.sin(y * 0.08 + columnOffset * 0.003) * 0.5 + 0.5;
+        const bandNoise2 = Math.sin(y * 0.15 + columnOffset * 0.005 + seed) * 0.5 + 0.5;
+        const bandContrib = (bandNoise1 * bandNoise2) * 0.12;
+        g += Math.floor(bandContrib * 25);
+        b += Math.floor(bandContrib * 35);
+        a += bandContrib * 0.15;
 
-        if (x === 0) {
-            ctx.moveTo(x, y);
+        // Hot pixel speckles
+        if (rnd > 0.988) {
+            const spk = rnd * 0.5;
+            g = Math.max(g, Math.floor(spk * 100));
+            b = Math.max(b, Math.floor(spk * 120));
+            a = Math.max(a, spk + 0.15);
+        }
+
+        if (filter.isCorrect) {
+            // CORRECT FILTER: show real signal pattern in the pattern region
+            if (patternIntensity > 0) {
+                let sig = 0;
+                if (type === 'alien') {
+                    sig = alienColumn(y, height, columnOffset, seed);
+                } else if (type === 'false_positive') {
+                    sig = falsePositiveColumn(y, height, columnOffset, seed);
+                } else {
+                    sig = naturalColumn(y, height, columnOffset, seed, patternState.naturalType);
+                }
+                sig *= patternIntensity;
+
+                if (type === 'alien') {
+                    r = Math.max(r, Math.floor(sig * 60));
+                    g = Math.max(g, Math.floor(sig * 200));
+                    b = Math.max(b, Math.floor(sig * 255));
+                } else if (type === 'false_positive') {
+                    r = Math.max(r, Math.floor(sig * 230));
+                    g = Math.max(g, Math.floor(sig * 170));
+                    b = Math.max(b, Math.floor(sig * 25));
+                } else {
+                    r = Math.max(r, Math.floor(sig * 10));
+                    g = Math.max(g, Math.floor(sig * 230));
+                    b = Math.max(b, Math.floor(sig * 130));
+                }
+                a = Math.max(a, sig * 0.9 + 0.1);
+            }
         } else {
-            ctx.lineTo(x, y);
+            // WRONG FILTER: show fake structured patterns across the whole width
+            const fakeSig = fakeFilterRenderer(y, height, columnOffset, seed, filter.filterSeed);
+            if (fakeSig > 0) {
+                g = Math.max(g, Math.floor(fakeSig * 140));
+                b = Math.max(b, Math.floor(fakeSig * 110));
+                a = Math.max(a, fakeSig * 0.6 + 0.1);
+            }
+        }
+
+        ctx.fillStyle = `rgba(${Math.min(255, r)},${Math.min(255, g)},${Math.min(255, b)},${Math.min(1, a)})`;
+        ctx.fillRect(x, y, 1, 1);
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SELECTION CHECKING
+// ═════════════════════════════════════════════════════════════════════════════
+
+function checkSelection() {
+    if (!patternState.active || patternState.captures.length >= 3) return;
+
+    const startX = Math.min(patternState.dragStartX, patternState.dragCurrentX);
+    const endX = Math.max(patternState.dragStartX, patternState.dragCurrentX);
+    const selectionWidth = endX - startX;
+
+    if (selectionWidth < 20) {
+        patternState.dragStartX = -1;
+        return;
+    }
+
+    playClick();
+
+    // Must be on the correct filter AND overlapping the pattern region
+    const onCorrectFilter = patternState.currentFilter === patternState.correctFilter;
+
+    let bestOverlap = 0;
+    let matchedRegion = null;
+
+    if (onCorrectFilter) {
+        for (const region of patternState.patternRegions) {
+            const overlapStart = Math.max(startX, region.startX);
+            const overlapEnd = Math.min(endX, region.endX);
+            const overlap = Math.max(0, overlapEnd - overlapStart);
+            const regionWidth = region.endX - region.startX;
+            const overlapRatio = overlap / regionWidth;
+
+            if (overlapRatio > bestOverlap) {
+                bestOverlap = overlapRatio;
+                matchedRegion = region;
+            }
         }
     }
 
-    ctx.stroke();
-}
-
-// Generate individual frequency band visualization
-function generateFrequencyBand(canvas, isCorrect, componentIndex, bandIndex, star) {
-    const ctx = canvas.getContext('2d');
-    const width = canvas.width;
-    const height = canvas.height;
-
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.strokeStyle = '#0f0';
-    ctx.lineWidth = 1.5;
-    ctx.shadowBlur = 3;
-    ctx.shadowColor = '#0f0';
-    ctx.beginPath();
-
-    if (isCorrect && componentIndex >= 0) {
-        // Draw the EXACT component wave
-        const component = gameState.patternComponents[componentIndex];
-
-        for (let x = 0; x < width; x++) {
-            const noise = (Math.random() - 0.5) * 4;
-            const signal = Math.sin(x * component.freq + component.phase) * component.amp;
-            const y = height / 2 + signal + noise;
-
-            if (x === 0) {
-                ctx.moveTo(x, y);
-            } else {
-                ctx.lineTo(x, y);
-            }
-        }
+    if (onCorrectFilter && bestOverlap >= 0.35) {
+        handleCapture(matchedRegion);
+    } else if (!onCorrectFilter) {
+        handleWrongFilter();
     } else {
-        // Generate decoy wave
-        const starId = star ? star.id : 0;
-        const seed = bandIndex * 17 + starId * 3;
-        const decoyType = seed % 6;
+        handleMiss();
+    }
 
-        let freq, amp, phase;
+    patternState.dragStartX = -1;
+}
 
-        switch (decoyType) {
-            case 0:
-                freq = 0.003 + (seed % 5) * 0.001;
-                amp = 15 + (seed % 4) * 5;
-                phase = (seed % 10) * 0.6;
-                break;
-            case 1:
-                freq = 0.012 + (seed % 4) * 0.002;
-                amp = 20 + (seed % 3) * 4;
-                phase = (seed % 8) * 0.7;
-                break;
-            case 2:
-                freq = 0.013 + (seed % 4) * 0.001;
-                amp = 14 + (seed % 5) * 3;
-                phase = (seed % 7) * 0.8;
-                break;
-            case 3:
-                freq = 0.029 + (seed % 5) * 0.002;
-                amp = 16 + (seed % 4) * 4;
-                phase = (seed % 9) * 0.5;
-                break;
-            case 4:
-                freq = 0.032 + (seed % 3) * 0.002;
-                amp = 10 + (seed % 4) * 2;
-                phase = (seed % 6) * 0.9;
-                break;
-            case 5:
-                freq = 0.060 + (seed % 4) * 0.005;
-                amp = 12 + (seed % 3) * 3;
-                phase = (seed % 11) * 0.4;
-                break;
-        }
+function handleCapture(region) {
+    patternState.captures.push({ region });
+    patternState.resultFlash = 20;
 
-        for (let x = 0; x < width; x++) {
-            const noiseSample = (Math.random() - 0.5) * 5;
-            const signal = Math.sin(x * freq + phase) * amp;
-            const y = height / 2 + signal + noiseSample;
+    playCaptureSound();
 
-            if (x === 0) {
-                ctx.moveTo(x, y);
-            } else {
-                ctx.lineTo(x, y);
-            }
+    // Fill capture slot
+    const idx = patternState.captures.length - 1;
+    const slot = document.getElementById(`capture-slot-${idx}`);
+    if (slot) {
+        slot.classList.add('captured');
+        const slotCanvas = slot.querySelector('canvas');
+        const correctImage = patternState.filterImages[patternState.correctFilter];
+        if (slotCanvas && correctImage) {
+            const tmpCanvas = document.createElement('canvas');
+            tmpCanvas.width = patternState.canvas.width;
+            tmpCanvas.height = patternState.canvas.height;
+            tmpCanvas.getContext('2d').putImageData(correctImage, 0, 0);
+
+            const slotCtx = slotCanvas.getContext('2d');
+            const padding = 20;
+            const srcX = Math.max(0, region.startX - padding);
+            const srcW = Math.min(tmpCanvas.width - srcX, (region.endX - region.startX) + padding * 2);
+            slotCtx.drawImage(tmpCanvas, srcX, 0, srcW, tmpCanvas.height,
+                0, 0, slotCanvas.width, slotCanvas.height);
         }
     }
 
-    ctx.stroke();
-}
-
-// Check if pattern game is complete
-function checkPatternGameCompletion(star) {
-    const selected = gameState.patternGameSelectedIndices;
-    const correct = gameState.patternGameCorrectIndices;
-
-    if (selected.length !== 3) return;
-
-    const allCorrect = selected.every(idx => correct.includes(idx));
-
-    if (allCorrect) {
-        gameState.patternGameCompleted = true;
-        playLockAchieved();
-
-        gameState.patternGameBands.forEach(band => {
-            if (correct.includes(band.index)) {
-                band.element.classList.add('correct');
-                band.element.classList.add('locked');
-            }
-        });
-
+    const remaining = 3 - patternState.captures.length;
+    if (remaining > 0) {
         document.getElementById('pattern-status').innerHTML =
-            '<span style="color: #0f0; text-shadow: 0 0 10px #0f0;">✓ PATTERN MATCH CONFIRMED</span>';
+            `<span style="color:#0f0;">✓ PATTERN ISOLATED!</span>  ` +
+            `<span style="color:#0ff;">${remaining} more needed</span>`;
 
+        log(`Pattern isolated! (${patternState.captures.length}/3)`, 'highlight');
+
+        setTimeout(() => {
+            if (patternState.active && patternState.captures.length < 3) {
+                generateFrame();
+                document.getElementById('pattern-status').textContent =
+                    'NEW SIGNAL FRAME — CYCLE FILTERS TO FIND THE PATTERN';
+                setTimeout(() => {
+                    if (patternState.active && patternState.captures.length < 3) {
+                        document.getElementById('pattern-status').textContent =
+                            'CYCLE FILTERS TO ISOLATE THE SIGNAL PATTERN';
+                    }
+                }, 1500);
+            }
+        }, 1200);
+    } else {
+        document.getElementById('pattern-status').innerHTML =
+            '<span style="color:#0f0; text-shadow:0 0 10px #0f0;">✓ REPEATING PATTERN CONFIRMED</span>';
         log('>>> PATTERN RECOGNITION COMPLETE <<<', 'highlight');
 
         setTimeout(() => {
-            completePatternGame(star);
+            patternState.active = false;
+            if (patternState.animationId) cancelAnimationFrame(patternState.animationId);
+            completePatternGame(patternState.star);
         }, 2000);
-    } else {
-        // Wrong selection
-        selected.forEach(idx => {
-            if (!correct.includes(idx)) {
-                const band = gameState.patternGameBands.find(b => b.index === idx);
-                if (band) {
-                    band.element.classList.add('wrong');
-                    playStaticBurst();
-
-                    setTimeout(() => {
-                        band.element.classList.remove('wrong');
-                        band.element.classList.remove('selected');
-                    }, 500);
-                }
-            }
-        });
-
-        gameState.patternGameSelectedIndices = selected.filter(idx => correct.includes(idx));
-        document.getElementById('pattern-status').innerHTML =
-            '<span style="color: #f00;">INCORRECT - TRY AGAIN</span>';
-
-        setTimeout(() => {
-            document.getElementById('pattern-status').textContent = 'SELECT 3 FREQUENCY BANDS THAT COMBINE TO CREATE THE TARGET PATTERN';
-        }, 1500);
     }
 }
 
-// Complete the pattern game and continue analysis
+function handleWrongFilter() {
+    patternState.resultFlash = -12;
+    playStaticBurst();
+
+    document.getElementById('pattern-status').innerHTML =
+        '<span style="color:#f80;">WRONG FILTER — NO PATTERN ON THIS BAND</span>';
+
+    setTimeout(() => {
+        if (patternState.active && patternState.captures.length < 3) {
+            document.getElementById('pattern-status').textContent =
+                'CYCLE FILTERS TO ISOLATE THE SIGNAL PATTERN';
+        }
+    }, 1500);
+}
+
+function handleMiss() {
+    patternState.resultFlash = -12;
+    playStaticBurst();
+
+    document.getElementById('pattern-status').innerHTML =
+        '<span style="color:#f80;">NO SIGNIFICANT PATTERN — TRY ANOTHER REGION</span>';
+
+    setTimeout(() => {
+        if (patternState.active && patternState.captures.length < 3) {
+            document.getElementById('pattern-status').textContent =
+                'CYCLE FILTERS TO ISOLATE THE SIGNAL PATTERN';
+        }
+    }, 1500);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ANIMATION LOOP
+// ═════════════════════════════════════════════════════════════════════════════
+
+function animate() {
+    if (!patternState.active) return;
+    if (!patternState.canvas || !patternState.canvas.offsetParent) {
+        patternState.active = false;
+        return;
+    }
+
+    const ctx = patternState.ctx;
+    const w = patternState.canvas.width;
+    const h = patternState.canvas.height;
+
+    // Draw current filter's pre-rendered image
+    const currentImage = patternState.filterImages[patternState.currentFilter];
+    if (currentImage) {
+        ctx.putImageData(currentImage, 0, 0);
+    }
+
+    // Noise shimmer
+    for (let i = 0; i < 20; i++) {
+        const rx = Math.floor(Math.random() * w);
+        const ry = Math.floor(Math.random() * h);
+        ctx.fillStyle = `rgba(0, ${Math.floor(Math.random() * 50)}, ${Math.floor(Math.random() * 60)}, 0.1)`;
+        ctx.fillRect(rx, ry, 1, 1);
+    }
+
+    // Scanline
+    patternState.scanlineY = (patternState.scanlineY + 0.4) % h;
+    ctx.fillStyle = 'rgba(0, 255, 255, 0.02)';
+    ctx.fillRect(0, Math.floor(patternState.scanlineY), w, 2);
+
+    // Cursor guide
+    if (patternState.cursorX >= 0 && !patternState.isDragging) {
+        ctx.strokeStyle = 'rgba(0, 255, 255, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(Math.floor(patternState.cursorX), 0);
+        ctx.lineTo(Math.floor(patternState.cursorX), h);
+        ctx.stroke();
+    }
+
+    // Selection box
+    if (patternState.isDragging && patternState.dragStartX >= 0) {
+        const x1 = Math.min(patternState.dragStartX, patternState.dragCurrentX);
+        const x2 = Math.max(patternState.dragStartX, patternState.dragCurrentX);
+        const selW = x2 - x1;
+
+        if (selW > 3) {
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.1)';
+            ctx.fillRect(x1, 0, selW, h);
+
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.7)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 4]);
+            ctx.strokeRect(x1, 1, selW, h - 2);
+            ctx.setLineDash([]);
+
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.5)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x1, 0); ctx.lineTo(x1, h);
+            ctx.moveTo(x2, 0); ctx.lineTo(x2, h);
+            ctx.stroke();
+        }
+    }
+
+    // Result flash
+    if (patternState.resultFlash > 0) {
+        ctx.fillStyle = `rgba(0, 255, 100, ${patternState.resultFlash * 0.02})`;
+        ctx.fillRect(0, 0, w, h);
+        patternState.resultFlash--;
+    } else if (patternState.resultFlash < 0) {
+        ctx.fillStyle = `rgba(255, 60, 0, ${Math.abs(patternState.resultFlash) * 0.02})`;
+        ctx.fillRect(0, 0, w, h);
+        patternState.resultFlash++;
+    }
+
+    // Frame + filter info overlay
+    ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
+    ctx.font = '10px "VT323", monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`FRAME ${patternState.generation}`, w - 5, 11);
+    ctx.textAlign = 'left';
+    ctx.fillText(`FILTER: ${patternState.filters[patternState.currentFilter]?.name || ''}`, 5, 11);
+
+    patternState.animationId = requestAnimationFrame(animate);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SIGNAL COLUMN RENDERERS (for correct filter)
+// ═════════════════════════════════════════════════════════════════════════════
+
+function alienColumn(y, h, off, seed) {
+    const b1 = h * (0.20 + (seed % 3) * 0.04);
+    const b2 = h * (0.45 + (seed % 4) * 0.03);
+    const b3 = h * (0.72 + (seed % 5) * 0.02);
+    const bw = 4 + (seed % 2);
+    const mod = Math.sin(off * 0.04 + seed) * 0.35 + 0.65;
+
+    let sig = 0;
+    if (Math.abs(y - b1) < bw) sig += (1 - Math.abs(y - b1) / bw) * mod;
+    if (Math.abs(y - b2) < bw) sig += (1 - Math.abs(y - b2) / bw) * mod;
+    if (Math.abs(y - b3) < bw) sig += (1 - Math.abs(y - b3) / bw) * mod;
+
+    if (Math.sin(off * 0.09 + seed * 2) > 0.85) sig *= 1.5;
+    return Math.min(1, sig);
+}
+
+function falsePositiveColumn(y, h, off, seed) {
+    const numH = 4 + (seed % 3);
+    const spacing = h / (numH + 1);
+    const pulse = Math.sin(off * 0.07) * 0.35 + 0.65;
+
+    let sig = 0;
+    for (let i = 1; i <= numH; i++) {
+        const center = spacing * i;
+        const dist = Math.abs(y - center);
+        if (dist < 2.5) sig += (1 - dist / 2.5) * pulse;
+    }
+    return Math.min(1, sig);
+}
+
+function naturalColumn(y, h, off, seed, subtype) {
+    let sig = 0;
+
+    switch (subtype) {
+        case 0: {
+            const center = h * (0.35 + (seed % 4) * 0.08);
+            const isPulse = Math.sin(off * 0.15) > 0.2;
+            if (Math.abs(y - center) < 5 && isPulse) {
+                sig = (1 - Math.abs(y - center) / 5) * 0.9;
+            }
+            break;
+        }
+        case 1: {
+            const center = h * 0.5;
+            const width = h * 0.35;
+            const dist = Math.abs(y - center);
+            if (dist < width) sig = (1 - dist / width) * 0.7;
+            break;
+        }
+        case 2: {
+            const sweep = h * (0.3 + 0.4 * Math.sin(off * 0.025));
+            if (Math.abs(y - sweep) < 6) {
+                sig = (1 - Math.abs(y - sweep) / 6) * 0.8;
+            }
+            break;
+        }
+        case 3: {
+            const center = h * 0.45;
+            const w = h * 0.3;
+            const dist = Math.abs(y - center);
+            if (dist < w) sig = (1 - dist / w) * 0.45;
+            break;
+        }
+        case 4:
+        default: {
+            const b1 = h * (0.3 + 0.06 * Math.sin(off * 0.012));
+            const b2 = h * (0.65 + 0.05 * Math.sin(off * 0.009));
+            if (Math.abs(y - b1) < 5) sig += (1 - Math.abs(y - b1) / 5) * 0.6;
+            if (Math.abs(y - b2) < 4) sig += (1 - Math.abs(y - b2) / 4) * 0.5;
+            break;
+        }
+    }
+
+    return Math.min(1, sig);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// AUDIO
+// ═════════════════════════════════════════════════════════════════════════════
+
+let patternAudioCtx = null;
+
+function getPatternAudioCtx() {
+    if (!patternAudioCtx || patternAudioCtx.state === 'closed') {
+        patternAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (patternAudioCtx.state === 'suspended') patternAudioCtx.resume();
+    return patternAudioCtx;
+}
+
+function playCaptureSound() {
+    try {
+        const ctx = getPatternAudioCtx();
+        [880, 1320].forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = freq;
+            osc.type = 'triangle';
+            const t = ctx.currentTime + i * 0.08;
+            gain.gain.setValueAtTime(0.12, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+            osc.start(t);
+            osc.stop(t + 0.15);
+        });
+    } catch (e) { /* audio not available */ }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// COMPLETE PATTERN GAME
+// ═════════════════════════════════════════════════════════════════════════════
+
 function completePatternGame(star) {
     document.getElementById('pattern-game').style.display = 'none';
     gameState.patternGameActive = false;
@@ -401,7 +906,6 @@ function completePatternGame(star) {
 
         typeAnalysisText(lines, () => {
             document.getElementById('analyze-btn').disabled = false;
-            // Check if day is complete after natural phenomenon analysis
             checkAndShowDayComplete();
         });
     }

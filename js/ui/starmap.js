@@ -707,40 +707,70 @@ export function renderStarMap() {
         ctx.shadowBlur = 0;
     }
 
-    // Draw scan confirmation box
-    if (gameState.showScanConfirm && gameState.selectedStarId !== null) {
+    // Draw scan confirmation box or completion indicator
+    if (gameState.selectedStarId !== null) {
         const star = gameState.stars[gameState.selectedStarId];
-
-        // Calculate box position with edge detection
         const { boxX, boxY, boxWidth, boxHeight } = calculateScanBoxPosition(star, width);
 
-        // Box background
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-        ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+        if (gameState.showScanConfirm) {
+            // Box background
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+            ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-        // Box border
-        ctx.strokeStyle = '#0ff';
-        ctx.lineWidth = 2;
-        ctx.shadowColor = '#0ff';
-        ctx.shadowBlur = 10;
-        ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+            // Box border
+            ctx.strokeStyle = '#0ff';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = '#0ff';
+            ctx.shadowBlur = 10;
+            ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
 
-        // Star name
-        ctx.fillStyle = '#0ff';
-        ctx.font = '14px VT323';
-        ctx.textAlign = 'center';
-        ctx.shadowBlur = 5;
-        ctx.fillText(star.name, boxX + boxWidth / 2, boxY + 20);
+            // Star name
+            ctx.fillStyle = '#0ff';
+            ctx.font = '14px VT323';
+            ctx.textAlign = 'center';
+            ctx.shadowBlur = 5;
+            ctx.fillText(star.name, boxX + boxWidth / 2, boxY + 20);
 
-        // "SCAN?" text with slow flash effect
-        const flashAlpha = (Math.sin(Date.now() * 0.003) + 1) / 2 * 0.6 + 0.4;
-        ctx.font = '18px VT323';
-        ctx.globalAlpha = flashAlpha;
-        ctx.fillText('SCAN?', boxX + boxWidth / 2, boxY + 40);
-        ctx.globalAlpha = 1;
+            // "SCAN?" text with slow flash effect
+            const flashAlpha = (Math.sin(Date.now() * 0.003) + 1) / 2 * 0.6 + 0.4;
+            ctx.font = '18px VT323';
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillText('SCAN?', boxX + boxWidth / 2, boxY + 40);
+            ctx.globalAlpha = 1;
 
-        ctx.shadowBlur = 0;
-        ctx.textAlign = 'left';
+            ctx.shadowBlur = 0;
+            ctx.textAlign = 'left';
+        } else {
+            // Show completion indicator for already-scanned stars
+            const hasContact = gameState.contactedStars.has(gameState.selectedStarId);
+            const scanResult = gameState.scanResults.get(gameState.selectedStarId);
+
+            if (hasContact || scanResult) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+                ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+                const borderColor = hasContact ? '#f0f' : (scanResult && scanResult.type === 'false_positive' ? '#f00' : '#ff0');
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = 1;
+                ctx.shadowColor = borderColor;
+                ctx.shadowBlur = 5;
+                ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+
+                ctx.fillStyle = borderColor;
+                ctx.font = '14px VT323';
+                ctx.textAlign = 'center';
+                ctx.fillText(star.name, boxX + boxWidth / 2, boxY + 20);
+
+                ctx.globalAlpha = 0.6;
+                ctx.font = '16px VT323';
+                const label = hasContact ? '★ CONTACT' : (scanResult && scanResult.type === 'false_positive' ? '⚠ FALSE POSITIVE' : '✓ COMPLETE');
+                ctx.fillText(label, boxX + boxWidth / 2, boxY + 40);
+                ctx.globalAlpha = 1;
+
+                ctx.shadowBlur = 0;
+                ctx.textAlign = 'left';
+            }
+        }
     }
 }
 

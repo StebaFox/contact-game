@@ -1440,7 +1440,7 @@ canvas.active {
 }
 
 .pattern-header {
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     text-align: center;
 }
 
@@ -1448,116 +1448,75 @@ canvas.active {
     font-size: 22px;
     color: #0ff;
     text-shadow: 0 0 5px #0ff;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     letter-spacing: 2px;
 }
 
 .pattern-instruction {
-    font-size: 16px;
+    font-size: 14px;
     color: #0ff;
     opacity: 0.8;
 }
 
-.pattern-reference {
+/* Scrolling signal stream canvas */
+.pattern-stream-wrap {
     text-align: center;
-    margin: 20px 0;
-    padding: 15px;
-    background: rgba(0, 255, 255, 0.1);
-    border: 1px solid #0ff;
+    padding: 10px 0;
 }
 
-.pattern-label {
-    font-size: 16px;
-    color: #0ff;
-    margin-bottom: 10px;
-    letter-spacing: 2px;
-}
-
-#reference-pattern {
+#pattern-stream {
     border: 1px solid #0ff;
     background: #000;
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
-}
-
-.pattern-bands {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 15px;
-    margin: 20px 0;
-}
-
-.frequency-band {
-    background: rgba(0, 255, 0, 0.05);
-    border: 2px solid #0f0;
-    padding: 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-}
-
-.frequency-band:hover {
-    background: rgba(0, 255, 0, 0.1);
-    transform: scale(1.02);
-}
-
-.frequency-band.selected {
-    border-color: #0ff;
-    background: rgba(0, 255, 255, 0.15);
-    box-shadow: 0 0 15px #0ff;
-}
-
-.frequency-band.correct {
-    border-color: #0f0;
-    background: rgba(0, 255, 0, 0.2);
-    animation: correctPulse 1s ease-out;
-}
-
-.frequency-band.wrong {
-    border-color: #f00;
-    background: rgba(255, 0, 0, 0.2);
-    animation: wrongFlash 0.5s ease-out;
-}
-
-.frequency-band.locked {
-    cursor: not-allowed;
-    opacity: 0.7;
-}
-
-@keyframes correctPulse {
-    0%, 100% {
-        box-shadow: 0 0 15px #0f0;
-    }
-    50% {
-        box-shadow: 0 0 30px #0f0;
-    }
-}
-
-@keyframes wrongFlash {
-    0%, 100% {
-        box-shadow: 0 0 15px #f00;
-    }
-    50% {
-        box-shadow: 0 0 30px #f00;
-        transform: scale(0.98);
-    }
-}
-
-.band-label {
-    font-size: 14px;
-    color: #0f0;
-    text-shadow: 0 0 3px #0f0;
-    margin-bottom: 8px;
-    letter-spacing: 1px;
-}
-
-.band-canvas {
-    border: 1px solid #0f0;
-    background: #000;
-    display: block;
-    margin: 0 auto;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.25);
+    cursor: crosshair;
     width: 100%;
-    max-width: 180px;
-    height: 80px;
+    max-width: 500px;
+}
+
+/* Capture slots row */
+.pattern-captures {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 12px 0;
+}
+
+.capture-slot {
+    position: relative;
+    border: 2px solid #333;
+    background: #000;
+    padding: 0;
+    transition: all 0.3s;
+}
+
+.capture-slot canvas {
+    display: block;
+}
+
+.capture-slot.captured {
+    border-color: #0f0;
+    box-shadow: 0 0 12px rgba(0, 255, 0, 0.5);
+}
+
+.capture-label {
+    position: absolute;
+    top: 2px;
+    left: 5px;
+    font-size: 10px;
+    color: #555;
+    letter-spacing: 1px;
+    z-index: 1;
+}
+
+.capture-slot.captured .capture-label {
+    color: #0f0;
+}
+
+/* Canvas drag selection (button removed — interaction is click-and-drag) */
+#pattern-stream {
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
 }
 
 .pattern-status {
@@ -1565,7 +1524,7 @@ canvas.active {
     font-size: 18px;
     color: #0ff;
     text-shadow: 0 0 5px #0ff;
-    margin-top: 20px;
+    margin-top: 15px;
     padding: 10px;
     border: 1px solid #0ff;
     background: rgba(0, 255, 255, 0.05);
@@ -1700,39 +1659,15 @@ body.white-mode .mail-header {
     border-bottom-color: #fff;
 }
 
-body.white-mode .frequency-band {
+body.white-mode .capture-slot {
     border-color: #fff;
-    background: rgba(255, 255, 255, 0.05);
 }
 
-body.white-mode .frequency-band:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-body.white-mode .frequency-band.correct {
+body.white-mode .capture-slot.captured {
     border-color: #fff;
-    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.5);
 }
 
-body.white-mode .frequency-band.correct {
-    animation: correctPulseWhite 1s ease-out;
-}
-
-@keyframes correctPulseWhite {
-    0%, 100% {
-        box-shadow: 0 0 15px #fff;
-    }
-    50% {
-        box-shadow: 0 0 30px #fff;
-    }
-}
-
-body.white-mode .band-label {
-    color: #fff;
-    text-shadow: none;
-}
-
-body.white-mode .band-canvas,
 body.white-mode canvas {
     border-color: #fff;
 }
@@ -3110,18 +3045,13 @@ body.white-mode .layout-toggle-btn:hover {
         padding: 15px;
     }
 
-    body:not(.force-desktop) .pattern-bands {
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 10px;
+    body:not(.force-desktop) .pattern-captures {
+        gap: 8px;
     }
 
-    body:not(.force-desktop) .pattern-band {
-        padding: 10px;
-    }
-
-    body:not(.force-desktop) .band-canvas {
-        max-width: 140px;
-        height: 60px;
+    body:not(.force-desktop) .capture-slot canvas {
+        width: 110px;
+        height: 40px;
     }
 
     body:not(.force-desktop) .band-buttons {
@@ -3330,8 +3260,8 @@ body.white-mode .layout-toggle-btn:hover {
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     }
 
-    body:not(.force-desktop) .pattern-bands {
-        grid-template-columns: 1fr;
+    body:not(.force-desktop) .pattern-captures {
+        flex-wrap: wrap;
     }
 
     body:not(.force-desktop) .survey-complete-title {
@@ -3563,8 +3493,9 @@ body.force-mobile .lock-btn {
     max-width: 250px;
 }
 
-body.force-mobile .pattern-bands {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+body.force-mobile .pattern-captures {
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 body.force-mobile .array-container {

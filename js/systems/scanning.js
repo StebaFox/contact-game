@@ -86,6 +86,233 @@ export function initiateScan() {
     startTuningMinigame(star);
 }
 
+// Natural phenomena waveform patterns (5 types)
+function drawNaturalWaveform(ctx, width, height, type, starId, offset) {
+    const seed = starId + 1;
+    switch (type) {
+        case 0: // Pulsar - sharp periodic spikes
+            for (let x = 0; x < width; x++) {
+                const xp = x + offset;
+                const noise = (Math.random() - 0.5) * 15;
+                const period = 40 + (seed % 5) * 8;
+                const spike = Math.pow(Math.max(0, Math.cos(xp * Math.PI * 2 / period)), 12) * 55;
+                const y = height / 2 + spike + noise - 15;
+                if (x === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
+            }
+            break;
+        case 1: // Solar flare - irregular bursts with exponential decay
+            for (let x = 0; x < width; x++) {
+                const xp = x + offset;
+                const noise = (Math.random() - 0.5) * 25;
+                const burstPos = (seed * 47) % 200;
+                const dist = Math.abs((xp % 250) - burstPos);
+                const burst = Math.exp(-dist * 0.03) * 60;
+                const rumble = Math.sin(xp * 0.15) * 12;
+                const y = height / 2 + burst * (Math.sin(xp * 0.3) > 0 ? 1 : -0.5) + rumble + noise;
+                if (x === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
+            }
+            break;
+        case 2: // Magnetospheric - smooth swooping oscillation
+            for (let x = 0; x < width; x++) {
+                const xp = x + offset;
+                const noise = (Math.random() - 0.5) * 10;
+                const sweep = Math.sin(xp * 0.005 + seed) * 40;
+                const wobble = Math.sin(xp * 0.06) * (15 + 10 * Math.sin(xp * 0.008));
+                const y = height / 2 + sweep + wobble + noise;
+                if (x === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
+            }
+            break;
+        case 3: // Quasar background - very low amplitude, noisy
+            for (let x = 0; x < width; x++) {
+                const xp = x + offset;
+                const noise = (Math.random() - 0.5) * 35;
+                const drift = Math.sin(xp * 0.003) * 8;
+                const y = height / 2 + drift + noise;
+                if (x === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
+            }
+            break;
+        case 4: // Stellar wind - medium waves with turbulence
+        default:
+            for (let x = 0; x < width; x++) {
+                const xp = x + offset;
+                const noise = (Math.random() - 0.5) * 18;
+                const wave1 = Math.sin(xp * 0.02) * 30;
+                const wave2 = Math.sin(xp * 0.055 + seed) * 18;
+                const gust = Math.sin(xp * 0.004) * 15;
+                const y = height / 2 + wave1 + wave2 + gust + noise;
+                if (x === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
+            }
+            break;
+    }
+}
+
+// Natural phenomena spectrogram column (5 types)
+function drawNaturalSpectrogramColumn(ctx, x, specHeight, type, starId, offset) {
+    const seed = starId + 1;
+    switch (type) {
+        case 0: { // Pulsar - periodic bright horizontal sweeps
+            const period = 40 + (seed % 5) * 8;
+            const isPulse = Math.cos(offset * Math.PI * 2 / period) > 0.85;
+            const bandCenter = specHeight * (0.3 + (seed % 4) * 0.1);
+            const bandWidth = 4 + (seed % 3);
+            for (let y = 0; y < specHeight; y++) {
+                const inBand = Math.abs(y - bandCenter) < bandWidth;
+                const noise = Math.random() * 0.15;
+                let intensity = noise;
+                if (inBand && isPulse) {
+                    intensity += 0.9 * (1 - Math.abs(y - bandCenter) / bandWidth);
+                } else if (inBand) {
+                    intensity += 0.15;
+                }
+                const b = Math.floor(intensity * 255);
+                ctx.fillStyle = `rgba(0, ${b * 0.9}, ${b}, ${Math.min(1, intensity)})`;
+                ctx.fillRect(x, y, 1, 1);
+            }
+            break;
+        }
+        case 1: { // Solar flare - broadband burst columns
+            const burstCycle = 200 + seed * 13;
+            const burstPhase = (offset % burstCycle) / burstCycle;
+            const isBurst = burstPhase < 0.08;
+            const burstIntensity = isBurst ? Math.exp(-burstPhase * 30) : 0;
+            for (let y = 0; y < specHeight; y++) {
+                const noise = Math.random() * 0.2;
+                const base = 0.05 + 0.05 * Math.sin(y * 0.1);
+                let intensity = base + noise + burstIntensity * 0.8;
+                const b = Math.floor(Math.min(1, intensity) * 220);
+                // Warm orange-green for flares
+                const r = Math.floor(b * burstIntensity * 0.6);
+                ctx.fillStyle = `rgba(${r}, ${b * 0.8}, ${Math.floor(b * 0.4)}, ${Math.min(1, intensity * 0.8)})`;
+                ctx.fillRect(x, y, 1, 1);
+            }
+            break;
+        }
+        case 2: { // Magnetospheric - curved frequency drift lines
+            const sweepFreq = 0.015 + (seed % 3) * 0.005;
+            const sweepCenter = specHeight * (0.3 + 0.4 * Math.sin(offset * sweepFreq));
+            const sweepWidth = 6 + 3 * Math.sin(offset * 0.01);
+            for (let y = 0; y < specHeight; y++) {
+                const dist = Math.abs(y - sweepCenter);
+                const inSweep = dist < sweepWidth;
+                const noise = Math.random() * 0.12;
+                let intensity = noise;
+                if (inSweep) {
+                    intensity += 0.7 * (1 - dist / sweepWidth);
+                }
+                // Secondary fainter arc
+                const sweep2Center = specHeight * (0.6 - 0.25 * Math.sin(offset * sweepFreq * 0.7 + 2));
+                const dist2 = Math.abs(y - sweep2Center);
+                if (dist2 < 4) {
+                    intensity += 0.3 * (1 - dist2 / 4);
+                }
+                const b = Math.floor(Math.min(1, intensity) * 230);
+                ctx.fillStyle = `rgba(0, ${b}, ${Math.floor(b * 0.7)}, ${Math.min(1, intensity)})`;
+                ctx.fillRect(x, y, 1, 1);
+            }
+            break;
+        }
+        case 3: { // Quasar background - diffuse glow, slow wandering
+            const glowCenter = specHeight * (0.45 + 0.15 * Math.sin(offset * 0.003 + seed));
+            const glowWidth = specHeight * 0.3;
+            for (let y = 0; y < specHeight; y++) {
+                const dist = Math.abs(y - glowCenter);
+                const glow = Math.max(0, 1 - dist / glowWidth);
+                const noise = Math.random() * 0.25;
+                const intensity = glow * 0.35 + noise * 0.4;
+                const b = Math.floor(intensity * 140);
+                ctx.fillStyle = `rgba(0, ${Math.floor(b * 0.6)}, ${b}, ${intensity * 0.5})`;
+                ctx.fillRect(x, y, 1, 1);
+            }
+            break;
+        }
+        case 4: // Stellar wind - shifting bands with turbulent edges
+        default: {
+            const bandPos1 = specHeight * (0.3 + 0.1 * Math.sin(offset * 0.008));
+            const bandPos2 = specHeight * (0.65 + 0.08 * Math.sin(offset * 0.006 + 1));
+            for (let y = 0; y < specHeight; y++) {
+                const dist1 = Math.abs(y - bandPos1);
+                const dist2 = Math.abs(y - bandPos2);
+                const band1 = dist1 < 8 ? (1 - dist1 / 8) * 0.6 : 0;
+                const band2 = dist2 < 6 ? (1 - dist2 / 6) * 0.45 : 0;
+                const turbulence = Math.random() * 0.15;
+                const intensity = band1 + band2 + turbulence;
+                const b = Math.floor(Math.min(1, intensity) * 200);
+                ctx.fillStyle = `rgba(0, ${b * 0.85}, ${b}, ${Math.min(1, intensity * 0.7)})`;
+                ctx.fillRect(x, y, 1, 1);
+            }
+            break;
+        }
+    }
+}
+
+// False positive spectrogram column - regular, artificial-looking
+function drawFalsePositiveSpectrogramColumn(ctx, x, specHeight, starId, offset) {
+    const seed = starId + 1;
+    const numHarmonics = 4 + (seed % 3); // 4-6 evenly spaced bands
+    const spacing = specHeight / (numHarmonics + 1);
+    const pulseFreq = 0.08 + (seed % 4) * 0.02;
+    const pulsePhase = Math.sin(offset * pulseFreq) * 0.5 + 0.5;
+    // Occasional glitch gap
+    const isGlitch = Math.sin(offset * 0.17 + seed * 3) > 0.92;
+
+    for (let y = 0; y < specHeight; y++) {
+        const noise = Math.random() * 0.1;
+        let intensity = noise;
+
+        if (!isGlitch) {
+            for (let h = 1; h <= numHarmonics; h++) {
+                const bandCenter = spacing * h;
+                const dist = Math.abs(y - bandCenter);
+                if (dist < 2) {
+                    intensity += pulsePhase * 0.8 * (1 - dist / 2);
+                }
+            }
+        }
+
+        const b = Math.floor(Math.min(1, intensity) * 220);
+        // Amber/orange tint for artificial signals
+        ctx.fillStyle = `rgba(${Math.floor(b * 0.8)}, ${Math.floor(b * 0.6)}, 0, ${Math.min(1, intensity)})`;
+        ctx.fillRect(x, y, 1, 1);
+    }
+}
+
+// Enhanced alien spectrogram column
+function drawAlienSpectrogramColumn(ctx, x, specHeight, starId, offset) {
+    const starSeed = starId + 1;
+    const band1Pos = 0.2 + (starSeed % 3) * 0.1;
+    const band2Pos = 0.4 + (starSeed % 4) * 0.1;
+    const band3Pos = 0.6 + (starSeed % 5) * 0.08;
+    const bandWidth1 = 3 + (starSeed % 3);
+    const bandWidth2 = 3 + ((starSeed + 1) % 3);
+    const modFreq = 0.03 + (starSeed % 4) * 0.01;
+    const modulation = Math.sin(offset * modFreq) * 0.5 + 0.5;
+
+    // Occasional bright pulse flash across all bands
+    const isPulse = Math.sin(offset * 0.07 + starSeed) > 0.9;
+    const pulseBoost = isPulse ? 0.5 : 0;
+
+    for (let y = 0; y < specHeight; y++) {
+        // Slight frequency wobble on bands
+        const wobble = Math.sin(offset * 0.02 + y * 0.1) * 1.5;
+        const band1 = Math.abs(y - specHeight * band1Pos + wobble) < bandWidth1 ? 1 : 0;
+        const band2 = Math.abs(y - specHeight * band2Pos - wobble) < bandWidth2 ? 1 : 0;
+        const band3 = Math.abs(y - specHeight * band3Pos + wobble * 0.5) < bandWidth1 ? 1 : 0;
+        const noise = Math.random() * 0.15;
+
+        let intensity = (band1 + band2 + band3) * modulation + noise + pulseBoost * (band1 + band2 + band3);
+        const b = Math.floor(Math.min(1, intensity) * 255);
+
+        // Cyan/magenta shift on bright moments
+        if (intensity > 0.7) {
+            const magenta = Math.floor((intensity - 0.7) * 300);
+            ctx.fillStyle = `rgba(${magenta}, ${Math.floor(b * 0.7)}, ${b}, ${Math.min(1, intensity)})`;
+        } else {
+            ctx.fillStyle = `rgba(0, ${Math.floor(b * 0.8)}, ${b}, ${Math.min(1, intensity)})`;
+        }
+        ctx.fillRect(x, y, 1, 1);
+    }
+}
+
 // Generate signal visualization
 export function generateSignal(star, analyzed = false) {
     const hasIntelligence = star.hasIntelligence;
@@ -117,39 +344,44 @@ export function generateSignal(star, analyzed = false) {
             }
         }
     } else if (hasIntelligence) {
-        // Intelligent signal pattern
+        // Intelligent signal pattern - complex multi-frequency
         const starSeed = star.id + 1;
         const freq1 = 0.008 + (starSeed % 3) * 0.002;
         const freq2 = 0.001 + (starSeed % 5) * 0.0005;
+        const freq3 = 0.02 + (starSeed % 7) * 0.003;
         const amp1 = 35 + (starSeed % 4) * 8;
         const amp2 = 20 + (starSeed % 3) * 10;
+        const amp3 = 10 + (starSeed % 3) * 5;
 
         for (let x = 0; x < width; x++) {
-            const noise = (Math.random() - 0.5) * 12;
+            const noise = (Math.random() - 0.5) * 8;
             const signal = Math.sin(x * freq1) * amp1;
             const pulse = Math.sin(x * freq2) * amp2;
-            const y = height / 2 + signal + pulse + noise;
+            const detail = Math.sin(x * freq3) * amp3;
+            const y = height / 2 + signal + pulse + detail + noise;
 
             if (x === 0) {
                 waveCtx.moveTo(x, y);
             } else {
                 waveCtx.lineTo(x, y);
             }
+        }
+    } else if (star.isFalsePositive) {
+        // False positive - suspiciously clean, regular sine wave
+        waveCtx.strokeStyle = '#c80';
+        waveCtx.shadowColor = '#c80';
+        const freq = 0.04 + (star.id % 3) * 0.01;
+        for (let x = 0; x < width; x++) {
+            const noise = (Math.random() - 0.5) * 4;
+            const signal = Math.sin(x * freq) * 45;
+            const harmonic = Math.sin(x * freq * 2) * 15;
+            const y = height / 2 + signal + harmonic + noise;
+            if (x === 0) { waveCtx.moveTo(x, y); } else { waveCtx.lineTo(x, y); }
         }
     } else {
-        // Natural phenomena - pulsar pattern
-        for (let x = 0; x < width; x++) {
-            const noise = (Math.random() - 0.5) * 20;
-            const pulsar = Math.sin(x * 0.08) * 50;
-            const decay = Math.cos(x * 0.05) * 15;
-            const y = height / 2 + pulsar + decay + noise;
-
-            if (x === 0) {
-                waveCtx.moveTo(x, y);
-            } else {
-                waveCtx.lineTo(x, y);
-            }
-        }
+        // Natural phenomena - varied by star type
+        const phenomenonType = star.id % 5;
+        drawNaturalWaveform(waveCtx, width, height, phenomenonType, star.id, 0);
     }
 
     waveCtx.stroke();
@@ -174,44 +406,20 @@ export function generateSignal(star, analyzed = false) {
             }
         }
     } else if (hasIntelligence) {
-        // Distinct frequency bands
-        const starSeed = star.id + 1;
-        const band1Pos = 0.2 + (starSeed % 3) * 0.1;
-        const band2Pos = 0.4 + (starSeed % 4) * 0.1;
-        const band3Pos = 0.6 + (starSeed % 5) * 0.08;
-        const bandWidth1 = 2 + (starSeed % 3);
-        const bandWidth2 = 2 + ((starSeed + 1) % 3);
-        const modFreq = 0.03 + (starSeed % 4) * 0.01;
-
+        // Enhanced alien signal
         for (let x = 0; x < specWidth; x++) {
-            for (let y = 0; y < specHeight; y++) {
-                const band1 = Math.abs(y - specHeight * band1Pos) < bandWidth1 ? 1 : 0;
-                const band2 = Math.abs(y - specHeight * band2Pos) < bandWidth2 ? 1 : 0;
-                const band3 = Math.abs(y - specHeight * band3Pos) < bandWidth1 ? 1 : 0;
-                const modulation = Math.sin(x * modFreq) * 0.5 + 0.5;
-                const noise = Math.random() * 0.2;
-
-                const intensity = (band1 + band2 + band3) * modulation + noise;
-                const brightness = Math.floor(intensity * 255);
-
-                specCtx.fillStyle = `rgba(0, ${brightness * 0.8}, ${brightness}, ${intensity})`;
-                specCtx.fillRect(x, y, 1, 1);
-            }
+            drawAlienSpectrogramColumn(specCtx, x, specHeight, star.id, x);
+        }
+    } else if (star.isFalsePositive) {
+        // Artificial-looking regular pattern
+        for (let x = 0; x < specWidth; x++) {
+            drawFalsePositiveSpectrogramColumn(specCtx, x, specHeight, star.id, x);
         }
     } else {
-        // Natural phenomena - broad diffuse bands
+        // Natural phenomena - varied by star type
+        const phenomenonType = star.id % 5;
         for (let x = 0; x < specWidth; x++) {
-            for (let y = 0; y < specHeight; y++) {
-                const band = Math.abs(y - specHeight * 0.5) < specHeight * 0.2 ? 1 : 0;
-                const variation = Math.sin(x * 0.1 + y * 0.05) * 0.3 + 0.7;
-                const noise = Math.random() * 0.4;
-
-                const intensity = band * variation + noise * 0.5;
-                const brightness = Math.floor(intensity * 180);
-
-                specCtx.fillStyle = `rgba(0, ${brightness * 0.8}, ${brightness}, ${intensity * 0.6})`;
-                specCtx.fillRect(x, y, 1, 1);
-            }
+            drawNaturalSpectrogramColumn(specCtx, x, specHeight, phenomenonType, star.id, x);
         }
     }
 
@@ -263,6 +471,7 @@ export function startSignalAnimation() {
                 waveCtx.stroke();
             }
         } else if (hasIntelligence) {
+            // Alien signal - complex multi-frequency waveform
             waveCtx.fillStyle = '#000';
             waveCtx.fillRect(0, 0, width, height);
 
@@ -277,24 +486,47 @@ export function startSignalAnimation() {
             const starSeed = star.id + 1;
             const freq1 = 0.008 + (starSeed % 3) * 0.002;
             const freq2 = 0.001 + (starSeed % 5) * 0.0005;
+            const freq3 = 0.02 + (starSeed % 7) * 0.003;
             const amp1 = 35 + (starSeed % 4) * 8;
             const amp2 = 20 + (starSeed % 3) * 10;
+            const amp3 = 10 + (starSeed % 3) * 5;
 
             for (let x = 0; x < width; x++) {
                 const xPos = x + gameState.signalOffset;
-                const noise = (Math.random() - 0.5) * 12;
+                const noise = (Math.random() - 0.5) * 8;
                 const signal = Math.sin(xPos * freq1) * amp1;
                 const pulse = Math.sin(xPos * freq2) * amp2;
-                const y = height / 2 + signal + pulse + noise;
+                const detail = Math.sin(xPos * freq3) * amp3;
+                const y = height / 2 + signal + pulse + detail + noise;
 
-                if (x === 0) {
-                    waveCtx.moveTo(x, y);
-                } else {
-                    waveCtx.lineTo(x, y);
-                }
+                if (x === 0) { waveCtx.moveTo(x, y); } else { waveCtx.lineTo(x, y); }
+            }
+            waveCtx.stroke();
+        } else if (star.isFalsePositive) {
+            // False positive - suspiciously clean waveform (amber)
+            waveCtx.fillStyle = '#000';
+            waveCtx.fillRect(0, 0, width, height);
+
+            waveCtx.strokeStyle = '#c80';
+            waveCtx.lineWidth = 2;
+            waveCtx.shadowBlur = 5;
+            waveCtx.shadowColor = '#c80';
+            waveCtx.beginPath();
+
+            gameState.signalOffset += 0.8;
+
+            const freq = 0.04 + (star.id % 3) * 0.01;
+            for (let x = 0; x < width; x++) {
+                const xPos = x + gameState.signalOffset;
+                const noise = (Math.random() - 0.5) * 4;
+                const signal = Math.sin(xPos * freq) * 45;
+                const harmonic = Math.sin(xPos * freq * 2) * 15;
+                const y = height / 2 + signal + harmonic + noise;
+                if (x === 0) { waveCtx.moveTo(x, y); } else { waveCtx.lineTo(x, y); }
             }
             waveCtx.stroke();
         } else {
+            // Natural phenomena - varied waveform
             waveCtx.fillStyle = '#000';
             waveCtx.fillRect(0, 0, width, height);
 
@@ -306,19 +538,8 @@ export function startSignalAnimation() {
 
             gameState.signalOffset += 0.5;
 
-            for (let x = 0; x < width; x++) {
-                const xPos = x + gameState.signalOffset;
-                const noise = (Math.random() - 0.5) * 20;
-                const pulsar = Math.sin(xPos * 0.08) * 50;
-                const decay = Math.cos(xPos * 0.05) * 15;
-                const y = height / 2 + pulsar + decay + noise;
-
-                if (x === 0) {
-                    waveCtx.moveTo(x, y);
-                } else {
-                    waveCtx.lineTo(x, y);
-                }
-            }
+            const phenomenonType = star.id % 5;
+            drawNaturalWaveform(waveCtx, width, height, phenomenonType, star.id, gameState.signalOffset);
             waveCtx.stroke();
         }
 
@@ -343,39 +564,12 @@ export function startSignalAnimation() {
                 specCtx.fillRect(x, y, 1, 1);
             }
         } else if (hasIntelligence) {
-            const starSeed = star.id + 1;
-            const band1Pos = 0.2 + (starSeed % 3) * 0.1;
-            const band2Pos = 0.4 + (starSeed % 4) * 0.1;
-            const band3Pos = 0.6 + (starSeed % 5) * 0.08;
-            const bandWidth1 = 2 + (starSeed % 3);
-            const bandWidth2 = 2 + ((starSeed + 1) % 3);
-            const modFreq = 0.03 + (starSeed % 4) * 0.01;
-
-            for (let y = 0; y < specHeight; y++) {
-                const band1 = Math.abs(y - specHeight * band1Pos) < bandWidth1 ? 1 : 0;
-                const band2 = Math.abs(y - specHeight * band2Pos) < bandWidth2 ? 1 : 0;
-                const band3 = Math.abs(y - specHeight * band3Pos) < bandWidth1 ? 1 : 0;
-                const modulation = Math.sin(gameState.signalOffset * modFreq) * 0.5 + 0.5;
-                const noise = Math.random() * 0.2;
-
-                const intensity = (band1 + band2 + band3) * modulation + noise;
-                const brightness = Math.floor(intensity * 255);
-
-                specCtx.fillStyle = `rgba(0, ${brightness * 0.8}, ${brightness}, ${intensity})`;
-                specCtx.fillRect(x, y, 1, 1);
-            }
+            drawAlienSpectrogramColumn(specCtx, x, specHeight, star.id, gameState.signalOffset);
+        } else if (star.isFalsePositive) {
+            drawFalsePositiveSpectrogramColumn(specCtx, x, specHeight, star.id, gameState.signalOffset);
         } else {
-            for (let y = 0; y < specHeight; y++) {
-                const band = Math.abs(y - specHeight * 0.5) < specHeight * 0.2 ? 1 : 0;
-                const variation = Math.sin(gameState.signalOffset * 0.1 + y * 0.05) * 0.3 + 0.7;
-                const noise = Math.random() * 0.4;
-
-                const intensity = band * variation + noise * 0.5;
-                const brightness = Math.floor(intensity * 180);
-
-                specCtx.fillStyle = `rgba(0, ${brightness * 0.8}, ${brightness}, ${intensity * 0.6})`;
-                specCtx.fillRect(x, y, 1, 1);
-            }
+            const phenomenonType = star.id % 5;
+            drawNaturalSpectrogramColumn(specCtx, x, specHeight, phenomenonType, star.id, gameState.signalOffset);
         }
 
         gameState.signalAnimationFrameId = requestAnimationFrame(animateSignals);
