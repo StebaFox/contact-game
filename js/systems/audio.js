@@ -349,6 +349,24 @@ export function stopMachineSound() {
     }
 }
 
+// Play metallic door shut sound (power failure)
+let doorShutSound = null;
+export function playDoorShutSound() {
+    if (masterVolume === 0) return;
+
+    if (!doorShutSound) {
+        doorShutSound = document.getElementById('door-shut-sound');
+    }
+
+    if (doorShutSound) {
+        doorShutSound.currentTime = 0;
+        doorShutSound.volume = masterVolume * 0.6;
+        doorShutSound.play().catch(err => {
+            console.log('Door shut sound play prevented:', err);
+        });
+    }
+}
+
 // Start continuous tuning tone (changes with signal quality)
 export function startTuningTone(quality) {
     // Ensure audio context exists
@@ -666,13 +684,13 @@ export function playDishRotationSound() {
 
     oscillator.type = 'sawtooth';
     oscillator.frequency.setValueAtTime(80, audioContext.currentTime);
-    oscillator.frequency.linearRampToValueAtTime(150, audioContext.currentTime + 1.5);
+    oscillator.frequency.linearRampToValueAtTime(150, audioContext.currentTime + 0.9);
 
     gainNode.gain.setValueAtTime(0.03 * masterVolume, audioContext.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 2);
+    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 1.2);
 
     oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 2);
+    oscillator.stop(audioContext.currentTime + 1.2);
 }
 
 // Dish aligned sound

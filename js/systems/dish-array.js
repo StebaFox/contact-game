@@ -5,7 +5,7 @@
 
 import { gameState } from '../core/game-state.js';
 import { log } from '../ui/rendering.js';
-import { playClick, playStaticBurst, playLockAchieved, playMachineSound, stopMachineSound, playDishRotationSound, playDishAlignedSound } from './audio.js';
+import { playClick, playStaticBurst, playLockAchieved, playMachineSound, stopMachineSound, playDishRotationSound, playDishAlignedSound, playDoorShutSound } from './audio.js';
 import { STAR_NAMES, STAR_COORDINATES } from '../narrative/stars.js';
 import { startRerouteMinigame } from './reroute-minigame.js';
 
@@ -194,12 +194,12 @@ function startDishAlignmentSequence(code, startIndex, malfunctionIndex) {
     }
 
     // Calculate timing for remaining dishes
+    const delayPerDish = 1400; // Matches rotation sound duration (1.2s) + aligned beep
     const remainingDishes = code.length - startIndex;
-    const totalDuration = remainingDishes * 1200; // ~1.2s per dish
+    const totalDuration = remainingDishes * delayPerDish;
 
     // Animate telemetry values during alignment
     animateTelemetryDuringAlignment(totalDuration);
-    const delayPerDish = 1200;
 
     // Flash each dish in sequence
     let delay = 0;
@@ -208,36 +208,40 @@ function startDishAlignmentSequence(code, startIndex, malfunctionIndex) {
         const dishIndex = i;
 
         setTimeout(() => {
-            // Check if this dish should malfunction
-            if (dishIndex === malfunctionIndex && !malfunctionTriggeredThisAlignment) {
-                malfunctionTriggeredThisAlignment = true;
-                triggerDishMalfunction(code, dishIndex, char);
-                return;
-            }
+            // Skip if malfunction already occurred (remaining dishes wait for repair)
+            if (malfunctionTriggeredThisAlignment) return;
 
             // Find the dish with this label
             const dish = gameState.dishArray.dishes.find(d => d.label === char);
-            if (dish) {
-                dish.isAligning = true;
-                renderStarmapArray();
-                playClick();
+            if (!dish) return;
 
-                // After a brief flash, mark as aligned
+            // Always start the dish aligning (flashing green)
+            dish.isAligning = true;
+            renderStarmapArray();
+            playDishRotationSound();
+
+            // Check if this dish should malfunction mid-alignment
+            if (dishIndex === malfunctionIndex && !malfunctionTriggeredThisAlignment) {
+                malfunctionTriggeredThisAlignment = true;
+                // Let it flash green briefly, then fail
                 setTimeout(() => {
                     dish.isAligning = false;
-                    dish.isAligned = true;
-                    renderStarmapArray();
-                    updateStarmapArrayStats();
-                }, 500);
+                    triggerDishMalfunction(code, dishIndex, char);
+                }, 800);
+                return;
             }
+
+            // After rotation sound, mark as aligned with confirmation sound
+            setTimeout(() => {
+                dish.isAligning = false;
+                dish.isAligned = true;
+                renderStarmapArray();
+                updateStarmapArrayStats();
+                playDishAlignedSound();
+            }, 1000);
         }, delay);
         delay += delayPerDish;
     }
-
-    // Calculate when alignment finishes (accounting for potential malfunction)
-    const finishDelay = malfunctionIndex >= startIndex && !malfunctionTriggeredThisAlignment
-        ? (malfunctionIndex - startIndex) * delayPerDish  // Will be interrupted
-        : delay;
 
     // After all dishes aligned, update status (only if no malfunction pending)
     if (malfunctionIndex < startIndex || malfunctionIndex === -1) {
@@ -251,44 +255,152 @@ function startDishAlignmentSequence(code, startIndex, malfunctionIndex) {
 function triggerDishMalfunction(code, dishIndex, dishLabel) {
     stopMachineSound();
     playStaticBurst();
+    playDoorShutSound();
 
     const statusEl = document.getElementById('starmap-array-status');
     const aligningTextEl = document.getElementById('array-aligning-text');
-
-    // Update status
-    if (statusEl) {
-        statusEl.textContent = `⚠ DISH ${dishLabel} MALFUNCTION`;
-        statusEl.className = 'starmap-array-status';
-        statusEl.style.color = '#f00';
-    }
 
     // Hide aligning text
     if (aligningTextEl) aligningTextEl.style.display = 'none';
 
     log(`CRITICAL: Dish ${dishLabel} power circuit failure!`, 'warning');
 
-    // Brief pause then show reroute minigame
-    setTimeout(() => {
+    // Mark the dish as malfunctioning (flash red with X on the array map)
+    const dish = gameState.dishArray.dishes.find(d => d.label === dishLabel);
+    if (dish) {
+        dish.isAligning = false;
+        dish.isMalfunctioning = true;
+    }
+    renderStarmapArray();
+
+    // Flash the dish red a few times
+    let flashCount = 0;
+    const flashInterval = setInterval(() => {
+        flashCount++;
+        if (dish) dish.malfunctionFlash = flashCount % 2 === 0;
+        renderStarmapArray();
+
+        if (flashCount >= 6) {
+            clearInterval(flashInterval);
+            if (dish) dish.malfunctionFlash = false;
+            renderStarmapArray();
+
+            // Update status after flashing
+            if (statusEl) {
+                statusEl.textContent = `⚠ DISH ${dishLabel} POWER FAILURE`;
+                statusEl.className = 'starmap-array-status';
+                statusEl.style.color = '#f00';
+            }
+
+            // Show malfunction popup after flash sequence
+            showMalfunctionPopup(code, dishIndex, dishLabel);
+        }
+    }, 200);
+}
+
+// Show malfunction popup with START REPAIR button
+function showMalfunctionPopup(code, dishIndex, dishLabel) {
+    const statusEl = document.getElementById('starmap-array-status');
+
+    const popup = document.createElement('div');
+    popup.id = 'malfunction-popup';
+    popup.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+        border: 2px solid #f00;
+        background: rgba(0, 0, 0, 0.95);
+        padding: 0;
+        width: 360px;
+        max-width: 90vw;
+        box-shadow: 0 0 40px rgba(255, 0, 0, 0.5);
+        font-family: 'VT323', monospace;
+        animation: popupAppear 0.3s ease-out;
+    `;
+
+    popup.innerHTML = `
+        <div style="
+            background: linear-gradient(180deg, #300 0%, #100 100%);
+            border-bottom: 2px solid #f00;
+            padding: 12px 15px;
+            text-align: center;
+        ">
+            <div style="color: #f00; font-size: 12px; letter-spacing: 3px; animation: blink 0.5s infinite;">
+                ⚠ CRITICAL ALERT ⚠
+            </div>
+            <div style="color: #ff0; font-size: 20px; margin-top: 6px; text-shadow: 0 0 10px #ff0;">
+                DISH ${dishLabel} - POWER FAILURE
+            </div>
+        </div>
+        <div style="padding: 15px; text-align: center;">
+            <div style="color: #f80; font-size: 14px; margin-bottom: 8px;">
+                Circuit breaker tripped during alignment.
+            </div>
+            <div style="color: #aaa; font-size: 12px; margin-bottom: 15px;">
+                Power must be manually rerouted to restore<br>
+                dish ${dishLabel} before alignment can continue.
+            </div>
+            <button id="malfunction-repair-btn" style="
+                background: transparent;
+                border: 2px solid #f00;
+                color: #f00;
+                font-family: 'VT323', monospace;
+                font-size: 18px;
+                padding: 10px 30px;
+                cursor: pointer;
+                letter-spacing: 2px;
+                transition: all 0.2s;
+            ">
+                BEGIN REPAIR
+            </button>
+        </div>
+        <style>
+            @keyframes blink {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.3; }
+            }
+            @keyframes popupAppear {
+                from { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+                to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            }
+            #malfunction-repair-btn:hover {
+                background: rgba(255, 0, 0, 0.2);
+                box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+            }
+        </style>
+    `;
+
+    document.body.appendChild(popup);
+
+    // Handle repair button click
+    document.getElementById('malfunction-repair-btn').addEventListener('click', () => {
+        playClick();
+        popup.remove();
+
+        // Clear malfunction visual on dish
+        const dish = gameState.dishArray.dishes.find(d => d.label === dishLabel);
+        if (dish) dish.isMalfunctioning = false;
+        renderStarmapArray();
+
+        // Launch the reroute minigame
         startRerouteMinigame(
             dishLabel,
             // On success - resume alignment from the malfunctioning dish
             () => {
                 log(`Dish ${dishLabel} repaired - resuming alignment`, 'highlight');
-                // Reset status color
                 if (statusEl) statusEl.style.color = '';
-                // Resume from the malfunctioning dish (include it in the sequence)
                 startDishAlignmentSequence(code, dishIndex, -1);
             },
             // On cancel/fail - still complete but note the issue
             () => {
                 log(`Dish ${dishLabel} repair aborted - alignment continuing with reduced efficiency`, 'warning');
-                // Reset status color
                 if (statusEl) statusEl.style.color = '';
-                // Skip the malfunctioning dish and continue
                 startDishAlignmentSequence(code, dishIndex + 1, -1);
             }
         );
-    }, 500);
+    });
 }
 
 // Finish the alignment sequence
@@ -634,7 +746,8 @@ export function renderStarmapArray() {
         const pos = scaledPositions[index];
 
         let classes = 'dish-element';
-        if (dish.isAligning) classes += ' aligning';
+        if (dish.isMalfunctioning) classes += ' malfunctioning';
+        else if (dish.isAligning) classes += ' aligning';
         else if (dish.isAligned) classes += ' aligned';
 
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -651,6 +764,14 @@ export function renderStarmapArray() {
         base.setAttribute('height', 15);
         base.setAttribute('rx', 2);
 
+        // Override colors for malfunctioning dish
+        if (dish.isMalfunctioning) {
+            const fillOpacity = dish.malfunctionFlash ? 0.6 : 0.3;
+            base.setAttribute('fill', `rgba(255, 0, 0, ${fillOpacity})`);
+            base.setAttribute('stroke', '#f00');
+            base.setAttribute('stroke-width', '2');
+        }
+
         // Dish bowl (smaller)
         const bowl = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
         bowl.setAttribute('class', 'dish-bowl');
@@ -659,15 +780,49 @@ export function renderStarmapArray() {
         bowl.setAttribute('rx', 12);
         bowl.setAttribute('ry', 6);
 
+        // Override colors for malfunctioning dish
+        if (dish.isMalfunctioning) {
+            const fillOpacity = dish.malfunctionFlash ? 0.5 : 0.2;
+            bowl.setAttribute('fill', `rgba(255, 0, 0, ${fillOpacity})`);
+            bowl.setAttribute('stroke', '#f00');
+            bowl.setAttribute('stroke-width', '2');
+        }
+
         // Label (inside the base box)
         const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         label.setAttribute('class', 'dish-label');
         label.setAttribute('y', 8);
         label.textContent = dish.label;
 
+        if (dish.isMalfunctioning) {
+            label.setAttribute('fill', '#f00');
+        }
+
         g.appendChild(base);
         g.appendChild(bowl);
         g.appendChild(label);
+
+        // Red X overlay for malfunctioning dish (always visible)
+        if (dish.isMalfunctioning) {
+            const xColor = dish.malfunctionFlash ? '#ff4444' : '#f00';
+            const x1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            x1.setAttribute('x1', -10);
+            x1.setAttribute('y1', -16);
+            x1.setAttribute('x2', 10);
+            x1.setAttribute('y2', 4);
+            x1.setAttribute('stroke', xColor);
+            x1.setAttribute('stroke-width', '3');
+            g.appendChild(x1);
+
+            const x2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            x2.setAttribute('x1', 10);
+            x2.setAttribute('y1', -16);
+            x2.setAttribute('x2', -10);
+            x2.setAttribute('y2', 4);
+            x2.setAttribute('stroke', xColor);
+            x2.setAttribute('stroke-width', '3');
+            g.appendChild(x2);
+        }
 
         dishGroup.appendChild(g);
     });

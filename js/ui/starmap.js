@@ -37,6 +37,8 @@ const weakSignalConfig = {
     // Day 1 weak signals (2 stars - one is false positive)
     3: { requiredPower: 4 },    // LALANDE 21185 - easy weak signal
     7: { requiredPower: 5 },    // ROSS 248 - weak signal FALSE POSITIVE
+    // Day 2 weak signal (1 star)
+    13: { requiredPower: 6 },   // STRUVE 2398 - binary system, weak signal
     // Day 3 weak signals (7 stars: indices 21-27)
     21: { requiredPower: 5 },   // VAN MAANEN'S STAR - easy
     22: { requiredPower: 4 },   // WOLF 424 - easy

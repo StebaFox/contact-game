@@ -17,6 +17,15 @@ export function setTuningFunctions(fns) {
     startSignalAnimationFn = fns.startSignalAnimation;
 }
 
+// Signal drift state for weak signals
+let driftState = {
+    freqOffset: 0,
+    gainOffset: 0,
+    freqVelocity: 0,
+    gainVelocity: 0,
+    driftTimer: 0
+};
+
 // Start the tuning minigame
 export function startTuningMinigame(star) {
     // Ensure audio context is initialized
@@ -31,6 +40,9 @@ export function startTuningMinigame(star) {
     gameState.currentGain = Math.random() < 0.5 ? 0 : 100;
     gameState.lockDuration = 0;
     gameState.tuningActive = true;
+
+    // Reset drift state
+    driftState = { freqOffset: 0, gainOffset: 0, freqVelocity: 0, gainVelocity: 0, driftTimer: 0 };
 
     // Show tuning interface
     document.getElementById('tuning-game').style.display = 'block';
@@ -100,16 +112,48 @@ function tuningFeedbackLoop() {
     // Reset strength display color
     document.getElementById('signal-strength-percent').style.color = '';
 
+    // Apply signal drift for weak signals (target wanders)
+    if (isWeakSignal) {
+        driftState.driftTimer++;
+
+        // Randomly change drift velocity (slow, wandering motion)
+        if (driftState.driftTimer % 30 === 0) {
+            driftState.freqVelocity += (Math.random() - 0.5) * 0.3;
+            driftState.gainVelocity += (Math.random() - 0.5) * 0.3;
+            // Dampen velocity to prevent runaway
+            driftState.freqVelocity *= 0.8;
+            driftState.gainVelocity *= 0.8;
+        }
+
+        // Apply velocity to offset
+        driftState.freqOffset += driftState.freqVelocity;
+        driftState.gainOffset += driftState.gainVelocity;
+
+        // Clamp drift range (±4 units)
+        const maxDriftRange = 4;
+        driftState.freqOffset = Math.max(-maxDriftRange, Math.min(maxDriftRange, driftState.freqOffset));
+        driftState.gainOffset = Math.max(-maxDriftRange, Math.min(maxDriftRange, driftState.gainOffset));
+
+        // Spring force pulling back toward center
+        driftState.freqVelocity -= driftState.freqOffset * 0.02;
+        driftState.gainVelocity -= driftState.gainOffset * 0.02;
+    }
+
+    // Calculate effective target (base + drift)
+    const effectiveTargetFreq = gameState.targetFrequency + (isWeakSignal ? driftState.freqOffset : 0);
+    const effectiveTargetGain = gameState.targetGain + (isWeakSignal ? driftState.gainOffset : 0);
+
     // Calculate how close the values are to target
-    const freqDiff = Math.abs(gameState.currentFrequency - gameState.targetFrequency);
-    const gainDiff = Math.abs(gameState.currentGain - gameState.targetGain);
+    const freqDiff = Math.abs(gameState.currentFrequency - effectiveTargetFreq);
+    const gainDiff = Math.abs(gameState.currentGain - effectiveTargetGain);
 
     const tolerance = 5;
-    const maxDiff = 100;
+    const maxDiff = 80;
 
-    // Calculate base signal quality (0-100%)
-    const freqQuality = Math.max(0, 1 - (freqDiff / maxDiff));
-    const gainQuality = Math.max(0, 1 - (gainDiff / maxDiff));
+    // Calculate base signal quality with power curve (steeper near target)
+    // Power of 2 means: diff=5 → ~88%, diff=10 → ~77%, diff=20 → ~56%
+    const freqQuality = Math.pow(Math.max(0, 1 - (freqDiff / maxDiff)), 2);
+    const gainQuality = Math.pow(Math.max(0, 1 - (gainDiff / maxDiff)), 2);
     let overallQuality = (freqQuality + gainQuality) / 2;
 
     // Apply dish array boost for weak signals
@@ -154,6 +198,12 @@ function tuningFeedbackLoop() {
             return;
         }
     } else {
+        // Show drift warning when close but signal is wandering
+        if (isWeakSignal && qualityPercent >= 70 && (freqDiff > tolerance || gainDiff > tolerance)) {
+            strengthPercent.textContent = qualityPercent + '% ◈ DRIFT';
+            strengthPercent.style.color = '#ff0';
+        }
+
         gameState.lockDuration = 0;
         strengthFill.style.boxShadow = '0 0 10px rgba(0, 255, 0, 0.5)';
         strengthFill.style.background = '';
