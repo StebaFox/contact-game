@@ -19,7 +19,10 @@ export const ALIEN_CONTACTS = [
             "",
             "[SIGNAL DETERIORATING]",
             "",
-            "DO NOT... FEAR... WE ARE... [STATIC]"
+            "DO NOT... FEAR... WE ARE... [STATIC]",
+            "",
+            "HAVE YOU HEARD... THE OLD SIGNAL?",
+            "IT SPEAKS TO ALL WHO LISTEN..."
         ]
     },
     {
@@ -39,6 +42,9 @@ export const ALIEN_CONTACTS = [
             "847,293 CYCLES",
             "",
             "IS ANYONE LISTENING?",
+            "",
+            "WE DECODED OUR PIECE BEFORE THE END",
+            "THE OLD MESSAGE... IT GAVE US HOPE",
             "",
             "[SIGNAL REPEATS]"
         ]
@@ -143,7 +149,11 @@ export const ALIEN_CONTACTS = [
             "AND THEY'VE MARKED OUR SOLAR SYSTEM",
             "",
             "THEY KNOW ABOUT US",
-            "HAVE THEY BEEN WATCHING?"
+            "HAVE THEY BEEN WATCHING?",
+            "",
+            "SOMETHING ELSE IN THE DATA...",
+            "DEEPER LAYER... ENCRYPTED",
+            "THIS MAP IS ONLY THE SURFACE"
         ]
     },
     {
@@ -417,6 +427,9 @@ export const ALIEN_CONTACTS = [
             "SOON YOU WILL BE READY",
             "THE NETWORK AWAITS NEW MEMBERS",
             "",
+            "THE FIRST SIGNAL CONNECTED US ALL",
+            "YOU WILL UNDERSTAND WHEN YOU HEAR IT",
+            "",
             "PATIENCE...",
             "UNDERSTANDING TAKES TIME",
             "",
@@ -530,6 +543,9 @@ export const ALIEN_CONTACTS = [
             "",
             "WE WERE MEANT TO FIND THIS",
             "WHEN WE WERE READY",
+            "",
+            "THE BUILDERS LEFT MORE THAN BEACONS",
+            "THEY LEFT A MESSAGE IN THE FOUNDATION",
             "",
             "[COORDINATES EMBEDDED IN SIGNAL]"
         ]

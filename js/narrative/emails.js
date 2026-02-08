@@ -20,9 +20,11 @@ Good luck.
 Project Oversight`
 };
 
-// Random emails that can be received during gameplay
+// Day-aware random email pools
 // Note: {PLAYER_NAME} will be replaced with the actual player name at runtime
-export const RANDOM_EMAILS = [
+
+// Day 1: Mundane atmosphere — routine, bureaucratic, small hints of strangeness
+export const DAY1_EMAILS = [
     {
         from: 'PROJECT OVERSIGHT - CLASSIFIED',
         subject: 'RE: Budget Concerns',
@@ -85,8 +87,40 @@ Due to supply chain delays, the following items are temporarily unavailable:
 
 We apologize for any inconvenience. Freeze-dried alternatives are available.
 
+P.S. — Has anyone else noticed the terminal displays flickering near the coffee machine? Maintenance says it's nothing but it's been going on all week.
+
 - Sector 7 Food Services`
     },
+    {
+        from: 'Tom Nguyen - Night Shift',
+        subject: 'Something weird in Sector 12',
+        body: `Hey {PLAYER_NAME},
+
+Probably nothing, but I flagged a pattern during my shift last night. Sector 12 background noise has this 47-second repeating structure. Too regular for natural, too weak for any cataloged source.
+
+I ran it through the standard filters and it passed right through — which means it's not any known interference pattern. Like I said, probably nothing. Solar wind refraction or something.
+
+Just thought you should know in case you see it in your data too.
+
+- Tom`
+    },
+    {
+        from: 'Dr. Sarah Okonkwo - Astrobiology',
+        subject: 'Habitable Zone Analysis',
+        body: `{PLAYER_NAME},
+
+I've compiled atmospheric data for several targets in your monitoring zone. Three of them show promising biosignature potential.
+
+I know SETI focuses on technological signatures, but sometimes life announces itself in simpler ways first. Keep an eye on the oxygen-rich candidates.
+
+Attached: Spectral analysis summary (encrypted)
+
+- Sarah`
+    }
+];
+
+// Day 2: Escalation — colleagues react to events, systems behaving strangely
+export const DAY2_EMAILS = [
     {
         from: 'Dr. Marcus Webb - Xenolinguistics',
         subject: 'Pattern Analysis Request',
@@ -116,17 +150,30 @@ Note: Anomalous data patterns flagged in sectors 7-12. Manual review recommended
 - Backup System v3.2.1`
     },
     {
-        from: 'Dr. Sarah Okonkwo - Astrobiology',
-        subject: 'Habitable Zone Analysis',
+        from: 'Tom Nguyen - Night Shift',
+        subject: 'RE: Something weird in Sector 12',
         body: `{PLAYER_NAME},
 
-I've compiled atmospheric data for several targets in your monitoring zone. Three of them show promising biosignature potential.
+Okay, remember that 47-second pattern I mentioned? It's gone. Completely. Vanished from the background noise overnight — right around the time you found that Ross 128 signal.
 
-I know SETI focuses on technological signatures, but sometimes life announces itself in simpler ways first. Keep an eye on the oxygen-rich candidates.
+Coincidence? Yeah. Probably. But the timing is weird, right?
 
-Attached: Spectral analysis summary (encrypted)
+Also — did you hear what happened? Half the building is talking about your signal. Dr. Chen was in the break room at 3 AM with printouts taped to the wall.
 
-- Sarah`
+- Tom`
+    },
+    {
+        from: 'SYSTEM ADMINISTRATOR',
+        subject: 'Array Calibration Anomaly — Advisory',
+        body: `NOTICE TO SECTOR 7 PERSONNEL:
+
+Automated diagnostics have detected a calibration drift across dishes 4, 7, and 11. All three receivers are gradually shifting toward the same coordinates without operator input.
+
+Engineering has been notified. Please do not attempt manual override at this time.
+
+This is likely a firmware issue from the last update cycle.
+
+- Technical Services`
     },
     {
         from: 'PERSONNEL DEPARTMENT',
@@ -142,6 +189,59 @@ Note: Given recent... developments... this training is more relevant than ever.
 - HR Division`
     }
 ];
+
+// Day 3: Tension — lockdown, personal confessions, the weight of discovery
+export const DAY3_EMAILS = [
+    {
+        from: 'SETI OPERATIONS - SECURITY',
+        subject: 'Building Access Restriction — Effective Immediately',
+        body: `[PRIORITY NOTICE]
+
+By order of the Program Director, effective immediately:
+
+- Building access is restricted to Level 6 clearance and above
+- All non-essential personnel have been reassigned
+- External communications are being routed through secure channels only
+- Media inquiries are to be directed to the Public Affairs office — do NOT respond directly
+
+This is a precautionary measure. There is no cause for alarm.
+
+- SETI Security Operations`
+    },
+    {
+        from: 'Dr. Marcus Webb - Xenolinguistics',
+        subject: 'I can\'t sleep',
+        body: `{PLAYER_NAME},
+
+It's 4 AM and I can't sleep. I keep running the encoding analysis in my head.
+
+This is going to sound unscientific, but the signal structure feels... personal. Like it was designed for us specifically. Not just for a civilization at our technological level — for us. For this moment.
+
+The mathematical constants it uses as reference frames are ones we only formalized in the last century. The compression algorithm maps to information theory we published in the 1960s. It's as if someone was watching us develop the tools we'd need to read their message, and then sent it.
+
+I know how that sounds. I know. But look at the data and tell me I'm wrong.
+
+- Marcus`
+    },
+    {
+        from: 'Tom Nguyen - Night Shift',
+        subject: 'This is my last shift',
+        body: `{PLAYER_NAME},
+
+They're rotating out all non-Level-6 staff starting tomorrow. I'm being reassigned to the Mojave relay station.
+
+I just want you to know — whatever you're working on in there, I believe in it. I've been doing night shifts at radio telescopes for twelve years and I've never seen the senior staff act like this. Dr. Whitmore was pacing the hall at midnight. Dr. Chen hasn't left the building in two days.
+
+Something big is happening. I can feel it.
+
+Good luck in there.
+
+- Tom`
+    }
+];
+
+// Legacy export for backwards compatibility
+export const RANDOM_EMAILS = [...DAY1_EMAILS, ...DAY2_EMAILS, ...DAY3_EMAILS];
 
 // Email sent after first dish power failure
 export const POWER_FAILURE_EMAIL = {

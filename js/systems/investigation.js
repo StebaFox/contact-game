@@ -414,12 +414,102 @@ function startGenesisTriangulation() {
 }
 
 function startFinalDecryption() {
-    // Import and trigger the final cosmic message
-    import('../narrative/final-message.js').then(module => {
-        gameState.finalPuzzleComplete = true;
-        autoSave();
-        module.showFinalMessage();
+    gameState.finalPuzzleComplete = true;
+    autoSave();
+
+    // Show transmission bridge overlay before the final message
+    showTransmissionBridge(() => {
+        import('../narrative/final-message.js').then(module => {
+            module.showFinalMessage();
+        });
     });
+}
+
+// Typed-text bridge sequence before the final cosmic message
+function showTransmissionBridge(onComplete) {
+    const overlay = document.createElement('div');
+    overlay.id = 'transmission-bridge';
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: #000; z-index: 9999; display: flex;
+        align-items: center; justify-content: center;
+        font-family: 'VT323', monospace; color: #0f0;
+    `;
+
+    const container = document.createElement('div');
+    container.style.cssText = `
+        text-align: left; font-size: 18px; line-height: 1.8;
+        max-width: 600px; padding: 40px;
+    `;
+    overlay.appendChild(container);
+    document.body.appendChild(overlay);
+
+    const lines = [
+        { text: 'DECRYPTION ENGINE: ONLINE', color: '#0f0', delay: 800 },
+        { text: 'COMBINING FRAGMENTS 1-4...', color: '#0f0', delay: 1200 },
+        { text: 'RECONSTRUCTING COMPLETE MESSAGE...', color: '#0f0', delay: 2000 },
+        { text: '', color: '#0f0', delay: 600 },
+        { text: 'SIGNAL COHERENCE: 100%', color: '#0ff', delay: 1500 },
+        { text: 'TEMPORAL ORIGIN: T < 0 (PRE-COSMIC)', color: '#0ff', delay: 2000 },
+        { text: '', color: '#0f0', delay: 1000 },
+        { text: 'MESSAGE CLASS: UNKNOWN', color: '#ff0', delay: 2000 },
+        { text: '', color: '#0f0', delay: 1500 },
+        { text: 'MESSAGE CLASS: ...FIRST CONTACT', color: '#ff0', delay: 2000 },
+        { text: '', color: '#0f0', delay: 1500 },
+        { text: 'MESSAGE CLASS: ...ORIGIN CONTACT', color: '#f0f', delay: 2500 },
+        { text: '', color: '#0f0', delay: 2000 },
+        { text: 'RECEIVING TRANSMISSION...', color: '#fff', delay: 3000 },
+    ];
+
+    let lineIndex = 0;
+
+    function typeLine() {
+        if (lineIndex >= lines.length) {
+            // Fade out and launch final message
+            overlay.style.transition = 'opacity 2s';
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.remove();
+                onComplete();
+            }, 2000);
+            return;
+        }
+
+        const line = lines[lineIndex];
+        const p = document.createElement('p');
+        p.style.cssText = `color: ${line.color}; margin: 0; min-height: 1.8em; opacity: 0;`;
+        container.appendChild(p);
+
+        // Fade in
+        requestAnimationFrame(() => {
+            p.style.transition = 'opacity 0.3s';
+            p.style.opacity = '1';
+        });
+
+        if (line.text === '') {
+            // Empty line — just a pause
+            lineIndex++;
+            setTimeout(typeLine, line.delay);
+            return;
+        }
+
+        // Type out character by character
+        let charIdx = 0;
+        const typeSpeed = 40;
+        const typeInterval = setInterval(() => {
+            if (charIdx < line.text.length) {
+                p.textContent += line.text[charIdx];
+                charIdx++;
+            } else {
+                clearInterval(typeInterval);
+                lineIndex++;
+                setTimeout(typeLine, line.delay);
+            }
+        }, typeSpeed);
+    }
+
+    // Start after a brief pause on black
+    setTimeout(typeLine, 1000);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

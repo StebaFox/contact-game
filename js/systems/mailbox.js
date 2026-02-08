@@ -6,7 +6,7 @@
 import { gameState } from '../core/game-state.js';
 import { showView, log } from '../ui/rendering.js';
 import { playClick, playEmailNotification } from '../systems/audio.js';
-import { RANDOM_EMAILS, FIRST_CONTACT_EMAIL } from '../narrative/emails.js';
+import { DAY1_EMAILS, DAY2_EMAILS, DAY3_EMAILS, FIRST_CONTACT_EMAIL } from '../narrative/emails.js';
 
 // Open the mailbox view (toggles if already open)
 export function openMailbox() {
@@ -173,9 +173,17 @@ export function checkForNewMail() {
     }
 }
 
-// Send a random email from the template list
+// Send a random email from the day-appropriate pool
 export function sendRandomMail() {
-    const randomEmail = RANDOM_EMAILS[Math.floor(Math.random() * RANDOM_EMAILS.length)];
+    // Pick from the right pool based on current day
+    let pool;
+    switch (gameState.currentDay) {
+        case 2: pool = DAY2_EMAILS; break;
+        case 3: pool = DAY3_EMAILS; break;
+        default: pool = DAY1_EMAILS; break;
+    }
+
+    const randomEmail = pool[Math.floor(Math.random() * pool.length)];
 
     // Replace {PLAYER_NAME} placeholder with actual player name
     const body = randomEmail.body.replace(/{PLAYER_NAME}/g, gameState.playerName);

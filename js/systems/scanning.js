@@ -21,6 +21,34 @@ import { updateStarCatalogDisplay } from '../ui/starmap.js';
 // Ross 128 star index - requires decryption
 const ROSS_128_INDEX = 8;
 
+// Track whether the pre-Ross-128 unease email has been sent
+let preRoss128EmailSent = false;
+
+// Check if we should send the CMB unease email (Day 1, after 3rd non-Ross-128 scan)
+function checkPreRoss128Unease() {
+    if (preRoss128EmailSent) return;
+    if (gameState.currentDay !== 1) return;
+    if (gameState.decryptionComplete) return; // Already past Ross 128
+
+    // Count Day 1 scans that aren't Ross 128
+    let day1ScanCount = 0;
+    for (const [id] of gameState.scanResults) {
+        if (id !== ROSS_128_INDEX) day1ScanCount++;
+    }
+
+    if (day1ScanCount >= 3) {
+        preRoss128EmailSent = true;
+        const name = gameState.playerName;
+        setTimeout(() => {
+            addMailMessage(
+                'Dr. Eleanor Chen - Radio Astronomy',
+                'Background Pattern — Probably Nothing',
+                `${name},\n\nThis might be nothing, but there's a low-level pattern in the cosmic microwave background data from your sector. It's below our standard detection threshold, but it's structured. Almost like a carrier wave.\n\nI can't isolate the source. It's not coming from any single star — it's more like it's embedded in the background itself.\n\nKeep scanning. If you notice anything unusual in the Ross 128 region, flag it immediately.\n\n- Eleanor`
+            );
+        }, 10000);
+    }
+}
+
 // Convert a star ID to a numeric seed (handles string IDs from dynamic stars)
 function numericSeed(id) {
     if (typeof id === 'number') return id + 1;
@@ -235,6 +263,13 @@ export function initiateSRC7024CrashScan() {
         playSecurityBeep('warning');
     }, 4000);
 
+    // Phase 2.5: The signal is responding — one extra second of dread
+    setTimeout(() => {
+        log('ALERT: Signal appears to be responding to our scan...', 'warning');
+        document.getElementById('analysis-text').innerHTML +=
+            '<p style="color: #f00;">⚠ SIGNAL RESPONDING TO SCAN...</p>';
+    }, 4500);
+
     // Phase 3: Crash begins
     setTimeout(() => {
         // Advance state machine
@@ -242,7 +277,7 @@ export function initiateSRC7024CrashScan() {
             module.advanceDay2Cliffhanger(1);
         });
         startCrashSequence();
-    }, 5000);
+    }, 6000);
 }
 
 function startCrashSequence() {
@@ -453,13 +488,13 @@ function launchCrashOverlay() {
 
             // Play power-down sound (fades out at end), wait for completion
             playPowerDownSound().then(() => {
-                // 3 seconds of dead silence on black screen
+                // 5 seconds of dead silence on black screen — agonizing
                 setTimeout(() => {
                     overlay.remove();
                     import('./day-report.js').then(module => {
                         module.advanceDay2Cliffhanger(2);
                     });
-                }, 3000);
+                }, 5000);
             });
         }
     }
@@ -1132,6 +1167,9 @@ function showFalsePositiveResult(star, cause, display) {
     // Auto-save after scan result
     autoSave();
 
+    // Check for pre-Ross-128 unease email trigger
+    checkPreRoss128Unease();
+
     const resultDiv = document.createElement('div');
     resultDiv.style.cssText = 'margin-top: 20px; padding: 15px; border: 2px solid #f00; background: rgba(255, 0, 0, 0.1);';
 
@@ -1189,6 +1227,9 @@ function showVerifiedSignalResult(star, display) {
 
     // Auto-save after scan result
     autoSave();
+
+    // Check for pre-Ross-128 unease email trigger
+    checkPreRoss128Unease();
 
     const resultDiv = document.createElement('div');
     resultDiv.style.cssText = 'margin-top: 20px; padding: 15px; border: 2px solid #f0f; background: rgba(255, 0, 255, 0.1);';
@@ -1660,7 +1701,7 @@ function scheduleSrc7024PostAlignmentEmails() {
         addMailMessage(
             'Dr. Marcus Webb - Xenolinguistics',
             'SRC-7024 Fragment Analysis',
-            `Dr. ${name},\n\nThe aligned fragment data is extraordinary. The encoding has definite positional structure — these aren't random symbols. The mathematical sequences embed what appear to be spatial coordinates.\n\nWhatever sent this signal wanted us to find something specific.\n\n- Marcus`
+            `Dr. ${name},\n\nMy hands are actually shaking. In twenty years of xenolinguistics, I've never seen encoding this purposeful.\n\nThe fragment has definite positional structure — these aren't random symbols. The mathematical sequences embed what appear to be spatial coordinates. Triangulation vectors, maybe.\n\nWhatever sent this signal wanted us to find something specific.\n\n- Marcus`
         );
     }, 8000);
 
@@ -1668,7 +1709,7 @@ function scheduleSrc7024PostAlignmentEmails() {
         addMailMessage(
             'Dr. Eleanor Chen - Radio Astronomy',
             'Triangulation Vectors in SRC-7024 Data',
-            `${name},\n\nCross-referencing the SRC-7024 fragment with pulsar timing arrays — these look like triangulation vectors. Three reference points, all pointing to a single location in deep space.\n\nThis is big.\n\n- Eleanor`
+            `${name},\n\nI pulled an all-nighter verifying Marcus's analysis. Triple-checked against every pulsar database we have access to. The vectors are real.\n\nThree reference points, all converging on a single location in deep space. Nothing in our catalogs matches these coordinates.\n\nThis is big. Really big.\n\n- Eleanor`
         );
     }, 18000);
 
@@ -1676,7 +1717,7 @@ function scheduleSrc7024PostAlignmentEmails() {
         addMailMessage(
             'Dr. James Whitmore - SETI Director',
             '[URGENT] PROJECT LIGHTHOUSE — Investigation Page Activated',
-            `Dr. ${name},\n\nDr. Chen and Dr. Webb both confirm: the SRC-7024 data contains triangulation vectors pointing to an unknown location in deep space.\n\nI've authorized the creation of a dedicated investigation workspace — PROJECT LIGHTHOUSE. You'll find it in your navigation panel.\n\nIf these coordinates are real, we need to triangulate NOW.\n\nThis could change everything.\n\n- James Whitmore\n  SETI Program Director`
+            `Dr. ${name},\n\nDr. Chen and Dr. Webb both confirm: the SRC-7024 data contains triangulation vectors pointing to an unknown location in deep space.\n\nI've authorized the creation of a dedicated investigation workspace — PROJECT LIGHTHOUSE. You'll find it in your navigation panel.\n\nIf these coordinates are real... I don't want to speculate yet. But we need to triangulate NOW.\n\n- James Whitmore\n  SETI Program Director`
         );
 
         // Unlock investigation page after this email arrives
@@ -1693,10 +1734,18 @@ function schedulePreBigBangEmails() {
     setTimeout(() => {
         addMailMessage(
             'Dr. Sarah Okonkwo - Astrobiology',
-            'NEXUS POINT Data — Impossible Constants',
-            `${name},\n\nI've been reviewing the NEXUS POINT fragment. These physical constants don't match our universe. They describe different initial conditions — as if someone is describing the parameters of a DIFFERENT cosmos.\n\nThe temporal markers predate the Big Bang by billions of years. This is impossible unless there was something before.\n\nTwo fragments down, but the message is still incomplete. If there are more pieces hidden in the remaining signals, we need to find them. Keep scanning — any star could be carrying another fragment.\n\n- Sarah`
+            'NEXUS POINT Data — I need to tell someone',
+            `${name},\n\nI need to tell someone because I can't tell my team without causing a panic.\n\nThe physical constants in the NEXUS POINT fragment don't match our universe. They describe different initial conditions — as if someone is documenting the parameters of a DIFFERENT cosmos. And the temporal markers predate the Big Bang by billions of years.\n\nThat sentence should be meaningless. It should be gibberish. But the math is clean.\n\nI'm terrified.\n\nTwo fragments down. The message is still incomplete. Keep scanning — any star could be carrying another piece.\n\n- Sarah`
         );
     }, 20000);
+
+    setTimeout(() => {
+        addMailMessage(
+            'Dr. Eleanor Chen - Radio Astronomy',
+            'RE: NEXUS POINT — A different perspective',
+            `${name},\n\nSarah just told me. I know she's scared. I'm not.\n\nI'm awed.\n\nThink about it — if they wanted to hurt us, they wouldn't have scattered the message across multiple stars for collaborative decryption. They wouldn't have embedded coordinates we could follow. This feels like... a gift.\n\nSomeone wanted to be found. Someone wanted us to understand.\n\nLet's keep going.\n\n- Eleanor`
+        );
+    }, 40000);
 
     // Only hint at 82 Eridani if the player hasn't found it after scanning half the Day 3 stars
     scheduleEridaniHintIfNeeded();
@@ -1739,11 +1788,19 @@ function scheduleGenesisTriangulationEmails() {
 
     setTimeout(() => {
         addMailMessage(
+            'Dr. James Whitmore - SETI Director',
+            'Before we go further',
+            `${name},\n\nBefore Eleanor sends you the triangulation data — I need a moment.\n\nI started this program thirty years ago. Fought the funding cuts. Every year, the same question from the oversight committee: "Why are we still listening?" I never had a good answer. Just faith.\n\nNow I'm looking at three fragments of a message from before the Big Bang, and I'm crying at my desk like a child.\n\nThank you. For everything.\n\n- James`
+        );
+    }, 5000);
+
+    setTimeout(() => {
+        addMailMessage(
             'Dr. Eleanor Chen - Radio Astronomy',
             'All Three Fragments — Pattern Emerging',
             `${name},\n\nWith all three fragments decoded, I ran a cross-correlation analysis. The data from SRC-7024, NEXUS POINT, and 82 Eridani aren't just pieces of a message — they contain a SECOND set of triangulation vectors.\n\nThese vectors don't point to any known object. They converge on a position that predates our earliest sky surveys.\n\nCheck PROJECT LIGHTHOUSE. We need to triangulate this immediately.\n\n- Eleanor`
         );
-    }, 10000);
+    }, 15000);
 
     setTimeout(() => {
         addMailMessage(
@@ -1751,7 +1808,7 @@ function scheduleGenesisTriangulationEmails() {
             'RE: Fragment Cross-Analysis — "The Origin Point"',
             `Dr. ${name},\n\nEleanor is right. These three fragments, when combined, contain precise triangulation data pointing to what the encoding describes as a "genesis coordinate."\n\nWhatever created these signals is directing us to the source — the very origin of the message.\n\nUse the investigation page to run the triangulation. I believe this is the final piece.\n\n- Marcus`
         );
-    }, 25000);
+    }, 30000);
 }
 
 // Schedule emails after GENESIS POINT synthesis fragment collected
@@ -1761,8 +1818,8 @@ function schedulePostGenesisEmails() {
     setTimeout(() => {
         addMailMessage(
             'Dr. James Whitmore - SETI Director',
-            '[PRIORITY] All Fragments Decoded — Final Decryption Ready',
-            `Dr. ${name},\n\nThis is it. All four fragments have been decoded and aligned.\n\nThe complete message is now reconstructable. Our quantum processors are standing by for the final decryption sequence.\n\nOpen PROJECT LIGHTHOUSE and initiate the final decryption when you're ready. Whatever this message says... we'll face it together.\n\n- James Whitmore\n  SETI Program Director`
+            'It\'s just us now',
+            `${name},\n\nI've cleared the building. It's just us now — the original team. Chen, Webb, Okonkwo, and you.\n\nAll four fragments are decoded. The complete message is reconstructable.\n\nOpen PROJECT LIGHTHOUSE when you're ready. Take your time.\n\nWe've been waiting 13.8 billion years. A few more minutes won't matter.\n\n- James`
         );
     }, 5000);
 }

@@ -557,11 +557,19 @@ function scheduleAllSections() {
         messageState.timeouts.push(timeout);
     });
 
-    // Schedule the continue button after last section
+    // Schedule breathing moment + continue button after last section
     const lastSection = MESSAGE_SECTIONS[MESSAGE_SECTIONS.length - 1];
+
+    // Start the breathing moment 3s after the last line appears
+    const breatheTimeout = setTimeout(() => {
+        startBreathingMoment();
+    }, lastSection.delay + 3000);
+    messageState.timeouts.push(breatheTimeout);
+
+    // Show continue button after 15s of breathing room
     const continueTimeout = setTimeout(() => {
         showContinueButton();
-    }, lastSection.delay + 5000);
+    }, lastSection.delay + 15000);
     messageState.timeouts.push(continueTimeout);
 }
 
@@ -681,6 +689,46 @@ function renderFinal(element, section) {
         animation: fm-finalPulse 3s ease-in-out infinite, fm-fadeIn 3s ease-out forwards;
     `;
     element.textContent = section.text;
+}
+
+function startBreathingMoment() {
+    const overlay = messageState.overlay;
+    if (!overlay) return;
+
+    // Brighten the starfield — increase star opacity/size
+    const stars = overlay.querySelectorAll('div[style*="border-radius: 50%"]');
+    stars.forEach(star => {
+        star.style.transition = 'opacity 8s ease-in, transform 8s ease-in';
+        star.style.opacity = '1';
+        const currentSize = parseFloat(star.style.width) || 1;
+        const scale = 1 + (currentSize / 3);
+        star.style.transform = `scale(${scale})`;
+    });
+
+    // Add a faint cyan glow that pulses at center of screen
+    const glow = document.createElement('div');
+    glow.style.cssText = `
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        width: 300px; height: 300px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(0, 255, 255, 0.08) 0%, transparent 70%);
+        animation: fm-breatheGlow 4s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 0;
+    `;
+    overlay.appendChild(glow);
+
+    // Add the glow animation if not already present
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fm-breatheGlow {
+            0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+        }
+    `;
+    overlay.appendChild(style);
 }
 
 function showContinueButton() {
