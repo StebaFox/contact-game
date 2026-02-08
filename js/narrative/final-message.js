@@ -2,523 +2,295 @@
 // FINAL MESSAGE
 // The cosmic revelation from the First Universe
 // This file is separate for easy editing of the narrative content
+//
+// Each section has an `id` for easy reference when adding images/effects later.
+// Section types: header, paragraph, emphasis, poetic, divider, final
 // ═════════════════════════════════════════════════════════════════════════════
 
 import { gameState } from '../core/game-state.js';
 import { playClick } from '../systems/audio.js';
-import { showView } from '../ui/rendering.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Message Content - Edit this section to change the narrative
+// Each section has: id (unique label), type, text, style (optional), pauseAfter (optional ms)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MESSAGE_SECTIONS = [
+    // ── ACT 1: GREETING & REVELATION ──
+    { id: 'greeting', type: 'header', text: 'Greetings.', style: 'greeting', pauseAfter: 2500 },
     {
-        type: 'header',
-        text: 'Greetings.',
-        delay: 0,
-        style: 'greeting'
+        id: 'opening-paragraph', type: 'paragraph',
+        text: `You are receiving this message because you have succeeded.\n\nYou have heard what could not be heard. You have seen what was never meant to be seen directly. You have gathered fragments scattered across noise, across time, across the birth-echo of your reality itself.\n\nThat alone tells us something about you.`,
+        style: 'default'
+    },
+    { id: 'waited-long-time', type: 'emphasis', text: 'We have waited a very long time for this moment.', style: 'default', pauseAfter: 3000 },
+    { id: 'divider-1', type: 'divider', pauseAfter: 1500 },
+    { id: 'came-before', type: 'header', text: 'We are the ones who came before.', style: 'revelation', pauseAfter: 3000 },
+    {
+        id: 'before-stars', type: 'poetic',
+        text: 'Before your stars ignited.\nBefore your galaxies spiraled into being.\nBefore time, as you understand it, had meaning.',
+        style: 'poetic'
     },
     {
-        type: 'paragraph',
-        text: `You are receiving this message because you have succeeded.
+        id: 'first-universe', type: 'paragraph',
+        text: `We were born in the first universe—the only universe that ever was.\n\nIn our earliest ages, we believed we were not alone. We listened. We searched. We built instruments that could hear across the cosmos and minds that could imagine what might answer back.\n\nWe expected company.\n\nWe found none.`,
+        style: 'default'
+    },
 
-You have heard what could not be heard. You have seen what was never meant to be seen directly. You have gathered fragments scattered across noise, across time, across the birth-echo of your reality itself.
+    // ── ACT 2: THE SILENCE ──
+    {
+        id: 'not-in-galaxy', type: 'poetic',
+        text: 'Not in our galaxy.\nNot in the clusters beyond it.\nNot in the furthest light that could ever reach us.',
+        style: 'poetic'
+    },
+    { id: 'searched-billion', type: 'emphasis', text: 'For nearly a billion years, we searched.', style: 'default', pauseAfter: 3000 },
+    { id: 'silence-absolute', type: 'emphasis', text: 'The silence was absolute.', style: 'dark', pauseAfter: 4000 },
+    { id: 'divider-2', type: 'divider', pauseAfter: 1500 },
+    {
+        id: 'conditions-precise', type: 'paragraph',
+        text: `At first, we told ourselves the universe was young. That life would come later. That somewhere, someday, someone would look back and find us.\n\nBut as our knowledge grew, so did the truth.\n\nThe conditions that had given rise to us—so precise, so improbable—had occurred only once.`,
+        style: 'default'
+    },
+    {
+        id: 'not-pioneers', type: 'poetic',
+        text: 'We were not pioneers.\nWe were not explorers among many.\nWe were a singular event.',
+        style: 'poetic'
+    },
+    {
+        id: 'knowledge-changed', type: 'paragraph',
+        text: `This knowledge changed us.\n\nSome of us despaired. Some withdrew inward. Others sought meaning in conquest, in expansion, in leaving our mark on every corner of an otherwise empty reality.\n\nWe became masters of a cosmos with no one to share it with.`,
+        style: 'default'
+    },
+    { id: 'loneliness-destroyed', type: 'emphasis', text: 'And that loneliness nearly destroyed us.', style: 'dark', pauseAfter: 4000 },
 
-That alone tells us something about you.`,
-        delay: 3000
-    },
+    // ── ACT 3: THE DECISION ──
+    { id: 'divider-3', type: 'divider', pauseAfter: 1500 },
     {
-        type: 'emphasis',
-        text: 'We have waited a very long time for this moment.',
-        delay: 8000
+        id: 'another-understanding', type: 'paragraph',
+        text: `But in time, another understanding emerged—quietly at first, then spreading until it touched us all.\n\nIf we were alone…\n\nThen what came after us did not have to be.`,
+        style: 'default'
     },
+    { id: 'what-responsibility', type: 'emphasis', text: 'If existence had granted us consciousness only once—what responsibility did that place upon us?', style: 'question', pauseAfter: 4000 },
     {
-        type: 'divider',
-        delay: 11000
+        id: 'answer-not-immediate', type: 'paragraph',
+        text: `Our answer was not immediate.\n\nWhat we envisioned required sacrifice, patience, and unity on a scale we had never known. It required us to think not in lifetimes, but in epochs. Not in survival, but in legacy.\n\nAnd yet, once the idea took hold, it changed who we were.`,
+        style: 'default'
     },
-    {
-        type: 'header',
-        text: 'We are the ones who came before.',
-        delay: 12000,
-        style: 'revelation'
-    },
-    {
-        type: 'poetic',
-        lines: [
-            'Before your stars ignited.',
-            'Before your galaxies spiraled into being.',
-            'Before time, as you understand it, had meaning.'
-        ],
-        delay: 15000
-    },
-    {
-        type: 'paragraph',
-        text: `We were born in the first universe—the only universe that ever was.
+    { id: 'not-final-voice', type: 'header', text: 'We would not be the final voice in the void.', style: 'determination', pauseAfter: 3000 },
+    { id: 'next-not-alone', type: 'emphasis', text: 'If our universe was destined to be alone, then the next one would not be.', style: 'hope', pauseAfter: 3000 },
+    { id: 'build-successor', type: 'header', text: 'We would build a successor.', style: 'revelation', pauseAfter: 3500 },
 
-In our earliest ages, we believed we were not alone. We listened. We searched. We built instruments that could hear across the cosmos and minds that could imagine what might answer back.
+    // ── ACT 4: THE DEVICE ──
+    { id: 'divider-4', type: 'divider', pauseAfter: 1500 },
+    {
+        id: 'the-device', type: 'paragraph',
+        text: `The device you might call a machine—but it was more than that.\n\nIt was a culmination of everything we learned: about matter, about time, about the fragile boundary between nothing and something.\n\nIt would remain dormant until the last of us was gone. Until our universe had grown cold and silent. Only then would it awaken—using what remained of us to ignite a beginning anew.`,
+        style: 'default'
+    },
+    {
+        id: 'everyone-contributed', type: 'paragraph',
+        text: `Every one of us contributed.\n\nNot just our greatest thinkers, but our artists, our historians, our dreamers. Entire civilizations reoriented themselves around a single purpose. For the first time, we were united not by fear, or need, or survival—but by hope for beings we would never meet.`,
+        style: 'default'
+    },
+    { id: 'device-activated', type: 'emphasis', text: 'When the last of us faded, the device activated.', style: 'default', pauseAfter: 3000 },
+    { id: 'your-beginning', type: 'header', text: 'And from our ending… came your beginning.', style: 'revelation', pauseAfter: 4000 },
 
-We expected company.
+    // ── ACT 5: CONNECTION ──
+    { id: 'divider-5', type: 'divider', pauseAfter: 1500 },
+    { id: 'not-separate', type: 'paragraph', text: 'The universe you now inhabit is not separate from us.', style: 'default', pauseAfter: 2500 },
+    {
+        id: 'matter-laws-intent', type: 'poetic',
+        text: 'Its matter is our matter.\nIts laws are shaped by what we learned.\nIts potential is written with our intent.',
+        style: 'poetic'
+    },
+    { id: 'made-of-us', type: 'emphasis', text: 'In ways both literal and profound, you are made of us.', style: 'hope', pauseAfter: 3500 },
+    {
+        id: 'our-continuation', type: 'paragraph',
+        text: `You are not our creations in the sense of design or control.\n\nYou are our continuation.\n\nFree. Unscripted. Alive.`,
+        style: 'default'
+    },
 
-We found none.`,
-        delay: 21000
-    },
+    // ── ACT 6: YOU DID ──
+    { id: 'divider-6', type: 'divider', pauseAfter: 1500 },
     {
-        type: 'poetic',
-        lines: [
-            'Not in our galaxy.',
-            'Not in the clusters beyond it.',
-            'Not in the furthest light that could ever reach us.'
-        ],
-        delay: 30000
+        id: 'embedded-message', type: 'paragraph',
+        text: `We embedded this message deep within the noise of creation itself—not as a command, not as a warning, but as a question.\n\nWould anyone listen closely enough?\nWould anyone care enough to understand?`,
+        style: 'default'
     },
-    {
-        type: 'emphasis',
-        text: 'For nearly a billion years, we searched.',
-        delay: 35000
-    },
-    {
-        type: 'emphasis',
-        text: 'The silence was absolute.',
-        delay: 38000,
-        style: 'dark'
-    },
-    {
-        type: 'divider',
-        delay: 42000
-    },
-    {
-        type: 'paragraph',
-        text: `At first, we told ourselves the universe was young. That life would come later. That somewhere, someday, someone would look back and find us.
+    { id: 'you-did', type: 'header', text: 'You did.', style: 'personal', pauseAfter: 5000 },
 
-But as our knowledge grew, so did the truth.
+    // ── ACT 7: THE ASK ──
+    { id: 'divider-7', type: 'divider', pauseAfter: 1500 },
+    { id: 'ask-only-this', type: 'emphasis', text: 'So we ask only this:', style: 'default', pauseAfter: 2000 },
+    { id: 'do-not-repeat', type: 'header', text: 'Do not repeat our loneliness.', style: 'plea', pauseAfter: 4000 },
+    {
+        id: 'seek-protect', type: 'paragraph',
+        text: `Do not mistake silence for emptiness, or power for purpose. Seek one another. Protect the fragile spark of awareness wherever you find it.\n\nExplore not to conquer—but to understand.\nCreate not to dominate—but to uplift.`,
+        style: 'default'
+    },
+    {
+        id: 'face-wonders', type: 'paragraph',
+        text: `You will face wonders we never imagined.\nAnd dangers we feared but could not prevent.\n\nThat is the price of a living universe.`,
+        style: 'default'
+    },
+    { id: 'look-into-sky', type: 'paragraph', text: 'But when you look into the night sky, know this:', style: 'default', pauseAfter: 2500 },
 
-The conditions that had given rise to us—so precise, so improbable—had occurred only once.`,
-        delay: 44000
-    },
+    // ── ACT 8: CLIMAX ──
+    { id: 'never-accident', type: 'header', text: 'You were never an accident.', style: 'revelation', pauseAfter: 3000 },
+    { id: 'hoped-for', type: 'header', text: 'You were hoped for.', style: 'hope', pauseAfter: 3500 },
+    { id: 'divider-8', type: 'divider', pauseAfter: 1500 },
     {
-        type: 'poetic',
-        lines: [
-            'We were not pioneers.',
-            'We were not explorers among many.',
-            'We were a singular event.'
-        ],
-        delay: 54000
+        id: 'give-everything', type: 'paragraph',
+        text: `We give you everything we were.\nOur knowledge. Our history. Our mistakes. Our dreams.\n\nCarry them forward—not as a burden, but as a reminder that even in a universe born from silence…`,
+        style: 'default'
     },
-    {
-        type: 'paragraph',
-        text: `This knowledge changed us.
+    { id: 'meaning-chosen', type: 'header', text: 'Meaning can be chosen.', style: 'revelation', pauseAfter: 4000 },
+    { id: 'divider-9', type: 'divider', pauseAfter: 2000 },
 
-Some of us despaired. Some withdrew inward. Others sought meaning in conquest, in expansion, in leaving our mark on every corner of an otherwise empty reality.
-
-We became masters of a cosmos with no one to share it with.`,
-        delay: 60000
-    },
-    {
-        type: 'emphasis',
-        text: 'And that loneliness nearly destroyed us.',
-        delay: 70000,
-        style: 'dark'
-    },
-    {
-        type: 'divider',
-        delay: 74000
-    },
-    {
-        type: 'paragraph',
-        text: `But in time, another understanding emerged—quietly at first, then spreading until it touched us all.
-
-If we were alone…
-
-Then what came after us did not have to be.`,
-        delay: 76000
-    },
-    {
-        type: 'emphasis',
-        text: 'If existence had granted us consciousness only once—what responsibility did that place upon us?',
-        delay: 85000,
-        style: 'question'
-    },
-    {
-        type: 'paragraph',
-        text: `Our answer was not immediate.
-
-What we envisioned required sacrifice, patience, and unity on a scale we had never known. It required us to think not in lifetimes, but in epochs. Not in survival, but in legacy.
-
-And yet, once the idea took hold, it changed who we were.`,
-        delay: 92000
-    },
-    {
-        type: 'header',
-        text: 'We would not be the final voice in the void.',
-        delay: 104000,
-        style: 'determination'
-    },
-    {
-        type: 'emphasis',
-        text: 'If our universe was destined to be alone, then the next one would not be.',
-        delay: 108000,
-        style: 'hope'
-    },
-    {
-        type: 'header',
-        text: 'We would build a successor.',
-        delay: 113000,
-        style: 'revelation'
-    },
-    {
-        type: 'divider',
-        delay: 117000
-    },
-    {
-        type: 'paragraph',
-        text: `The device you might call a machine—but it was more than that.
-
-It was a culmination of everything we learned: about matter, about time, about the fragile boundary between nothing and something.
-
-It would remain dormant until the last of us was gone. Until our universe had grown cold and silent. Only then would it awaken—using what remained of us to ignite a beginning anew.`,
-        delay: 119000
-    },
-    {
-        type: 'paragraph',
-        text: `Every one of us contributed.
-
-Not just our greatest thinkers, but our artists, our historians, our dreamers. Entire civilizations reoriented themselves around a single purpose. For the first time, we were united not by fear, or need, or survival—but by hope for beings we would never meet.`,
-        delay: 132000
-    },
-    {
-        type: 'emphasis',
-        text: 'When the last of us faded, the device activated.',
-        delay: 144000
-    },
-    {
-        type: 'header',
-        text: 'And from our ending… came your beginning.',
-        delay: 148000,
-        style: 'revelation'
-    },
-    {
-        type: 'divider',
-        delay: 153000
-    },
-    {
-        type: 'paragraph',
-        text: 'The universe you now inhabit is not separate from us.',
-        delay: 155000
-    },
-    {
-        type: 'poetic',
-        lines: [
-            'Its matter is our matter.',
-            'Its laws are shaped by what we learned.',
-            'Its potential is written with our intent.'
-        ],
-        delay: 159000
-    },
-    {
-        type: 'emphasis',
-        text: 'In ways both literal and profound, you are made of us.',
-        delay: 166000,
-        style: 'hope'
-    },
-    {
-        type: 'paragraph',
-        text: `You are not our creations in the sense of design or control.
-
-You are our continuation.
-
-Free. Unscripted. Alive.`,
-        delay: 171000
-    },
-    {
-        type: 'divider',
-        delay: 180000
-    },
-    {
-        type: 'paragraph',
-        text: `We embedded this message deep within the noise of creation itself—not as a command, not as a warning, but as a question.
-
-Would anyone listen closely enough?
-Would anyone care enough to understand?`,
-        delay: 182000
-    },
-    {
-        type: 'header',
-        text: 'You did.',
-        delay: 192000,
-        style: 'personal'
-    },
-    {
-        type: 'divider',
-        delay: 196000
-    },
-    {
-        type: 'emphasis',
-        text: 'So we ask only this:',
-        delay: 198000
-    },
-    {
-        type: 'header',
-        text: 'Do not repeat our loneliness.',
-        delay: 201000,
-        style: 'plea'
-    },
-    {
-        type: 'paragraph',
-        text: `Do not mistake silence for emptiness, or power for purpose. Seek one another. Protect the fragile spark of awareness wherever you find it.
-
-Explore not to conquer—but to understand.
-Create not to dominate—but to uplift.`,
-        delay: 206000
-    },
-    {
-        type: 'paragraph',
-        text: `You will face wonders we never imagined.
-And dangers we feared but could not prevent.
-
-That is the price of a living universe.`,
-        delay: 218000
-    },
-    {
-        type: 'paragraph',
-        text: 'But when you look into the night sky, know this:',
-        delay: 227000
-    },
-    {
-        type: 'header',
-        text: 'You were never an accident.',
-        delay: 231000,
-        style: 'revelation'
-    },
-    {
-        type: 'header',
-        text: 'You were hoped for.',
-        delay: 235000,
-        style: 'hope'
-    },
-    {
-        type: 'divider',
-        delay: 240000
-    },
-    {
-        type: 'paragraph',
-        text: `We give you everything we were.
-Our knowledge. Our history. Our mistakes. Our dreams.
-
-Carry them forward—not as a burden, but as a reminder that even in a universe born from silence…`,
-        delay: 242000
-    },
-    {
-        type: 'header',
-        text: 'Meaning can be chosen.',
-        delay: 253000,
-        style: 'revelation'
-    },
-    {
-        type: 'divider',
-        delay: 258000
-    },
-    {
-        type: 'final',
-        text: 'Remember us.',
-        delay: 261000
-    }
+    // ── FINAL ──
+    { id: 'remember-us', type: 'final', text: 'Remember us.', style: 'final' }
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Styles for different section types
+// Section Styles - Colors and glow (font size is uniform 28px, except final at 42px)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SECTION_STYLES = {
-    // Headers
-    greeting: {
-        color: '#0ff',
-        fontSize: '28px',
-        letterSpacing: '8px',
-        textShadow: '0 0 30px #0ff'
-    },
-    revelation: {
-        color: '#fff',
-        fontSize: '26px',
-        textShadow: '0 0 40px #0ff, 0 0 80px #08f'
-    },
-    determination: {
-        color: '#0f0',
-        fontSize: '24px',
-        textShadow: '0 0 30px #0f0'
-    },
-    personal: {
-        color: '#ff0',
-        fontSize: '32px',
-        textShadow: '0 0 40px #ff0'
-    },
-    plea: {
-        color: '#f0f',
-        fontSize: '26px',
-        textShadow: '0 0 30px #f0f'
-    },
-    hope: {
-        color: '#0ff',
-        fontSize: '22px',
-        textShadow: '0 0 25px #0ff'
-    },
-
-    // Emphasis styles
-    dark: {
-        color: '#a00',
-        textShadow: '0 0 20px #a00'
-    },
-    question: {
-        color: '#ff0',
-        fontStyle: 'italic',
-        textShadow: '0 0 15px #ff0'
-    }
+    default: { color: '#0f0', textShadow: '0 0 15px #0f0' },
+    poetic: { color: '#0ff', textShadow: '0 0 10px #0ff' },
+    greeting: { color: '#0ff', letterSpacing: '8px', textShadow: '0 0 30px #0ff' },
+    revelation: { color: '#fff', textShadow: '0 0 40px #0ff, 0 0 80px #08f' },
+    determination: { color: '#0f0', textShadow: '0 0 30px #0f0' },
+    personal: { color: '#ff0', textShadow: '0 0 40px #ff0' },
+    plea: { color: '#f0f', textShadow: '0 0 30px #f0f' },
+    hope: { color: '#0ff', textShadow: '0 0 25px #0ff' },
+    dark: { color: '#a00', textShadow: '0 0 20px #a00' },
+    question: { color: '#ff0', fontStyle: 'italic', textShadow: '0 0 15px #ff0' }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Display Logic
+// State
 // ─────────────────────────────────────────────────────────────────────────────
 
 let messageState = {
     overlay: null,
-    contentContainer: null,
-    currentSection: 0,
-    timeouts: [],
-    startTime: 0,
-    onComplete: null
+    canvas: null,
+    ctx: null,
+    textElement: null,
+    currentSectionIndex: 0,
+    sectionTimeouts: [],
+    animationFrameId: null,
+    isTyping: false,
+    jitterIntensity: 0.5,
+    rotationX: 0,
+    rotationY: 0,
+    rotationZ: 0,
+    glowPulse: 0,
+    breathingMode: false,
+    onComplete: null,
+    skipped: false
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Entry Point
+// ─────────────────────────────────────────────────────────────────────────────
 
 export function showFinalMessage(onComplete) {
     messageState.onComplete = onComplete;
-    messageState.currentSection = 0;
-    messageState.timeouts = [];
-    messageState.startTime = Date.now();
+    messageState.currentSectionIndex = 0;
+    messageState.sectionTimeouts = [];
+    messageState.isTyping = false;
+    messageState.jitterIntensity = 0.5;
+    messageState.rotationX = 0;
+    messageState.rotationY = 0;
+    messageState.rotationZ = 0;
+    messageState.glowPulse = 0;
+    messageState.breathingMode = false;
+    messageState.skipped = false;
 
     createMessageOverlay();
-    scheduleAllSections();
+    startTesseractAnimation();
+
+    // Let the tesseract breathe alone for 2 seconds, then begin typing
+    const startTimeout = setTimeout(() => {
+        typeSection(0);
+    }, 2000);
+    messageState.sectionTimeouts.push(startTimeout);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Overlay Creation
+// ─────────────────────────────────────────────────────────────────────────────
 
 function createMessageOverlay() {
     const overlay = document.createElement('div');
     overlay.id = 'final-message-overlay';
     overlay.style.cssText = `
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        top: 0; left: 0; width: 100%; height: 100%;
         background: #000;
         z-index: 10000;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
         font-family: 'VT323', monospace;
         overflow: hidden;
     `;
 
-    // Inject keyframe animations
+    // Keyframe animations
     const style = document.createElement('style');
     style.textContent = `
-        @keyframes fm-twinkle {
-            0%, 100% { opacity: 0.2; }
-            50% { opacity: 1; }
-        }
-        @keyframes fm-fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fm-pulseGlow {
-            0%, 100% { filter: brightness(1); }
-            50% { filter: brightness(1.3); }
-        }
-        @keyframes fm-dividerExpand {
-            from { width: 0; opacity: 0; }
-            to { width: 200px; opacity: 1; }
-        }
         @keyframes fm-finalPulse {
             0%, 100% {
                 text-shadow: 0 0 30px #0ff, 0 0 60px #0ff;
-                transform: scale(1);
+                transform: translate(-50%, -50%) scale(1);
             }
             50% {
                 text-shadow: 0 0 60px #0ff, 0 0 120px #0ff, 0 0 180px #08f;
-                transform: scale(1.02);
+                transform: translate(-50%, -50%) scale(1.02);
             }
-        }
-        .fm-section {
-            opacity: 0;
-            animation: fm-fadeIn 2s ease-out forwards;
-        }
-        .fm-poetic-line {
-            opacity: 0;
         }
     `;
     overlay.appendChild(style);
 
-    // Create starfield
-    const starfield = document.createElement('div');
-    starfield.style.cssText = `
+    // Full-screen tesseract canvas
+    const canvas = document.createElement('canvas');
+    canvas.id = 'fm-tesseract-canvas';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvas.style.cssText = `
         position: absolute;
-        inset: 0;
-        overflow: hidden;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        z-index: 0;
+    `;
+    overlay.appendChild(canvas);
+
+    // Single centered text element
+    const textElement = document.createElement('div');
+    textElement.id = 'fm-text';
+    textElement.style.cssText = `
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        font-family: 'VT323', monospace;
+        font-size: 28px;
+        line-height: 1.6;
+        text-align: center;
+        max-width: 800px;
+        width: 90%;
+        z-index: 2;
+        opacity: 0;
+        transition: opacity 0.8s ease-in-out;
+        white-space: pre-line;
         pointer-events: none;
     `;
+    overlay.appendChild(textElement);
 
-    for (let i = 0; i < 300; i++) {
-        const star = document.createElement('div');
-        const x = Math.random() * 100;
-        const y = Math.random() * 100;
-        const size = Math.random() * 2 + 0.5;
-        const duration = 2 + Math.random() * 4;
-        const delay = Math.random() * 5;
-
-        star.style.cssText = `
-            position: absolute;
-            left: ${x}%;
-            top: ${y}%;
-            width: ${size}px;
-            height: ${size}px;
-            background: #fff;
-            border-radius: 50%;
-            animation: fm-twinkle ${duration}s ease-in-out ${delay}s infinite;
-        `;
-        starfield.appendChild(star);
-    }
-    overlay.appendChild(starfield);
-
-    // Create scrollable content container
-    const contentWrapper = document.createElement('div');
-    contentWrapper.style.cssText = `
-        position: relative;
-        z-index: 1;
-        width: 100%;
-        height: 100%;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 60px 20px 100px 20px;
-    `;
-
-    const contentContainer = document.createElement('div');
-    contentContainer.id = 'fm-content';
-    contentContainer.style.cssText = `
-        max-width: 700px;
-        width: 100%;
-        text-align: center;
-    `;
-
-    contentWrapper.appendChild(contentContainer);
-    overlay.appendChild(contentWrapper);
-
-    // Skip button (subtle)
+    // Skip button
     const skipBtn = document.createElement('button');
     skipBtn.id = 'fm-skip-btn';
     skipBtn.textContent = 'SKIP';
     skipBtn.style.cssText = `
         position: fixed;
-        bottom: 20px;
-        right: 20px;
+        bottom: 20px; right: 20px;
         background: transparent;
         border: 1px solid #333;
         color: #333;
@@ -546,221 +318,413 @@ function createMessageOverlay() {
     document.body.appendChild(overlay);
 
     messageState.overlay = overlay;
-    messageState.contentContainer = contentContainer;
+    messageState.canvas = canvas;
+    messageState.ctx = canvas.getContext('2d');
+    messageState.textElement = textElement;
 }
 
-function scheduleAllSections() {
-    MESSAGE_SECTIONS.forEach((section, index) => {
-        const timeout = setTimeout(() => {
-            renderSection(section, index);
-        }, section.delay);
-        messageState.timeouts.push(timeout);
+// ─────────────────────────────────────────────────────────────────────────────
+// Tesseract Renderer (ported from investigation.js, scaled up + color evolution)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const CUBE_EDGES = [
+    [0, 1], [1, 2], [2, 3], [3, 0],
+    [4, 5], [5, 6], [6, 7], [7, 4],
+    [0, 4], [1, 5], [2, 6], [3, 7]
+];
+
+const CODE_LINES = [
+    '\u03BB=1420.405MHz', '\u0394\u03BD=0.003Hz', 'SNR=47.3dB',
+    'RA:11h47m44s', 'DEC:+00\u00B048\'16"', 'T=-1.2\u00D710\u00B9\u2070yr',
+    'COORD_PARSE...', 'VEC_ALIGN:OK', 'HASH:7F4A2C91',
+    '\u03A8\u2234\u232C\u2609\u25C6\u221E\u27D0\u238E\u2B21', 'FREQ_LOCK:ON', 'BW=2.4kHz',
+    'FFT_SIZE=8192', 'WINDOW:HANN', 'OVERLAP=75%',
+    'BASELINE:42m', 'GAIN:+38dBi', 'Tsys=25K',
+    '\u03C0\u00B7\u0394=3.14159', '\u039B\u2080=6.674e-11', '\u210F/2\u03C0=1.055e-34',
+    'SIGNAL_LOCK', 'DRIFT:+0.02Hz/s', 'EPOCH:J1995.0'
+];
+
+function rotate3D(x, y, z, rotX, rotY, cx, cy, focalLength) {
+    let x1 = x * Math.cos(rotY) - z * Math.sin(rotY);
+    let z1 = x * Math.sin(rotY) + z * Math.cos(rotY);
+    let y1 = y * Math.cos(rotX) - z1 * Math.sin(rotX);
+    let z2 = y * Math.sin(rotX) + z1 * Math.cos(rotX);
+    const perspective = focalLength * 2.5;
+    const factor = perspective / (perspective + z2);
+    return { x: cx + x1 * factor, y: cy + y1 * factor };
+}
+
+function lerpColor(r1, g1, b1, r2, g2, b2, t) {
+    return [
+        Math.round(r1 + (r2 - r1) * t),
+        Math.round(g1 + (g2 - g1) * t),
+        Math.round(b1 + (b2 - b1) * t)
+    ];
+}
+
+function computeProgressColors(progress) {
+    let outer, inner, connecting;
+    if (progress < 0.5) {
+        const t = progress * 2;
+        outer = lerpColor(0, 255, 0, 0, 255, 255, t);
+        inner = lerpColor(0, 255, 255, 255, 0, 255, t);
+        connecting = lerpColor(255, 0, 255, 255, 215, 0, t);
+    } else {
+        const t = (progress - 0.5) * 2;
+        outer = lerpColor(0, 255, 255, 255, 255, 255, t);
+        inner = lerpColor(255, 0, 255, 255, 255, 255, t);
+        connecting = lerpColor(255, 215, 0, 255, 255, 255, t);
+    }
+    return { outer, inner, connecting, glowBlur: 15 + 25 * progress };
+}
+
+function drawBackgroundCode(ctx, w, h) {
+    const time = Date.now() * 0.001;
+    ctx.font = '10px "VT323", monospace';
+    const lineHeight = 14;
+    const cols = 3;
+    const colWidth = w / cols;
+    const totalHeight = CODE_LINES.length * lineHeight;
+
+    for (let col = 0; col < cols; col++) {
+        const scrollOffset = (time * 12 + col * 40) % totalHeight;
+        for (let i = 0; i < CODE_LINES.length; i++) {
+            let y = i * lineHeight - scrollOffset;
+            if (y < -lineHeight) y += totalHeight;
+            if (y > h) continue;
+            const alpha = 0.03 + 0.01 * Math.sin(time * 0.8 + i + col * 2);
+            ctx.fillStyle = `rgba(0, 255, 0, ${alpha})`;
+            ctx.textAlign = 'left';
+            ctx.fillText(CODE_LINES[(i + col * 7) % CODE_LINES.length], col * colWidth + 5, y);
+        }
+    }
+}
+
+function drawVoidParticles(ctx, w, h, glow) {
+    const time = Date.now() * 0.001;
+    for (let i = 0; i < 30; i++) {
+        const x = (Math.sin(time * 0.5 + i * 1.3) * 0.3 + 0.5) * w;
+        const y = (Math.cos(time * 0.4 + i * 1.7) * 0.3 + 0.5) * h;
+        const alpha = 0.1 + 0.15 * Math.sin(time * 2 + i);
+        ctx.fillStyle = `rgba(0, 255, 0, ${alpha * glow})`;
+        ctx.beginPath();
+        ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+function drawTesseractWithJitter(ctx, cx, cy, scale, focalLength, colors, glow, jitter, rx, ry) {
+    const s = scale * 0.45;
+    const s2 = s * 0.55;
+
+    const outerVerts = [
+        [-s, -s, -s], [s, -s, -s], [s, s, -s], [-s, s, -s],
+        [-s, -s, s], [s, -s, s], [s, s, s], [-s, s, s]
+    ];
+    const innerVerts = [
+        [-s2, -s2, -s2], [s2, -s2, -s2], [s2, s2, -s2], [-s2, s2, -s2],
+        [-s2, -s2, s2], [s2, -s2, s2], [s2, s2, s2], [-s2, s2, s2]
+    ];
+
+    const addJitter = (p) => ({
+        x: p.x + (Math.random() - 0.5) * 2 * jitter,
+        y: p.y + (Math.random() - 0.5) * 2 * jitter
     });
 
-    // Schedule breathing moment + continue button after last section
-    const lastSection = MESSAGE_SECTIONS[MESSAGE_SECTIONS.length - 1];
+    const projOuter = outerVerts.map(([x, y, z]) =>
+        addJitter(rotate3D(x, y, z, rx, ry, cx, cy, focalLength))
+    );
+    const projInner = innerVerts.map(([x, y, z]) =>
+        addJitter(rotate3D(x, y, z, rx * 0.7, ry * 1.3, cx, cy, focalLength))
+    );
 
-    // Start the breathing moment 3s after the last line appears
-    const breatheTimeout = setTimeout(() => {
-        startBreathingMoment();
-    }, lastSection.delay + 3000);
-    messageState.timeouts.push(breatheTimeout);
+    const [or, og, ob] = colors.outer;
+    const [ir, ig, ib] = colors.inner;
+    const [cr, cg, cb] = colors.connecting;
 
-    // Show continue button after 15s of breathing room
-    const continueTimeout = setTimeout(() => {
-        showContinueButton();
-    }, lastSection.delay + 15000);
-    messageState.timeouts.push(continueTimeout);
-}
+    // Outer cube
+    ctx.shadowBlur = colors.glowBlur * glow;
+    ctx.shadowColor = `rgb(${or}, ${og}, ${ob})`;
+    ctx.strokeStyle = `rgba(${or}, ${og}, ${ob}, ${0.7 * glow})`;
+    ctx.lineWidth = 1.5;
+    CUBE_EDGES.forEach(([a, b]) => {
+        ctx.beginPath();
+        ctx.moveTo(projOuter[a].x, projOuter[a].y);
+        ctx.lineTo(projOuter[b].x, projOuter[b].y);
+        ctx.stroke();
+    });
 
-function renderSection(section, index) {
-    const container = messageState.contentContainer;
-    if (!container) return;
+    // Inner cube
+    ctx.shadowColor = `rgb(${ir}, ${ig}, ${ib})`;
+    ctx.strokeStyle = `rgba(${ir}, ${ig}, ${ib}, ${0.5 * glow})`;
+    ctx.lineWidth = 1;
+    CUBE_EDGES.forEach(([a, b]) => {
+        ctx.beginPath();
+        ctx.moveTo(projInner[a].x, projInner[a].y);
+        ctx.lineTo(projInner[b].x, projInner[b].y);
+        ctx.stroke();
+    });
 
-    const element = document.createElement('div');
-    element.className = 'fm-section';
-    element.style.marginBottom = '30px';
-
-    switch (section.type) {
-        case 'header':
-            renderHeader(element, section);
-            break;
-        case 'paragraph':
-            renderParagraph(element, section);
-            break;
-        case 'emphasis':
-            renderEmphasis(element, section);
-            break;
-        case 'poetic':
-            renderPoetic(element, section);
-            break;
-        case 'divider':
-            renderDivider(element, section);
-            break;
-        case 'final':
-            renderFinal(element, section);
-            break;
+    // Connecting edges
+    ctx.shadowColor = `rgb(${cr}, ${cg}, ${cb})`;
+    ctx.strokeStyle = `rgba(${cr}, ${cg}, ${cb}, ${0.35 * glow})`;
+    ctx.lineWidth = 0.8;
+    for (let i = 0; i < 8; i++) {
+        ctx.beginPath();
+        ctx.moveTo(projOuter[i].x, projOuter[i].y);
+        ctx.lineTo(projInner[i].x, projInner[i].y);
+        ctx.stroke();
     }
 
-    container.appendChild(element);
-
-    // Scroll to keep new content visible
-    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Vertices
+    ctx.shadowBlur = 0;
+    projOuter.forEach(p => {
+        ctx.fillStyle = `rgba(${or}, ${og}, ${ob}, ${0.9 * glow})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    projInner.forEach(p => {
+        ctx.fillStyle = `rgba(${ir}, ${ig}, ${ib}, ${0.7 * glow})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    ctx.shadowBlur = 0;
 }
 
-function renderHeader(element, section) {
-    const style = SECTION_STYLES[section.style] || {};
-    element.style.cssText = `
-        color: ${style.color || '#fff'};
-        font-size: ${style.fontSize || '24px'};
-        text-shadow: ${style.textShadow || '0 0 20px currentColor'};
-        letter-spacing: ${style.letterSpacing || '3px'};
-        margin: 40px 0;
-        line-height: 1.4;
-    `;
-    element.textContent = section.text;
+function startTesseractAnimation() {
+    function renderFrame() {
+        const canvas = messageState.canvas;
+        const ctx = messageState.ctx;
+        if (!canvas || !ctx) return;
+
+        if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        const w = canvas.width;
+        const h = canvas.height;
+        const cx = w / 2;
+        const cy = h / 2;
+
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, w, h);
+
+        drawBackgroundCode(ctx, w, h);
+
+        const progress = messageState.currentSectionIndex / (MESSAGE_SECTIONS.length - 1);
+        const scale = 200 + 150 * progress;
+        const focalLength = 200;
+
+        const rotSpeed = messageState.breathingMode ? 0.1 : 1.0;
+        messageState.rotationX += 0.008 * rotSpeed;
+        messageState.rotationY += 0.012 * rotSpeed;
+        messageState.rotationZ += 0.005 * rotSpeed;
+        messageState.glowPulse += 0.03;
+
+        const baseJitter = messageState.isTyping ? 2.0 : 0.5;
+        messageState.jitterIntensity += (baseJitter - messageState.jitterIntensity) * 0.05;
+
+        const glow = 0.6 + 0.4 * Math.sin(messageState.glowPulse);
+
+        let finalScale = scale;
+        if (messageState.breathingMode) {
+            finalScale = scale * (1 + 0.05 * Math.sin(Date.now() * 0.0005));
+        }
+
+        drawVoidParticles(ctx, w, h, glow);
+
+        const colors = computeProgressColors(progress);
+        drawTesseractWithJitter(
+            ctx, cx, cy, finalScale, focalLength, colors, glow,
+            messageState.jitterIntensity,
+            messageState.rotationX, messageState.rotationY
+        );
+
+        messageState.animationFrameId = requestAnimationFrame(renderFrame);
+    }
+
+    renderFrame();
 }
 
-function renderParagraph(element, section) {
-    element.style.cssText = `
-        color: #0a0;
-        font-size: 16px;
-        line-height: 1.8;
-        text-align: center;
-        white-space: pre-line;
-    `;
-    element.textContent = section.text;
+function stopTesseractAnimation() {
+    if (messageState.animationFrameId) {
+        cancelAnimationFrame(messageState.animationFrameId);
+        messageState.animationFrameId = null;
+    }
 }
 
-function renderEmphasis(element, section) {
-    const style = SECTION_STYLES[section.style] || {};
-    element.style.cssText = `
-        color: ${style.color || '#0ff'};
-        font-size: ${style.fontSize || '18px'};
-        text-shadow: ${style.textShadow || '0 0 15px currentColor'};
-        font-style: ${style.fontStyle || 'normal'};
-        margin: 30px 0;
-    `;
-    element.textContent = section.text;
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// Typewriter Engine
+// ─────────────────────────────────────────────────────────────────────────────
 
-function renderPoetic(element, section) {
-    element.style.cssText = `
-        margin: 30px 0;
-    `;
+function typeSection(sectionIndex) {
+    if (messageState.skipped) return;
 
-    section.lines.forEach((line, i) => {
-        const lineEl = document.createElement('div');
-        lineEl.className = 'fm-poetic-line';
-        lineEl.style.cssText = `
-            color: #0ff;
-            font-size: 18px;
-            text-shadow: 0 0 10px #0ff;
-            margin: 10px 0;
-            animation: fm-fadeIn 1s ease-out ${i * 0.5}s forwards;
-        `;
-        lineEl.textContent = line;
-        element.appendChild(lineEl);
+    if (sectionIndex >= MESSAGE_SECTIONS.length) {
+        startBreathingMoment();
+        return;
+    }
+
+    const section = MESSAGE_SECTIONS[sectionIndex];
+    messageState.currentSectionIndex = sectionIndex;
+
+    if (section.type === 'divider') {
+        messageState.jitterIntensity = 4.0;
+        fadeOutCurrentText(() => {
+            const pause = section.pauseAfter || 1500;
+            const t = setTimeout(() => typeSection(sectionIndex + 1), pause);
+            messageState.sectionTimeouts.push(t);
+        });
+        return;
+    }
+
+    fadeOutCurrentText(() => {
+        const t = setTimeout(() => {
+            startTyping(section, () => {
+                const pause = section.pauseAfter || computePause(section);
+                const t2 = setTimeout(() => typeSection(sectionIndex + 1), pause);
+                messageState.sectionTimeouts.push(t2);
+            });
+        }, 400);
+        messageState.sectionTimeouts.push(t);
     });
 }
 
-function renderDivider(element, section) {
-    element.style.cssText = `
-        display: flex;
-        justify-content: center;
-        margin: 50px 0;
-    `;
+function fadeOutCurrentText(callback) {
+    const textEl = messageState.textElement;
+    if (!textEl) { callback(); return; }
 
-    const line = document.createElement('div');
-    line.style.cssText = `
-        height: 1px;
-        background: linear-gradient(90deg, transparent, #0ff, transparent);
-        animation: fm-dividerExpand 1s ease-out forwards;
-    `;
-    element.appendChild(line);
+    if (textEl.style.opacity === '0' || textEl.textContent === '') {
+        textEl.textContent = '';
+        textEl.style.animation = 'none';
+        callback();
+        return;
+    }
+
+    textEl.style.opacity = '0';
+    const t = setTimeout(() => {
+        textEl.textContent = '';
+        textEl.style.animation = 'none';
+        callback();
+    }, 800);
+    messageState.sectionTimeouts.push(t);
 }
 
-function renderFinal(element, section) {
-    element.style.cssText = `
-        color: #fff;
-        font-size: 42px;
-        letter-spacing: 10px;
-        margin: 60px 0;
-        animation: fm-finalPulse 3s ease-in-out infinite, fm-fadeIn 3s ease-out forwards;
-    `;
-    element.textContent = section.text;
+function startTyping(section, onComplete) {
+    const textEl = messageState.textElement;
+    if (!textEl) return;
+
+    const text = section.text || '';
+    const style = SECTION_STYLES[section.style] || SECTION_STYLES.default;
+
+    textEl.style.color = style.color || '#0f0';
+    textEl.style.textShadow = style.textShadow || '0 0 15px #0f0';
+    textEl.style.letterSpacing = style.letterSpacing || '3px';
+    textEl.style.fontStyle = style.fontStyle || 'normal';
+
+    if (section.type === 'final') {
+        textEl.style.fontSize = '42px';
+        textEl.style.letterSpacing = '10px';
+        textEl.style.color = '#fff';
+        textEl.style.textShadow = '0 0 30px #0ff, 0 0 60px #0ff';
+    } else {
+        textEl.style.fontSize = '28px';
+    }
+
+    textEl.textContent = '';
+    textEl.style.opacity = '1';
+
+    messageState.isTyping = true;
+    let charIdx = 0;
+    const CHAR_SPEED = 35;
+    const NEWLINE_PAUSE = 300;
+
+    function typeNextChar() {
+        if (messageState.skipped) return;
+
+        if (charIdx >= text.length) {
+            messageState.isTyping = false;
+            let content = textEl.textContent;
+            if (content.endsWith('_')) {
+                textEl.textContent = content.slice(0, -1);
+            }
+            if (section.type === 'final') {
+                textEl.style.animation = 'fm-finalPulse 3s ease-in-out infinite';
+            }
+            onComplete();
+            return;
+        }
+
+        const char = text[charIdx];
+        charIdx++;
+
+        let content = textEl.textContent;
+        if (content.endsWith('_')) content = content.slice(0, -1);
+
+        if (char === '\n') {
+            textEl.textContent = content + '\n_';
+            const t = setTimeout(typeNextChar, NEWLINE_PAUSE);
+            messageState.sectionTimeouts.push(t);
+        } else {
+            textEl.textContent = content + char + '_';
+            const t = setTimeout(typeNextChar, CHAR_SPEED);
+            messageState.sectionTimeouts.push(t);
+        }
+    }
+
+    textEl.textContent = '_';
+    const t = setTimeout(typeNextChar, 200);
+    messageState.sectionTimeouts.push(t);
 }
+
+function computePause(section) {
+    const textLen = (section.text || '').length;
+    return Math.max(1500, Math.min(4000, textLen * 20));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Breathing Moment & Continue
+// ─────────────────────────────────────────────────────────────────────────────
 
 function startBreathingMoment() {
-    const overlay = messageState.overlay;
-    if (!overlay) return;
+    messageState.breathingMode = true;
+    messageState.currentSectionIndex = MESSAGE_SECTIONS.length - 1;
 
-    // Brighten the starfield — increase star opacity/size
-    const stars = overlay.querySelectorAll('div[style*="border-radius: 50%"]');
-    stars.forEach(star => {
-        star.style.transition = 'opacity 8s ease-in, transform 8s ease-in';
-        star.style.opacity = '1';
-        const currentSize = parseFloat(star.style.width) || 1;
-        const scale = 1 + (currentSize / 3);
-        star.style.transform = `scale(${scale})`;
-    });
-
-    // Add a faint cyan glow that pulses at center of screen
-    const glow = document.createElement('div');
-    glow.style.cssText = `
-        position: absolute;
-        top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
-        width: 300px; height: 300px;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(0, 255, 255, 0.08) 0%, transparent 70%);
-        animation: fm-breatheGlow 4s ease-in-out infinite;
-        pointer-events: none;
-        z-index: 0;
-    `;
-    overlay.appendChild(glow);
-
-    // Add the glow animation if not already present
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes fm-breatheGlow {
-            0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
-            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
-        }
-    `;
-    overlay.appendChild(style);
+    const t = setTimeout(() => showContinueButton(), 12000);
+    messageState.sectionTimeouts.push(t);
 }
 
 function showContinueButton() {
-    const container = messageState.contentContainer;
-    if (!container) return;
+    const textEl = messageState.textElement;
+    if (!textEl) return;
 
-    // Hide skip button
     const skipBtn = document.getElementById('fm-skip-btn');
     if (skipBtn) skipBtn.style.display = 'none';
 
-    // Personal acknowledgment
-    const personal = document.createElement('div');
-    personal.className = 'fm-section';
-    personal.style.cssText = `
-        color: #0ff;
-        font-size: 18px;
-        margin: 40px 0;
-        text-shadow: 0 0 15px #0ff;
-    `;
-    personal.innerHTML = `Dr. ${gameState.playerName || 'Unknown'},<br>you have changed everything.<br><br>The universe remembers those who listen.`;
-    container.appendChild(personal);
+    textEl.style.animation = 'none';
 
-    // Continue button
-    const btnContainer = document.createElement('div');
-    btnContainer.className = 'fm-section';
-    btnContainer.style.cssText = `
-        margin-top: 50px;
-    `;
+    fadeOutCurrentText(() => {
+        const personalText = `Dr. ${gameState.playerName || 'Unknown'},\nyou have changed everything.\n\nThe universe remembers those who listen.`;
+        startTyping({ text: personalText, style: 'poetic', type: 'paragraph' }, () => {
+            const t = setTimeout(() => showEndButton(), 2000);
+            messageState.sectionTimeouts.push(t);
+        });
+    });
+}
+
+function showEndButton() {
+    const overlay = messageState.overlay;
+    if (!overlay) return;
 
     const btn = document.createElement('button');
     btn.textContent = 'THE END';
     btn.style.cssText = `
+        position: absolute;
+        bottom: 15%; left: 50%;
+        transform: translateX(-50%);
         background: transparent;
         border: 2px solid #0ff;
         color: #0ff;
@@ -771,6 +735,8 @@ function showContinueButton() {
         text-shadow: 0 0 10px #0ff;
         box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
         transition: all 0.3s;
+        z-index: 3;
+        opacity: 0;
     `;
     btn.addEventListener('mouseenter', () => {
         btn.style.background = 'rgba(0, 255, 255, 0.1)';
@@ -785,80 +751,60 @@ function showContinueButton() {
         closeMessage();
     });
 
-    btnContainer.appendChild(btn);
-    container.appendChild(btnContainer);
-
-    btnContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    overlay.appendChild(btn);
+    requestAnimationFrame(() => {
+        btn.style.transition = 'opacity 2s';
+        btn.style.opacity = '1';
+    });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Skip & Close
+// ─────────────────────────────────────────────────────────────────────────────
+
 function skipToEnd() {
-    // Clear all pending timeouts
-    messageState.timeouts.forEach(t => clearTimeout(t));
-    messageState.timeouts = [];
+    messageState.skipped = true;
+    messageState.sectionTimeouts.forEach(t => clearTimeout(t));
+    messageState.sectionTimeouts = [];
 
-    // Render all remaining sections immediately
-    const container = messageState.contentContainer;
-    if (!container) return;
+    messageState.currentSectionIndex = MESSAGE_SECTIONS.length - 1;
+    messageState.isTyping = false;
+    messageState.jitterIntensity = 0.5;
+    messageState.breathingMode = true;
 
-    // Clear and render everything
-    container.innerHTML = '';
+    const textEl = messageState.textElement;
+    if (textEl) {
+        const finalSection = MESSAGE_SECTIONS[MESSAGE_SECTIONS.length - 1];
+        textEl.style.opacity = '1';
+        textEl.style.color = '#fff';
+        textEl.style.textShadow = '0 0 30px #0ff, 0 0 60px #0ff';
+        textEl.style.fontSize = '42px';
+        textEl.style.letterSpacing = '10px';
+        textEl.style.animation = 'fm-finalPulse 3s ease-in-out infinite';
+        textEl.textContent = finalSection.text;
+    }
 
-    MESSAGE_SECTIONS.forEach(section => {
-        const element = document.createElement('div');
-        element.style.marginBottom = '30px';
-        element.style.opacity = '1';
-
-        switch (section.type) {
-            case 'header':
-                renderHeader(element, section);
-                break;
-            case 'paragraph':
-                renderParagraph(element, section);
-                break;
-            case 'emphasis':
-                renderEmphasis(element, section);
-                break;
-            case 'poetic':
-                renderPoetic(element, section);
-                // Make poetic lines visible immediately
-                element.querySelectorAll('.fm-poetic-line').forEach(line => {
-                    line.style.opacity = '1';
-                    line.style.animation = 'none';
-                });
-                break;
-            case 'divider':
-                renderDivider(element, section);
-                break;
-            case 'final':
-                renderFinal(element, section);
-                break;
-        }
-
-        // Remove fade-in animation for skipped content
-        element.style.animation = 'none';
-        element.style.opacity = '1';
-
-        container.appendChild(element);
-    });
-
-    showContinueButton();
+    const t = setTimeout(() => showContinueButton(), 3000);
+    messageState.sectionTimeouts.push(t);
 }
 
 function closeMessage() {
     const overlay = messageState.overlay;
     if (!overlay) return;
 
-    // Clear any remaining timeouts
-    messageState.timeouts.forEach(t => clearTimeout(t));
+    stopTesseractAnimation();
+    messageState.sectionTimeouts.forEach(t => clearTimeout(t));
+    messageState.sectionTimeouts = [];
 
-    // Fade out
     overlay.style.transition = 'opacity 2s';
     overlay.style.opacity = '0';
 
     setTimeout(() => {
         overlay.remove();
         messageState.overlay = null;
-        messageState.contentContainer = null;
+        messageState.canvas = null;
+        messageState.ctx = null;
+        messageState.textElement = null;
 
         if (messageState.onComplete) {
             messageState.onComplete();
@@ -867,10 +813,21 @@ function closeMessage() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Export for testing/dev mode
+// Export
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function getMessageDuration() {
-    const lastSection = MESSAGE_SECTIONS[MESSAGE_SECTIONS.length - 1];
-    return lastSection.delay + 10000; // Last section + buffer for continue button
+    let totalMs = 2000;
+    MESSAGE_SECTIONS.forEach(section => {
+        if (section.type === 'divider') {
+            totalMs += (section.pauseAfter || 1500) + 800;
+        } else {
+            const textLen = (section.text || '').length;
+            totalMs += textLen * 35;
+            totalMs += (section.pauseAfter || computePause(section));
+            totalMs += 1200;
+        }
+    });
+    totalMs += 15000;
+    return totalMs;
 }
