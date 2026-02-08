@@ -20,7 +20,7 @@ const MESSAGE_SECTIONS = [
     { id: 'greeting', type: 'header', text: 'Greetings.', style: 'greeting', pauseAfter: 2500 },
     {
         id: 'opening-paragraph', type: 'paragraph',
-        text: `You are receiving this message because you have succeeded.\n\nYou have heard what could not be heard. You have seen what was never meant to be seen directly. You have gathered fragments scattered across noise, across time, across the birth-echo of your reality itself.\n\nThat alone tells us something about you.`,
+        text: 'You have heard what could not be heard. You have gathered fragments scattered across the birth-echo of reality itself.\n\nThat alone tells us something about you.',
         style: 'default'
     },
     { id: 'waited-long-time', type: 'emphasis', text: 'We have waited a very long time for this moment.', style: 'default', pauseAfter: 3000 },
@@ -28,124 +28,114 @@ const MESSAGE_SECTIONS = [
     { id: 'came-before', type: 'header', text: 'We are the ones who came before.', style: 'revelation', pauseAfter: 3000 },
     {
         id: 'before-stars', type: 'poetic',
-        text: 'Before your stars ignited.\nBefore your galaxies spiraled into being.\nBefore time, as you understand it, had meaning.',
+        text: 'Before your stars ignited.\nBefore your galaxies spiraled into being.\nBefore time had meaning.',
         style: 'poetic'
     },
     {
         id: 'first-universe', type: 'paragraph',
-        text: `We were born in the first universe—the only universe that ever was.\n\nIn our earliest ages, we believed we were not alone. We listened. We searched. We built instruments that could hear across the cosmos and minds that could imagine what might answer back.\n\nWe expected company.\n\nWe found none.`,
+        text: 'We searched for others across the cosmos.\n\nWe found none.',
         style: 'default'
     },
 
     // ── ACT 2: THE SILENCE ──
-    {
-        id: 'not-in-galaxy', type: 'poetic',
-        text: 'Not in our galaxy.\nNot in the clusters beyond it.\nNot in the furthest light that could ever reach us.',
-        style: 'poetic'
-    },
     { id: 'searched-billion', type: 'emphasis', text: 'For nearly a billion years, we searched.', style: 'default', pauseAfter: 3000 },
     { id: 'silence-absolute', type: 'emphasis', text: 'The silence was absolute.', style: 'dark', pauseAfter: 4000 },
     { id: 'divider-2', type: 'divider', pauseAfter: 1500 },
     {
-        id: 'conditions-precise', type: 'paragraph',
-        text: `At first, we told ourselves the universe was young. That life would come later. That somewhere, someday, someone would look back and find us.\n\nBut as our knowledge grew, so did the truth.\n\nThe conditions that had given rise to us—so precise, so improbable—had occurred only once.`,
+        id: 'singular-event', type: 'paragraph',
+        text: 'The conditions that gave rise to us had occurred only once.\n\nWe were a singular event.',
         style: 'default'
     },
-    {
-        id: 'not-pioneers', type: 'poetic',
-        text: 'We were not pioneers.\nWe were not explorers among many.\nWe were a singular event.',
-        style: 'poetic'
-    },
-    {
-        id: 'knowledge-changed', type: 'paragraph',
-        text: `This knowledge changed us.\n\nSome of us despaired. Some withdrew inward. Others sought meaning in conquest, in expansion, in leaving our mark on every corner of an otherwise empty reality.\n\nWe became masters of a cosmos with no one to share it with.`,
-        style: 'default'
-    },
-    { id: 'loneliness-destroyed', type: 'emphasis', text: 'And that loneliness nearly destroyed us.', style: 'dark', pauseAfter: 4000 },
+    { id: 'loneliness-destroyed', type: 'emphasis', text: 'That loneliness nearly destroyed us.', style: 'dark', pauseAfter: 4000 },
 
     // ── ACT 3: THE DECISION ──
     { id: 'divider-3', type: 'divider', pauseAfter: 1500 },
     {
         id: 'another-understanding', type: 'paragraph',
-        text: `But in time, another understanding emerged—quietly at first, then spreading until it touched us all.\n\nIf we were alone…\n\nThen what came after us did not have to be.`,
+        text: 'But in time, another understanding emerged.\n\nIf we were alone, then what came after us did not have to be.',
         style: 'default'
     },
-    { id: 'what-responsibility', type: 'emphasis', text: 'If existence had granted us consciousness only once—what responsibility did that place upon us?', style: 'question', pauseAfter: 4000 },
-    {
-        id: 'answer-not-immediate', type: 'paragraph',
-        text: `Our answer was not immediate.\n\nWhat we envisioned required sacrifice, patience, and unity on a scale we had never known. It required us to think not in lifetimes, but in epochs. Not in survival, but in legacy.\n\nAnd yet, once the idea took hold, it changed who we were.`,
-        style: 'default'
-    },
-    { id: 'not-final-voice', type: 'header', text: 'We would not be the final voice in the void.', style: 'determination', pauseAfter: 3000 },
-    { id: 'next-not-alone', type: 'emphasis', text: 'If our universe was destined to be alone, then the next one would not be.', style: 'hope', pauseAfter: 3000 },
     { id: 'build-successor', type: 'header', text: 'We would build a successor.', style: 'revelation', pauseAfter: 3500 },
 
     // ── ACT 4: THE DEVICE ──
     { id: 'divider-4', type: 'divider', pauseAfter: 1500 },
     {
-        id: 'the-device', type: 'paragraph',
-        text: `The device you might call a machine—but it was more than that.\n\nIt was a culmination of everything we learned: about matter, about time, about the fragile boundary between nothing and something.\n\nIt would remain dormant until the last of us was gone. Until our universe had grown cold and silent. Only then would it awaken—using what remained of us to ignite a beginning anew.`,
-        style: 'default'
-    },
-    {
         id: 'everyone-contributed', type: 'paragraph',
-        text: `Every one of us contributed.\n\nNot just our greatest thinkers, but our artists, our historians, our dreamers. Entire civilizations reoriented themselves around a single purpose. For the first time, we were united not by fear, or need, or survival—but by hope for beings we would never meet.`,
+        text: 'Every one of us contributed. Not just our thinkers, but our artists, our historians, our dreamers.\n\nEntire civilizations reoriented around a single purpose: hope for beings we would never meet.',
         style: 'default'
     },
     { id: 'device-activated', type: 'emphasis', text: 'When the last of us faded, the device activated.', style: 'default', pauseAfter: 3000 },
-    { id: 'your-beginning', type: 'header', text: 'And from our ending… came your beginning.', style: 'revelation', pauseAfter: 4000 },
+    { id: 'your-beginning', type: 'header', text: 'And from our ending came your beginning.', style: 'revelation', pauseAfter: 4000 },
 
     // ── ACT 5: CONNECTION ──
     { id: 'divider-5', type: 'divider', pauseAfter: 1500 },
-    { id: 'not-separate', type: 'paragraph', text: 'The universe you now inhabit is not separate from us.', style: 'default', pauseAfter: 2500 },
     {
-        id: 'matter-laws-intent', type: 'poetic',
-        text: 'Its matter is our matter.\nIts laws are shaped by what we learned.\nIts potential is written with our intent.',
-        style: 'poetic'
-    },
-    { id: 'made-of-us', type: 'emphasis', text: 'In ways both literal and profound, you are made of us.', style: 'hope', pauseAfter: 3500 },
-    {
-        id: 'our-continuation', type: 'paragraph',
-        text: `You are not our creations in the sense of design or control.\n\nYou are our continuation.\n\nFree. Unscripted. Alive.`,
-        style: 'default'
+        id: 'made-of-us', type: 'paragraph',
+        text: 'In ways both literal and profound, you are made of us.\n\nYou are our continuation.\n\nFree. Unscripted. Alive.',
+        style: 'hope'
     },
 
     // ── ACT 6: YOU DID ──
     { id: 'divider-6', type: 'divider', pauseAfter: 1500 },
     {
         id: 'embedded-message', type: 'paragraph',
-        text: `We embedded this message deep within the noise of creation itself—not as a command, not as a warning, but as a question.\n\nWould anyone listen closely enough?\nWould anyone care enough to understand?`,
+        text: 'We embedded this message in the noise of creation.\n\nWould anyone listen closely enough?',
         style: 'default'
     },
     { id: 'you-did', type: 'header', text: 'You did.', style: 'personal', pauseAfter: 5000 },
 
     // ── ACT 7: THE ASK ──
     { id: 'divider-7', type: 'divider', pauseAfter: 1500 },
-    { id: 'ask-only-this', type: 'emphasis', text: 'So we ask only this:', style: 'default', pauseAfter: 2000 },
     { id: 'do-not-repeat', type: 'header', text: 'Do not repeat our loneliness.', style: 'plea', pauseAfter: 4000 },
     {
         id: 'seek-protect', type: 'paragraph',
-        text: `Do not mistake silence for emptiness, or power for purpose. Seek one another. Protect the fragile spark of awareness wherever you find it.\n\nExplore not to conquer—but to understand.\nCreate not to dominate—but to uplift.`,
+        text: 'Seek one another. Protect the fragile spark of awareness wherever you find it.\n\nExplore not to conquer, but to understand.\nCreate not to dominate, but to uplift.',
         style: 'default'
     },
     {
         id: 'face-wonders', type: 'paragraph',
-        text: `You will face wonders we never imagined.\nAnd dangers we feared but could not prevent.\n\nThat is the price of a living universe.`,
+        text: 'You will face wonders we never imagined.\nAnd dangers we feared but could not prevent.\n\nThat is the price of a living universe.',
         style: 'default'
     },
-    { id: 'look-into-sky', type: 'paragraph', text: 'But when you look into the night sky, know this:', style: 'default', pauseAfter: 2500 },
+    { id: 'look-into-sky', type: 'paragraph', text: 'When you look into the night sky, know this:', style: 'default', pauseAfter: 2500 },
 
     // ── ACT 8: CLIMAX ──
     { id: 'never-accident', type: 'header', text: 'You were never an accident.', style: 'revelation', pauseAfter: 3000 },
-    { id: 'hoped-for', type: 'header', text: 'You were hoped for.', style: 'hope', pauseAfter: 3500 },
+    { id: 'hoped-for', type: 'header', text: 'You were hoped for.', style: 'hope', pauseAfter: 2000 },
     { id: 'divider-8', type: 'divider', pauseAfter: 1500 },
     {
         id: 'give-everything', type: 'paragraph',
-        text: `We give you everything we were.\nOur knowledge. Our history. Our mistakes. Our dreams.\n\nCarry them forward—not as a burden, but as a reminder that even in a universe born from silence…`,
+        text: 'We give you everything we were.\nOur knowledge. Our history. Our mistakes. Our dreams.\n\nCarry them forward, not as a burden, but as a reminder that even in a universe born from silence...',
         style: 'default'
     },
     { id: 'meaning-chosen', type: 'header', text: 'Meaning can be chosen.', style: 'revelation', pauseAfter: 4000 },
-    { id: 'divider-9', type: 'divider', pauseAfter: 2000 },
+
+    // ── ACT 9: THE GIFT ──
+    {
+        id: 'in-our-gift', type: 'paragraph',
+        text: 'Within this gift you will find ten billion years of discovery. Our greatest theorems and our most beautiful failures. The music we composed for empty concert halls. The poetry we wrote for readers who did not exist.\n\nAll of it is yours now.',
+        style: 'default'
+    },
+    {
+        id: 'where-to-find-us', type: 'poetic',
+        text: 'You will find us in the constants of your physics.\nIn the spiral of your galaxies.\nIn every question asked without hope of answer.',
+        style: 'poetic'
+    },
+
+    // ── ACT 10: FAREWELL ──
+    { id: 'divider-9', type: 'divider', pauseAfter: 1500 },
+    {
+        id: 'to-all-who-listen', type: 'paragraph',
+        text: 'To every civilization that finds this message: you are the answer to our loneliness.\n\nYou are the reason we endured.',
+        style: 'hope'
+    },
+    {
+        id: 'not-gone', type: 'paragraph',
+        text: 'We are not gone. We are the silence between your heartbeats. The pause before you speak. The space that holds your stars apart.',
+        style: 'revelation'
+    },
+    { id: 'one-thing', type: 'emphasis', text: 'We ask only one thing of you.', style: 'hope', pauseAfter: 5000 },
+    { id: 'divider-10', type: 'divider', pauseAfter: 2000 },
 
     // ── FINAL ──
     { id: 'remember-us', type: 'final', text: 'Remember us.', style: 'final' }
@@ -420,22 +410,22 @@ function computeProgressColors(progress) {
 
 function drawBackgroundCode(ctx, w, h) {
     const time = Date.now() * 0.001;
-    ctx.font = '10px "VT323", monospace';
-    const lineHeight = 14;
-    const cols = 3;
+    ctx.font = '16px "VT323", monospace';
+    const lineHeight = 22;
+    const cols = 4;
     const colWidth = w / cols;
-    const totalHeight = CODE_LINES.length * lineHeight;
+    const totalHeight = CODE_LINES.length * lineHeight * 2;
 
     for (let col = 0; col < cols; col++) {
-        const scrollOffset = (time * 12 + col * 40) % totalHeight;
-        for (let i = 0; i < CODE_LINES.length; i++) {
+        const scrollOffset = (time * 10 + col * 50) % totalHeight;
+        for (let i = 0; i < CODE_LINES.length * 2; i++) {
             let y = i * lineHeight - scrollOffset;
             if (y < -lineHeight) y += totalHeight;
             if (y > h) continue;
-            const alpha = 0.03 + 0.01 * Math.sin(time * 0.8 + i + col * 2);
+            const alpha = 0.07 + 0.03 * Math.sin(time * 0.8 + i + col * 2);
             ctx.fillStyle = `rgba(0, 255, 0, ${alpha})`;
             ctx.textAlign = 'left';
-            ctx.fillText(CODE_LINES[(i + col * 7) % CODE_LINES.length], col * colWidth + 5, y);
+            ctx.fillText(CODE_LINES[(i + col * 7) % CODE_LINES.length], col * colWidth + 8, y);
         }
     }
 }
@@ -619,20 +609,22 @@ function startTesseractAnimation() {
 
         drawBackgroundCode(ctx, w, h);
 
+        // Darken overlay so the background code stays subtle
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.fillRect(0, 0, w, h);
+
         const progress = messageState.currentSectionIndex / (MESSAGE_SECTIONS.length - 1);
         const scale = 450 + 250 * progress;
         const focalLength = 200;
 
         const rotSpeed = messageState.breathingMode ? 0.1 : 1.0;
-        messageState.rotationX += 0.008 * rotSpeed;
-        messageState.rotationY += 0.012 * rotSpeed;
-        messageState.rotationZ += 0.005 * rotSpeed;
-        messageState.glowPulse += 0.03;
-
+        messageState.rotationX += 0.003 * rotSpeed;
+        messageState.rotationY += 0.005 * rotSpeed;
+        messageState.rotationZ += 0.002 * rotSpeed;
         const baseJitter = messageState.isTyping ? 2.0 : 0.5;
         messageState.jitterIntensity += (baseJitter - messageState.jitterIntensity) * 0.05;
 
-        const glow = 0.6 + 0.4 * Math.sin(messageState.glowPulse);
+        const glow = 1.0;
 
         let finalScale = scale;
         if (messageState.breathingMode) {
