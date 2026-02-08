@@ -69,6 +69,10 @@ export const gameState = {
     investigationUnlocked: false,
     dynamicStars: [], // SRC-7024, NEXUS POINT - added during gameplay
 
+    // Starmap mode
+    starmapMode: 'array', // 'array' or 'skychart'
+    skyChart: { scale: 1, panX: 0, panY: 0, isDragging: false, dragStartX: 0, dragStartY: 0, lastPanX: 0, lastPanY: 0 },
+
     // Progress flags
     tutorialCompleted: false,
     decryptionComplete: false,
@@ -122,6 +126,10 @@ export function resetGameState() {
     gameState.currentFrequency = 50;
     gameState.currentGain = 50;
     gameState.lockDuration = 0;
+
+    // Reset starmap mode
+    gameState.starmapMode = 'array';
+    gameState.skyChart = { scale: 1, panX: 0, panY: 0, isDragging: false, dragStartX: 0, dragStartY: 0, lastPanX: 0, lastPanY: 0 };
 
     // Reset parallax
     gameState.mouseX = 0;

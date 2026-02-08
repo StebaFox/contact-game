@@ -165,6 +165,67 @@ export function switchToBackgroundMusic() {
     }, fadeInterval);
 }
 
+// Stop all music and ambient audio immediately (for crash/shutdown)
+export function stopAllMusic() {
+    if (backgroundMusic) {
+        backgroundMusic.pause();
+        backgroundMusic.volume = 0;
+    }
+    if (alienMusic) {
+        alienMusic.pause();
+        alienMusic.volume = 0;
+    }
+    if (roomTone) {
+        roomTone.pause();
+        roomTone.volume = 0;
+    }
+    currentMusic = null;
+}
+
+// Resume all ambient audio after reboot
+export function resumeAllMusic() {
+    if (backgroundMusic) {
+        backgroundMusic.volume = masterVolume * 0.3;
+        backgroundMusic.play().catch(() => {});
+        currentMusic = backgroundMusic;
+    }
+    if (roomTone) {
+        roomTone.volume = masterVolume * 0.35;
+        roomTone.play().catch(() => {});
+    }
+}
+
+// Echoing ping — sonar-like tone with reverb tail for star reveals
+export function playEchoingPing() {
+    if (!audioContext || masterVolume === 0) return;
+
+    // Three pings: initial + two fading echoes
+    const baseFreq = 1400;
+    const pings = [
+        { delay: 0, vol: 0.12, dur: 0.4 },
+        { delay: 0.35, vol: 0.06, dur: 0.3 },
+        { delay: 0.6, vol: 0.025, dur: 0.25 }
+    ];
+
+    pings.forEach(({ delay, vol, dur }) => {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(baseFreq, audioContext.currentTime + delay);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.7, audioContext.currentTime + delay + dur);
+
+        gain.gain.setValueAtTime(vol * masterVolume, audioContext.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + delay + dur);
+
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+
+        osc.start(audioContext.currentTime + delay);
+        osc.stop(audioContext.currentTime + delay + dur);
+    });
+}
+
 // UI click sound
 export function playClick() {
     // Initialize audio on first user interaction
@@ -185,6 +246,38 @@ export function playClick() {
     oscillator.start(audioContext.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
     oscillator.stop(audioContext.currentTime + 0.1);
+}
+
+// Zoom in sound — short rising chirp
+export function playZoomIn() {
+    if (!audioContext || masterVolume === 0) return;
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(400, audioContext.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.06 * masterVolume, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+    osc.start(audioContext.currentTime);
+    osc.stop(audioContext.currentTime + 0.1);
+}
+
+// Zoom out sound — short falling chirp
+export function playZoomOut() {
+    if (!audioContext || masterVolume === 0) return;
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, audioContext.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.06 * masterVolume, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+    osc.start(audioContext.currentTime);
+    osc.stop(audioContext.currentTime + 0.1);
 }
 
 // Scan acknowledge sound (confirmation tone)
@@ -407,6 +500,76 @@ export function playDoorShutSound() {
         doorShutSound.volume = masterVolume * 0.6;
         doorShutSound.play().catch(err => {
             console.log('Door shut sound play prevented:', err);
+        });
+    }
+}
+
+// Play power down SFX with fade-out at the end. Returns a promise that resolves when done.
+let powerDownSound = null;
+export function playPowerDownSound() {
+    if (masterVolume === 0) return Promise.resolve();
+
+    if (!powerDownSound) {
+        powerDownSound = document.getElementById('power-down-sound');
+    }
+
+    if (!powerDownSound) return Promise.resolve();
+
+    powerDownSound.currentTime = 0;
+    const peakVolume = masterVolume * 0.7;
+    powerDownSound.volume = peakVolume;
+    powerDownSound.play().catch(err => {
+        console.log('Power down sound play prevented:', err);
+    });
+
+    return new Promise(resolve => {
+        const FADE_DURATION = 1.5; // fade out over last 1.5 seconds
+
+        function checkFade() {
+            if (!powerDownSound || powerDownSound.paused || powerDownSound.ended) {
+                resolve();
+                return;
+            }
+
+            const remaining = powerDownSound.duration - powerDownSound.currentTime;
+            if (remaining <= FADE_DURATION) {
+                powerDownSound.volume = Math.max(0, peakVolume * (remaining / FADE_DURATION));
+            }
+
+            if (remaining <= 0.05) {
+                powerDownSound.pause();
+                powerDownSound.volume = peakVolume;
+                resolve();
+            } else {
+                requestAnimationFrame(checkFade);
+            }
+        }
+
+        // Start checking once we know the duration
+        if (powerDownSound.readyState >= 1) {
+            checkFade();
+        } else {
+            powerDownSound.addEventListener('loadedmetadata', checkFade, { once: true });
+            // Safety fallback
+            setTimeout(resolve, 5000);
+        }
+    });
+}
+
+// Play boot up SFX
+let bootUpSound = null;
+export function playBootUpSound() {
+    if (masterVolume === 0) return;
+
+    if (!bootUpSound) {
+        bootUpSound = document.getElementById('boot-up-sound');
+    }
+
+    if (bootUpSound) {
+        bootUpSound.currentTime = 0;
+        bootUpSound.volume = masterVolume * 0.6;
+        bootUpSound.play().catch(err => {
+            console.log('Boot up sound play prevented:', err);
         });
     }
 }
@@ -713,6 +876,106 @@ export function stopAlienSignalSound() {
             alienSignalOscillators = [];
             alienSignalGain = null;
         }, 550);
+    }
+}
+
+// Fragment signal sound — structural, almost musical resonance unique to each fragment star
+let fragmentSignalOscillators = [];
+let fragmentSignalGain = null;
+
+export function startFragmentSignalSound(star) {
+    if (!audioContext || masterVolume === 0) {
+        stopFragmentSignalSound();
+        return;
+    }
+
+    if (fragmentSignalOscillators.length > 0) return; // Already playing
+
+    fragmentSignalGain = audioContext.createGain();
+    fragmentSignalGain.gain.value = 0;
+    fragmentSignalGain.connect(audioContext.destination);
+
+    // Fade in
+    fragmentSignalGain.gain.linearRampToValueAtTime(0.08 * masterVolume, audioContext.currentTime + 1.5);
+
+    const starSeed = star ? (typeof star.id === 'number' ? star.id + 1 : hashStarId(star.id)) : 1;
+
+    // Musical chord structure — each fragment star gets a unique chord
+    const chords = [
+        [220, 277.18, 329.63, 440],       // A minor: A3, C#4, E4, A4
+        [261.63, 329.63, 392, 523.25],     // C major: C4, E4, G4, C5
+        [293.66, 369.99, 440, 587.33],     // D major: D4, F#4, A4, D5
+        [196, 246.94, 293.66, 392],        // G major: G3, B3, D4, G4
+        [174.61, 220, 261.63, 349.23]      // F major: F3, A3, C4, F4
+    ];
+    const chord = chords[starSeed % chords.length];
+
+    // Main chord tones — sine waves for a clean, crystalline sound
+    chord.forEach((freq, i) => {
+        const osc = audioContext.createOscillator();
+        const oscGain = audioContext.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+
+        // Higher notes slightly quieter for balance
+        oscGain.gain.value = 0.8 / (i * 0.3 + 1);
+
+        osc.connect(oscGain);
+        oscGain.connect(fragmentSignalGain);
+        osc.start();
+        fragmentSignalOscillators.push({ osc, oscGain });
+    });
+
+    // Add a shimmering high harmonic — triangle wave for texture
+    const shimmer = audioContext.createOscillator();
+    const shimmerGain = audioContext.createGain();
+    shimmer.type = 'triangle';
+    shimmer.frequency.value = chord[chord.length - 1] * 2; // Octave above top note
+    shimmerGain.gain.value = 0.15;
+    shimmer.connect(shimmerGain);
+    shimmerGain.connect(fragmentSignalGain);
+    shimmer.start();
+    fragmentSignalOscillators.push({ osc: shimmer, oscGain: shimmerGain });
+
+    // Slow pulsing vibrato on the shimmer for an organic feel
+    const vibrato = audioContext.createOscillator();
+    const vibratoGain = audioContext.createGain();
+    vibrato.frequency.value = 0.3 + (starSeed % 3) * 0.15; // 0.3-0.6 Hz
+    vibratoGain.gain.value = 0.08;
+    vibrato.connect(vibratoGain);
+    vibratoGain.connect(shimmerGain.gain);
+    vibrato.start();
+    fragmentSignalOscillators.push({ osc: vibrato, oscGain: vibratoGain });
+
+    // Slow chord tone shifting — notes gently drift in pitch
+    const drift = audioContext.createOscillator();
+    const driftGain = audioContext.createGain();
+    drift.frequency.value = 0.05; // Very slow
+    driftGain.gain.value = 3; // Subtle pitch bend in Hz
+    drift.connect(driftGain);
+    chord.forEach((freq, i) => {
+        if (fragmentSignalOscillators[i]) {
+            driftGain.connect(fragmentSignalOscillators[i].osc.frequency);
+        }
+    });
+    drift.start();
+    fragmentSignalOscillators.push({ osc: drift, oscGain: driftGain });
+}
+
+export function stopFragmentSignalSound() {
+    if (fragmentSignalOscillators.length > 0) {
+        if (fragmentSignalGain && audioContext) {
+            fragmentSignalGain.gain.linearRampToValueAtTime(0.001, audioContext.currentTime + 0.8);
+        }
+
+        setTimeout(() => {
+            fragmentSignalOscillators.forEach(({ osc }) => {
+                try { osc.stop(); } catch (e) {}
+            });
+            fragmentSignalOscillators = [];
+            fragmentSignalGain = null;
+        }, 850);
     }
 }
 

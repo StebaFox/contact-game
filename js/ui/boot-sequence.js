@@ -912,37 +912,19 @@ function animateStarsAppearing() {
     const width = canvas.width;
     const height = canvas.height;
 
-    // Store original star positions
-    const stars = [...gameState.stars];
-    let revealedStars = 0;
-    const totalStars = stars.length;
-
-    // Scan line effect
+    // Scan line sweeps down, revealing the actual starmap underneath
     let scanY = 0;
-    const scanSpeed = 5; // Slower for more visible effect
+    const scanSpeed = 5;
 
     function drawScanEffect() {
-        // Clear canvas
+        // Render the real starmap first (ensures pixel-perfect alignment)
+        if (renderStarMapFn) renderStarMapFn();
+
+        // Black mask over everything below the scan line
         ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, width, height);
+        ctx.fillRect(0, scanY + 1, width, height - scanY);
 
-        // Draw grid lines (subtle)
-        ctx.strokeStyle = 'rgba(0, 255, 0, 0.1)';
-        ctx.lineWidth = 1;
-        for (let x = 0; x < width; x += 50) {
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, Math.min(scanY, height));
-            ctx.stroke();
-        }
-        for (let y = 0; y < Math.min(scanY, height); y += 50) {
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(width, y);
-            ctx.stroke();
-        }
-
-        // Draw scan line
+        // Draw the green scan line
         ctx.strokeStyle = '#0f0';
         ctx.lineWidth = 2;
         ctx.shadowColor = '#0f0';
@@ -953,34 +935,12 @@ function animateStarsAppearing() {
         ctx.stroke();
         ctx.shadowBlur = 0;
 
-        // Reveal stars as scan passes them
-        stars.forEach((star, index) => {
-            if (star.y <= scanY) {
-                // Draw revealed star
-                const isIntelligent = star.hasIntelligence;
-                ctx.fillStyle = isIntelligent ? '#0ff' : '#0f0';
-                ctx.shadowColor = isIntelligent ? '#0ff' : '#0f0';
-                ctx.shadowBlur = 10;
-                ctx.beginPath();
-                ctx.arc(star.x, star.y, isIntelligent ? 6 : 4, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowBlur = 0;
-
-                // Draw star label
-                ctx.fillStyle = '#0f0';
-                ctx.font = '10px VT323';
-                ctx.fillText(star.name, star.x + 10, star.y + 3);
-            }
-        });
-
         scanY += scanSpeed;
 
         if (scanY < height + 50) {
             requestAnimationFrame(drawScanEffect);
-        } else {
-            // Scan complete, draw final state
-            if (renderStarMapFn) renderStarMapFn();
         }
+        // No final render needed — last frame already called renderStarMapFn
     }
 
     drawScanEffect();

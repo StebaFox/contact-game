@@ -5,7 +5,7 @@
 
 import { gameState } from '../core/game-state.js';
 import { showView, log } from '../ui/rendering.js';
-import { playClick } from './audio.js';
+import { playClick, playEchoingPing } from './audio.js';
 import { startTriangulationMinigame } from './triangulation-minigame.js';
 import { startDecryptionMinigame } from './decryption-minigame.js';
 import { autoSave } from '../core/save-system.js';
@@ -295,10 +295,10 @@ function handleFragmentAction(sourceKey) {
             () => {
                 log('TRIANGULATION COMPLETE - Deep space target located!', 'highlight');
                 gameState.cmbDetected = true;
-                // Add NEXUS POINT to dynamic stars
-                addNexusPoint();
                 autoSave();
+                // Show starmap first, then dramatically reveal NEXUS POINT
                 showView('starmap-view');
+                revealDynamicStar(() => addNexusPoint(), 'NEXUS POINT');
             },
             () => {
                 log('Triangulation aborted.', 'warning');
@@ -306,6 +306,18 @@ function handleFragmentAction(sourceKey) {
             }
         );
     }
+}
+
+// Dramatic reveal for a new dynamic star appearing on the starmap
+function revealDynamicStar(addStarFn, starName) {
+    // Brief pause, then ping + add the star
+    setTimeout(() => {
+        playEchoingPing();
+        addStarFn();
+        autoSave();
+        log(`NEW TARGET ADDED TO STARMAP: ${starName}`, 'highlight');
+        log(`Select ${starName} on the starmap to begin scanning.`, 'info');
+    }, 800);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -329,7 +341,8 @@ export function addSRC7024() {
         hasIntelligence: true,
         isFalsePositive: false,
         x: 0.72,  // Starmap position (fraction of canvas)
-        y: 0.35
+        y: 0.35,
+        addedAt: Date.now()
     };
     gameState.dynamicStars.push(src7024);
     log('NEW TARGET DETECTED: SRC-7024', 'highlight');
@@ -352,10 +365,10 @@ export function addNexusPoint() {
         hasIntelligence: true,
         isFalsePositive: false,
         x: 0.85,
-        y: 0.55
+        y: 0.55,
+        addedAt: Date.now()
     };
     gameState.dynamicStars.push(nexusPoint);
-    log('NEW TARGET DETECTED: NEXUS POINT', 'highlight');
 }
 
 export function addGenesisPoint() {
@@ -378,7 +391,6 @@ export function addGenesisPoint() {
         addedAt: Date.now()
     };
     gameState.dynamicStars.push(genesisPoint);
-    log('NEW TARGET DETECTED: GENESIS POINT', 'highlight');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -390,9 +402,9 @@ function startGenesisTriangulation() {
     startTriangulationMinigame(
         () => {
             log('TRIANGULATION COMPLETE - Primordial source located!', 'highlight');
-            addGenesisPoint();
-            autoSave();
+            // Show starmap first, then dramatically reveal GENESIS POINT
             showView('starmap-view');
+            revealDynamicStar(() => addGenesisPoint(), 'GENESIS POINT');
         },
         () => {
             log('Triangulation aborted.', 'warning');

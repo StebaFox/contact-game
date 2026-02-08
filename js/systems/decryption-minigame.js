@@ -638,8 +638,12 @@ function generateTargetPattern() {
         }
     }
 
+    // Audio feedback
     if (isDangerous) {
+        playDangerWarningTone();
         log('WARNING: Signal interference detected!', 'warning');
+    } else {
+        playPatternAppearSound();
     }
 }
 
@@ -771,7 +775,12 @@ function updateTargetPattern(dt) {
 
     if (decryptionState.targetPattern) {
         decryptionState.targetTimer -= dt;
+        const prevPhase = decryptionState.targetPattern.pulsePhase;
         decryptionState.targetPattern.pulsePhase += dt * 0.01;
+        // Tick sound each blink cycle (when sine crosses from negative to positive)
+        if (Math.sin(prevPhase) <= 0 && Math.sin(decryptionState.targetPattern.pulsePhase) > 0) {
+            playPatternBlinkTick();
+        }
 
         if (decryptionState.targetTimer <= 0) {
             // Pattern expired - player missed it
@@ -1144,6 +1153,72 @@ function playMissSound() {
 
         osc.start(ctx.currentTime);
         osc.stop(ctx.currentTime + 0.2);
+    } catch (e) {}
+}
+
+function playPatternAppearSound() {
+    try {
+        const vol = getMasterVolume();
+        const ctx = getAudioContext();
+
+        // Quick digital chirp — two-tone ascending blip
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.frequency.setValueAtTime(300, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.06);
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.07 * vol, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.1);
+    } catch (e) {}
+}
+
+function playDangerWarningTone() {
+    try {
+        const vol = getMasterVolume();
+        const ctx = getAudioContext();
+
+        // Pulsing low warning — two quick buzzes
+        for (let i = 0; i < 2; i++) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.frequency.value = 150;
+            osc.type = 'sawtooth';
+            gain.gain.setValueAtTime(0.06 * vol, ctx.currentTime + i * 0.12);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.08);
+
+            osc.start(ctx.currentTime + i * 0.12);
+            osc.stop(ctx.currentTime + i * 0.12 + 0.08);
+        }
+    } catch (e) {}
+}
+
+function playPatternBlinkTick() {
+    try {
+        const vol = getMasterVolume();
+        const ctx = getAudioContext();
+
+        // Soft tick — very short high-freq click
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.frequency.value = 1200;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.03 * vol, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.02);
+
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.02);
     } catch (e) {}
 }
 

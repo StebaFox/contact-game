@@ -36,10 +36,10 @@ body {
         rgba(18, 16, 16, 0) 50%,
         rgba(0, 0, 0, 0.25) 50%
     );
-    background-size: 100% 4px;
+    background-size: 100% 1px;
     z-index: 2;
     pointer-events: none;
-    animation: scanline 8s linear infinite;
+    animation: scanline 0.5s linear infinite;
 }
 
 /* Flickering effect */
@@ -60,10 +60,10 @@ body {
 
 @keyframes scanline {
     0% {
-        transform: translateY(0);
+        background-position: 0 0;
     }
     100% {
-        transform: translateY(100vh);
+        background-position: 0 1px;
     }
 }
 
@@ -1000,7 +1000,12 @@ h2 {
 .starmap-container {
     flex: 1;
     text-align: center;
+}
+
+.starmap-canvas-wrap {
+    display: inline-block;
     position: relative;
+    max-width: 100%;
 }
 
 #starmap-canvas {
@@ -1010,6 +1015,60 @@ h2 {
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     max-width: 100%;
+}
+
+/* Starmap mode toggle */
+.starmap-mode-btn {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #0f0;
+    color: #0f0;
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    padding: 4px 12px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-shadow: 0 0 5px #0f0;
+    transition: background 0.2s;
+}
+.starmap-mode-btn:hover {
+    background: rgba(0, 255, 0, 0.15);
+}
+.starmap-mode-btn.active {
+    border-color: #0ff;
+    color: #0ff;
+    text-shadow: 0 0 5px #0ff;
+}
+
+/* Sky chart zoom controls */
+.sky-chart-zoom {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+    display: flex;
+    gap: 4px;
+}
+.zoom-btn {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #0f0;
+    color: #0f0;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    text-shadow: 0 0 5px #0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+.zoom-btn:hover {
+    background: rgba(0, 255, 0, 0.15);
 }
 
 .star-info-panel {

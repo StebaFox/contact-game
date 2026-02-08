@@ -32,12 +32,14 @@ import { toggleColorScheme, toggleLayoutMode, loadColorScheme, loadLayoutMode } 
 import { setupBootSequence, setBootFunctions } from './ui/boot-sequence.js';
 import {
     generateBackgroundStars,
+    generateSkyChartBackground,
     generateStarCatalog,
     drawStarVisualization,
     selectStar,
     renderStarMap,
     startStarMapAnimation,
     setupStarMapCanvas,
+    setupStarmapToggle,
     setStarmapFunctions,
     setupNavigationButtons
 } from './ui/starmap.js';
@@ -71,7 +73,8 @@ import {
     stopSignalAnimation,
     showVerifyPrompt,
     startRoss128DirectDecryption,
-    initiateSRC7024CrashScan
+    initiateSRC7024CrashScan,
+    setScanningFunctions
 } from './systems/scanning.js';
 import { startTuningMinigame, setTuningFunctions, setupTuningSliders } from './systems/tuning-minigame.js';
 import { startPatternRecognitionGame, setPatternFunctions } from './systems/pattern-minigame.js';
@@ -95,6 +98,11 @@ function setupModuleConnections() {
     setBootFunctions({
         renderStarMap: renderStarMap,
         playSecurityBeep: playSecurityBeep
+    });
+
+    // Scanning needs star visualization from starmap
+    setScanningFunctions({
+        drawStarVisualization: drawStarVisualization
     });
 
     // Starmap needs dish-array functions and signal animation
@@ -332,8 +340,10 @@ function initGame() {
 
     // Initialize systems
     generateBackgroundStars();
+    generateSkyChartBackground();
     generateStarCatalog();
     setupStarMapCanvas();
+    setupStarmapToggle();
     initDishArray();
 
     // Start animations

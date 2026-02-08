@@ -5,7 +5,7 @@
 
 import { gameState } from '../core/game-state.js';
 import { showView, log, clearCanvas, calculateScanBoxPosition } from './rendering.js';
-import { playClick, playSelectStar, playStaticBurst, playScanAcknowledge, stopNaturalPhenomenaSound, stopAlienSignalSound, stopStaticHiss, switchToBackgroundMusic } from '../systems/audio.js';
+import { playClick, playSelectStar, playStaticBurst, playScanAcknowledge, playZoomIn, playZoomOut, stopNaturalPhenomenaSound, stopAlienSignalSound, stopFragmentSignalSound, stopStaticHiss, stopTuningTone, switchToBackgroundMusic } from '../systems/audio.js';
 import { STAR_NAMES, STAR_TYPES, DISCOVERY_DATES, STAR_COORDINATES, STAR_DISTANCES, WEAK_SIGNAL_START_INDEX } from '../narrative/stars.js';
 import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
 import { checkForEndState } from '../core/end-game.js';
@@ -75,7 +75,10 @@ const weakSignalConfig = {
     28: { requiredPower: 7 }    // VEGA - medium
 };
 
-// Generate background stars for parallax effect
+// Pre-rendered nebula canvas (generated once, drawn each frame with parallax)
+let nebulaCanvas = null;
+
+// Generate background stars and nebula for parallax effect
 export function generateBackgroundStars() {
     const canvas = document.getElementById('starmap-canvas');
     const width = canvas.width;
@@ -88,12 +91,408 @@ export function generateBackgroundStars() {
             x: Math.random() * width,
             y: Math.random() * height,
             size: Math.random() * 1.5 + 0.5,
-            brightness: Math.floor(Math.random() * 80 + 175), // 175-255 range
-            alpha: Math.random() * 0.4 + 0.3, // 0.3-0.7 range
+            brightness: Math.floor(Math.random() * 80 + 175),
+            alpha: Math.random() * 0.4 + 0.3,
             twinkleSpeed: Math.random() * 0.02 + 0.01,
             twinkleOffset: Math.random() * Math.PI * 2
         });
     }
+
+    // Generate nebula on offscreen canvas (slightly oversized for parallax movement)
+    const pad = 40;
+    nebulaCanvas = document.createElement('canvas');
+    nebulaCanvas.width = width + pad * 2;
+    nebulaCanvas.height = height + pad * 2;
+    const nCtx = nebulaCanvas.getContext('2d');
+
+    // Galactic center bulge position (0-1 along the band, 0.4 = slightly left of center)
+    const nw = nebulaCanvas.width, nh = nebulaCanvas.height;
+    const bulgeT = 0.4;
+    const bulgeFactor = (t) => {
+        const dist = Math.abs(t - bulgeT);
+        return 1 + 1.2 * Math.exp(-dist * dist * 35); // peaks at 2.2x at center, tighter falloff
+    };
+
+    // Milky way — glow spots along the diagonal band (slightly brighter near bulge)
+    const bandAngle = Math.atan2(-0.75 * nh, nw);
+    for (let i = 0; i < 16; i++) {
+        const t = (i + 0.5) / 16;
+        const cx = t * nw;
+        const cy = nh * 0.85 - t * nh * 0.75;
+        const bulge = bulgeFactor(t);
+        const r = (55 + Math.random() * 20) * Math.min(bulge, 1.6);
+        const a = 0.19 + 0.08 * (bulge - 1); // slightly brighter base
+        const grad = nCtx.createRadialGradient(cx, cy, 0, cx, cy, r);
+        grad.addColorStop(0, `rgba(48, 58, 115, ${Math.min(a, 0.35)})`);
+        grad.addColorStop(0.5, `rgba(42, 52, 105, ${Math.min(a * 0.4, 0.18)})`);
+        grad.addColorStop(1, 'rgba(30, 40, 80, 0)');
+        nCtx.fillStyle = grad;
+        nCtx.fillRect(cx - r, cy - r, r * 2, r * 2);
+    }
+
+    // White nebula wisps — irregular curving tendrils built from chained blobs
+    const bandDx = Math.cos(bandAngle);
+    const bandDy = Math.sin(bandAngle);
+    const perpDx = -bandDy; // perpendicular to band
+    const perpDy = bandDx;
+    for (let i = 0; i < 8; i++) {
+        const startT = Math.random() * 0.75 + 0.1;
+        const segments = 4 + Math.floor(Math.random() * 4); // 4-7 blobs per wisp
+        const baseAlpha = 0.04 + Math.random() * 0.05;
+        let cx = startT * nw;
+        let cy = nh * 0.85 - startT * nh * 0.75 + (Math.random() - 0.5) * 20;
+        // Each wisp wanders with its own drift
+        let drift = (Math.random() - 0.5) * 0.8; // perpendicular wander tendency
+
+        for (let s = 0; s < segments; s++) {
+            const blobRx = 20 + Math.random() * 35;
+            const blobRy = 5 + Math.random() * 8;
+            // Rotate each blob slightly differently
+            const angle = bandAngle + (Math.random() - 0.5) * 0.6 + drift * 0.3;
+            const a = baseAlpha * (1 - s * 0.08); // fade along length
+
+            nCtx.save();
+            nCtx.translate(cx, cy);
+            nCtx.rotate(angle);
+            const grad = nCtx.createRadialGradient(0, 0, 0, 0, 0, blobRx);
+            grad.addColorStop(0, `rgba(220, 225, 240, ${Math.min(a, 0.12)})`);
+            grad.addColorStop(0.4, `rgba(210, 215, 235, ${Math.min(a * 0.5, 0.07)})`);
+            grad.addColorStop(1, 'rgba(190, 200, 225, 0)');
+            nCtx.scale(1, blobRy / blobRx);
+            nCtx.fillStyle = grad;
+            nCtx.fillRect(-blobRx, -blobRx, blobRx * 2, blobRx * 2);
+            nCtx.restore();
+
+            // Step along band direction + wander perpendicular
+            drift += (Math.random() - 0.5) * 0.6;
+            drift = Math.max(-1.2, Math.min(1.2, drift)); // clamp wander
+            const step = 25 + Math.random() * 20;
+            cx += bandDx * step + perpDx * drift * 8;
+            cy += bandDy * step + perpDy * drift * 8;
+        }
+    }
+
+    // Dense star clusters forming the milky way river (bulges at galactic center)
+    for (let i = 0; i < 1200; i++) {
+        const t = Math.random();
+        const bandX = t * nw;
+        const bandCenterY = nh * 0.85 - t * nh * 0.75;
+        const bulge = bulgeFactor(t);
+        // Gaussian spread, wider at the bulge
+        const r1 = Math.random(), r2 = Math.random();
+        const gaussian = Math.sqrt(-2 * Math.log(r1)) * Math.cos(2 * Math.PI * r2);
+        const spread = 30 * bulge;
+        const bandY = bandCenterY + gaussian * spread;
+        const distFromCenter = Math.abs(bandY - bandCenterY) / (spread * 1.5);
+        const alpha = Math.max(0, (1 - distFromCenter * 0.8)) * (Math.random() * 0.5 + 0.2);
+        const size = Math.random() * 1.5 + 0.3;
+        nCtx.fillStyle = `rgba(200, 210, 235, ${Math.min(alpha, 0.7)})`;
+        nCtx.fillRect(bandX, bandY, size, size);
+    }
+
+    // Dark dust lanes — dark patches that cut across the band (drawn on top to obscure)
+    nCtx.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < 6; i++) {
+        const t = Math.random() * 0.7 + 0.15;
+        const cx = t * nw;
+        const cy = nh * 0.85 - t * nh * 0.75 + (Math.random() - 0.5) * 15;
+        // Elongated dark patches along the band, slightly angled
+        const rx = 40 + Math.random() * 60;
+        const ry = 5 + Math.random() * 10;
+        const angle = bandAngle + (Math.random() - 0.5) * 0.4;
+        const a = 0.15 + Math.random() * 0.2;
+
+        nCtx.save();
+        nCtx.translate(cx, cy);
+        nCtx.rotate(angle);
+        const grad = nCtx.createRadialGradient(0, 0, 0, 0, 0, rx);
+        grad.addColorStop(0, `rgba(0, 0, 0, ${a})`);
+        grad.addColorStop(0.5, `rgba(0, 0, 0, ${a * 0.4})`);
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        nCtx.scale(1, ry / rx);
+        nCtx.fillStyle = grad;
+        nCtx.fillRect(-rx, -rx, rx * 2, rx * 2);
+        nCtx.restore();
+    }
+    nCtx.globalCompositeOperation = 'source-over';
+}
+
+// Get star color based on spectral type
+function getSpectralColor(starType) {
+    const spectralClass = starType.charAt(0).toUpperCase();
+    switch(spectralClass) {
+        case 'O': return { color: '#9bb0ff', size: 50 };
+        case 'B': return { color: '#aabfff', size: 45 };
+        case 'A': return { color: '#cad7ff', size: 42 };
+        case 'F': return { color: '#f8f7ff', size: 40 };
+        case 'G': return { color: '#fff4ea', size: 38 };
+        case 'K': return { color: '#ffd2a1', size: 35 };
+        case 'M': return { color: '#ffcc6f', size: 32 };
+        case 'D': return { color: '#f0f0ff', size: 28 };
+        default: return { color: '#ffffff', size: 36 };
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SKY CHART — RA/Dec projection utilities
+// ═════════════════════════════════════════════════════════════════════════════
+
+const SKY_PAD = 30; // padding from canvas edges
+
+// Pre-rendered sky chart background canvas
+let skyChartBgCanvas = null;
+
+// Convert RA/Dec coordinate to canvas x,y (equirectangular projection)
+function projectRADec(coord, canvasWidth, canvasHeight) {
+    const raHours = coord.ra.h + coord.ra.m / 60 + (coord.ra.s || 0) / 3600;
+    const decDeg = coord.dec.deg + (coord.dec.deg >= 0 ? 1 : -1) * (coord.dec.m / 60 + (coord.dec.s || 0) / 3600);
+    const x = SKY_PAD + (raHours / 24) * (canvasWidth - SKY_PAD * 2);
+    const y = SKY_PAD + ((90 - decDeg) / 180) * (canvasHeight - SKY_PAD * 2);
+    return { x, y };
+}
+
+// Pre-compute sky chart positions for all catalog stars
+function computeSkyChartPositions(canvasWidth, canvasHeight) {
+    gameState.stars.forEach((star, index) => {
+        const coord = STAR_COORDINATES[index];
+        const pos = projectRADec(coord, canvasWidth, canvasHeight);
+        star.skyX = pos.x;
+        star.skyY = pos.y;
+    });
+}
+
+// Sky chart positions for dynamic stars
+const DYNAMIC_SKY_COORDS = {
+    'src7024': { ra: { h: 11, m: 48, s: 0 }, dec: { deg: 1, m: 0, s: 0 } },      // Near Ross 128
+    'nexusPoint': { ra: { h: 12, m: 0, s: 0 }, dec: { deg: 30, m: 0, s: 0 } },    // Arbitrary
+    'genesis': { ra: { h: 3, m: 20, s: 0 }, dec: { deg: -43, m: 0, s: 0 } }        // Near 82 Eridani
+};
+
+function getDynamicStarSkyPos(dStar, canvasWidth, canvasHeight) {
+    const coord = DYNAMIC_SKY_COORDS[dStar.id];
+    if (coord) return projectRADec(coord, canvasWidth, canvasHeight);
+    return { x: dStar.x * canvasWidth, y: dStar.y * canvasHeight };
+}
+
+// Draw RA/Dec axis labels (shared by both views)
+function drawAxisLabels(ctx, width, height) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 255, 0, 0.25)';
+    ctx.font = '10px VT323';
+    ctx.textAlign = 'center';
+    for (let h = 0; h <= 24; h += 3) {
+        const x = SKY_PAD + (h / 24) * (width - SKY_PAD * 2);
+        ctx.fillText(h + 'h', x, height - 5);
+    }
+    ctx.textAlign = 'right';
+    for (let d = -60; d <= 60; d += 30) {
+        const y = SKY_PAD + ((90 - d) / 180) * (height - SKY_PAD * 2);
+        ctx.fillText((d >= 0 ? '+' : '') + d + '\u00B0', SKY_PAD - 5, y + 3);
+    }
+    ctx.restore();
+}
+
+// Generate sky chart background with real galactic plane
+export function generateSkyChartBackground() {
+    const canvas = document.getElementById('starmap-canvas');
+    const W = canvas.width, H = canvas.height;
+
+    skyChartBgCanvas = document.createElement('canvas');
+    skyChartBgCanvas.width = W;
+    skyChartBgCanvas.height = H;
+    const ctx = skyChartBgCanvas.getContext('2d');
+
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, W, H);
+
+    // Galactic plane formula (J2000)
+    const DEG = Math.PI / 180;
+    const DEC_NGP = 27.128 * DEG;
+    const RA_NGP = 192.859 * DEG;
+    const L_NCP = 122.932 * DEG;
+
+    const galacticPoints = [];
+    for (let l = 0; l < 360; l += 2) {
+        const lRad = l * DEG;
+        const sinDec = Math.cos(DEC_NGP) * Math.cos(lRad - L_NCP);
+        const dec = Math.asin(sinDec);
+        const ra = RA_NGP + Math.atan2(Math.sin(lRad - L_NCP), -Math.sin(DEC_NGP) * Math.cos(lRad - L_NCP));
+        const raH = ((ra / DEG / 15) % 24 + 24) % 24;
+        galacticPoints.push({ ra: raH, dec: dec / DEG, l: l });
+    }
+
+    // Glow blobs along galactic plane (subtler)
+    galacticPoints.forEach(p => {
+        const px = SKY_PAD + (p.ra / 24) * (W - SKY_PAD * 2);
+        const py = SKY_PAD + ((90 - p.dec) / 180) * (H - SKY_PAD * 2);
+        const distFromCenter = Math.min(p.l, 360 - p.l) / 180;
+        const bulge = 1 + 1.2 * Math.exp(-distFromCenter * distFromCenter * 8);
+        const brightness = 0.09 * bulge;
+        const r = (24 + 14 * (1 - distFromCenter)) * bulge;
+        const grad = ctx.createRadialGradient(px, py, 0, px, py, r);
+        grad.addColorStop(0, `rgba(40, 50, 100, ${Math.min(brightness, 0.25)})`);
+        grad.addColorStop(0.6, `rgba(35, 45, 85, ${Math.min(brightness * 0.3, 0.08)})`);
+        grad.addColorStop(1, 'rgba(30, 40, 70, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(px - r, py - r, r * 2, r * 2);
+    });
+
+    // Pre-compute canvas positions and local tangent/perpendicular for each galactic point
+    const galacticCanvas = galacticPoints.map(p => ({
+        x: SKY_PAD + (p.ra / 24) * (W - SKY_PAD * 2),
+        y: SKY_PAD + ((90 - p.dec) / 180) * (H - SKY_PAD * 2)
+    }));
+    const galacticTangents = galacticPoints.map((p, idx) => {
+        const prev = galacticCanvas[(idx - 1 + galacticCanvas.length) % galacticCanvas.length];
+        const next = galacticCanvas[(idx + 1) % galacticCanvas.length];
+        const dx = next.x - prev.x, dy = next.y - prev.y;
+        const len = Math.sqrt(dx * dx + dy * dy) || 1;
+        return { tanX: dx / len, tanY: dy / len, perpX: -dy / len, perpY: dx / len };
+    });
+
+    // Dense stars along galactic plane — jitter along tangent + spread perpendicular
+    for (let i = 0; i < 1200; i++) {
+        const idx = Math.floor(Math.random() * galacticPoints.length);
+        const p = galacticPoints[idx];
+        const tang = galacticTangents[idx];
+        const base = galacticCanvas[idx];
+        const distFromCenter = Math.min(p.l, 360 - p.l) / 180;
+        const spread = 30 + 20 * (1 - distFromCenter);
+        // Perpendicular gaussian spread
+        const r1 = Math.random(), r2 = Math.random();
+        const gaussPerp = Math.sqrt(-2 * Math.log(r1)) * Math.cos(2 * Math.PI * r2);
+        const perpOff = gaussPerp * spread * 0.5;
+        // Along-band jitter to prevent stripes
+        const tanOff = (Math.random() - 0.5) * 20;
+        const px = base.x + tang.perpX * perpOff + tang.tanX * tanOff;
+        const py = base.y + tang.perpY * perpOff + tang.tanY * tanOff;
+        const a = Math.random() * 0.5 + 0.15;
+        ctx.fillStyle = `rgba(200, 210, 240, ${a})`;
+        ctx.fillRect(px, py, Math.random() * 1.5 + 0.4, Math.random() * 1.5 + 0.4);
+    }
+
+    // Sparse background stars (brighter)
+    for (let i = 0; i < 500; i++) {
+        const x = Math.random() * W;
+        const y = Math.random() * H;
+        ctx.fillStyle = `rgba(215, 215, 235, ${Math.random() * 0.5 + 0.15})`;
+        ctx.fillRect(x, y, Math.random() * 1.4 + 0.4, Math.random() * 1.4 + 0.4);
+    }
+
+    // Dark dust lanes — multi-segment chains that wander along the band
+    ctx.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < 5; i++) {
+        let idx = Math.floor(Math.random() * galacticPoints.length);
+        const segments = 3 + Math.floor(Math.random() * 4); // 3-6 blobs per lane
+        const baseAlpha = 0.08 + Math.random() * 0.12;
+        let drift = 0; // perpendicular wander
+
+        for (let s = 0; s < segments; s++) {
+            // Wrap index within bounds
+            const ci = ((idx + s * 3) % galacticPoints.length + galacticPoints.length) % galacticPoints.length;
+            const tang = galacticTangents[ci];
+            const base = galacticCanvas[ci];
+            const localAngle = Math.atan2(tang.tanY, tang.tanX);
+
+            // Vary thickness per segment for irregularity
+            const rx = 25 + Math.random() * 45;
+            const ry = 3 + Math.random() * 10;
+            const angle = localAngle + (Math.random() - 0.5) * 0.5;
+            const a = baseAlpha * (1 - s * 0.1);
+
+            // Wander perpendicular to band
+            drift += (Math.random() - 0.5) * 12;
+            drift = Math.max(-18, Math.min(18, drift));
+            const cx = base.x + tang.perpX * drift;
+            const cy = base.y + tang.perpY * drift;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(angle);
+            const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+            grad.addColorStop(0, `rgba(0, 0, 0, ${a})`);
+            grad.addColorStop(0.5, `rgba(0, 0, 0, ${a * 0.35})`);
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.scale(1, ry / rx);
+            ctx.fillStyle = grad;
+            ctx.fillRect(-rx, -rx, rx * 2, rx * 2);
+            ctx.restore();
+        }
+    }
+    // Extra dust lanes clustered around the galactic bulge (l near 0/360)
+    const bulgeIndices = [];
+    galacticPoints.forEach((p, idx) => {
+        const distL = Math.min(p.l, 360 - p.l);
+        if (distL < 40) bulgeIndices.push(idx);
+    });
+    for (let i = 0; i < 4; i++) {
+        const startIdx = bulgeIndices[Math.floor(Math.random() * bulgeIndices.length)];
+        const segments = 2 + Math.floor(Math.random() * 3);
+        const baseAlpha = 0.06 + Math.random() * 0.1;
+        let drift = 0;
+
+        for (let s = 0; s < segments; s++) {
+            const ci = ((startIdx + s * 2) % galacticPoints.length + galacticPoints.length) % galacticPoints.length;
+            const tang = galacticTangents[ci];
+            const base = galacticCanvas[ci];
+            const localAngle = Math.atan2(tang.tanY, tang.tanX);
+            const rx = 20 + Math.random() * 35;
+            const ry = 3 + Math.random() * 8;
+            const angle = localAngle + (Math.random() - 0.5) * 0.6;
+            const a = baseAlpha * (1 - s * 0.12);
+            drift += (Math.random() - 0.5) * 14;
+            drift = Math.max(-22, Math.min(22, drift));
+            const cx = base.x + tang.perpX * drift;
+            const cy = base.y + tang.perpY * drift;
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(angle);
+            const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+            grad.addColorStop(0, `rgba(0, 0, 0, ${a})`);
+            grad.addColorStop(0.5, `rgba(0, 0, 0, ${a * 0.35})`);
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.scale(1, ry / rx);
+            ctx.fillStyle = grad;
+            ctx.fillRect(-rx, -rx, rx * 2, rx * 2);
+            ctx.restore();
+        }
+    }
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Bright nebula wisps — white/pale elongated clouds along the band
+    for (let i = 0; i < 6; i++) {
+        const idx = Math.floor(Math.random() * galacticPoints.length);
+        const tang = galacticTangents[idx];
+        const base = galacticCanvas[idx];
+        const localAngle = Math.atan2(tang.tanY, tang.tanX);
+        const rx = 40 + Math.random() * 60;
+        const ry = 5 + Math.random() * 8;
+        const angle = localAngle + (Math.random() - 0.5) * 0.4;
+        // Offset slightly from center of band
+        const perpOff = (Math.random() - 0.5) * 20;
+        const cx = base.x + tang.perpX * perpOff;
+        const cy = base.y + tang.perpY * perpOff;
+        const a = 0.03 + Math.random() * 0.04;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(angle);
+        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+        grad.addColorStop(0, `rgba(220, 225, 240, ${a})`);
+        grad.addColorStop(0.4, `rgba(210, 215, 235, ${a * 0.5})`);
+        grad.addColorStop(1, 'rgba(200, 210, 230, 0)');
+        ctx.scale(1, ry / rx);
+        ctx.fillStyle = grad;
+        ctx.fillRect(-rx, -rx, rx * 2, rx * 2);
+        ctx.restore();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+}
+
+// Clamp sky chart pan within bounds
+function clampPan(w, h) {
+    const sc = gameState.skyChart;
+    sc.panX = Math.max(w - w * sc.scale, Math.min(0, sc.panX));
+    sc.panY = Math.max(h - h * sc.scale, Math.min(0, sc.panY));
 }
 
 // Generate star catalog
@@ -112,6 +511,25 @@ export function generateStarCatalog() {
         const starInfo = STAR_TYPES[index];
         const isWeakSignal = weakSignalConfig.hasOwnProperty(index);
 
+        // Generate position with minimum spacing to avoid label overlap
+        let px, py, tooClose;
+        const minDist = 50; // Minimum pixel distance between stars
+        let attempts = 0;
+        do {
+            px = Math.random() * 900 + 50; // 50-950 (extra margin for labels)
+            py = Math.random() * 470 + 40; // 40-510
+            tooClose = false;
+            for (const existing of gameState.stars) {
+                const dx = existing.x - px;
+                const dy = existing.y - py;
+                if (Math.sqrt(dx * dx + dy * dy) < minDist) {
+                    tooClose = true;
+                    break;
+                }
+            }
+            attempts++;
+        } while (tooClose && attempts < 80);
+
         const star = {
             id: index,
             name: name,
@@ -125,12 +543,16 @@ export function generateStarCatalog() {
             isFalsePositive: falsePositiveIndices.includes(index),
             signalStrength: isWeakSignal ? 'weak' : 'normal',
             requiredPower: isWeakSignal ? weakSignalConfig[index].requiredPower : 0,
-            x: Math.random() * 940 + 30, // Position for visual map (30-970)
-            y: Math.random() * 500 + 25  // Position for visual map (25-525)
+            x: px,
+            y: py
         };
 
         gameState.stars.push(star);
     });
+
+    // Pre-compute sky chart positions from real RA/Dec
+    const canvas = document.getElementById('starmap-canvas');
+    computeSkyChartPositions(canvas.width, canvas.height);
 
     // Create shuffled display order
     const displayOrder = [...Array(STAR_NAMES.length).keys()];
@@ -301,48 +723,7 @@ export function drawStarVisualization(star, canvasId = 'star-visual') {
         ctx.fill();
     }
 
-    // Determine star glow color and size based on spectral type
-    // Spectral types: O, B (blue), A (white), F (yellow-white), G (yellow), K (orange), M (red), D (white dwarf)
-    let glowColor, glowSize;
-    const spectralClass = star.starType.charAt(0).toUpperCase();
-
-    switch(spectralClass) {
-        case 'O': // Blue supergiant
-            glowColor = '#9bb0ff';
-            glowSize = 50;
-            break;
-        case 'B': // Blue-white
-            glowColor = '#aabfff';
-            glowSize = 45;
-            break;
-        case 'A': // White (like Sirius)
-            glowColor = '#cad7ff';
-            glowSize = 42;
-            break;
-        case 'F': // Yellow-white (like Procyon)
-            glowColor = '#f8f7ff';
-            glowSize = 40;
-            break;
-        case 'G': // Yellow dwarf (like our Sun)
-            glowColor = '#fff4ea';
-            glowSize = 38;
-            break;
-        case 'K': // Orange dwarf
-            glowColor = '#ffd2a1';
-            glowSize = 35;
-            break;
-        case 'M': // Red dwarf
-            glowColor = '#ffcc6f';
-            glowSize = 32;
-            break;
-        case 'D': // White dwarf
-            glowColor = '#f0f0ff';
-            glowSize = 28;
-            break;
-        default:
-            glowColor = '#ffffff';
-            glowSize = 36;
-    }
+    const { color: glowColor, size: glowSize } = getSpectralColor(star.starType);
 
     const centerX = width / 2;
     const centerY = height / 2;
@@ -736,8 +1117,340 @@ export function startScanSequence() {
     log('Switching to analysis mode...');
 }
 
-// Render star map
+// Render star map (branches between array view and sky chart)
 export function renderStarMap() {
+    if (gameState.starmapMode === 'skychart') {
+        renderSkyChart();
+    } else {
+        renderArrayView();
+    }
+}
+
+// Sky Chart view — real RA/Dec projection with galactic plane
+function renderSkyChart() {
+    const canvas = document.getElementById('starmap-canvas');
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const sc = gameState.skyChart;
+
+    // Clear canvas
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, width, height);
+
+    // Apply zoom/pan transform
+    ctx.save();
+    ctx.translate(sc.panX, sc.panY);
+    ctx.scale(sc.scale, sc.scale);
+
+    // Draw pre-rendered sky chart background (galactic plane)
+    if (skyChartBgCanvas) {
+        ctx.drawImage(skyChartBgCanvas, 0, 0);
+    }
+
+    // Draw grid lines
+    ctx.strokeStyle = 'rgba(0, 255, 0, 0.15)';
+    ctx.lineWidth = 1 / sc.scale;
+    for (let x = 0; x < width; x += 50) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+    }
+    for (let y = 0; y < height; y += 50) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+    }
+
+    // Draw catalog stars at RA/Dec positions
+    gameState.stars.forEach(star => {
+        const isSelected = gameState.selectedStarId === star.id;
+        const isContacted = gameState.contactedStars.has(star.id);
+        const isAnalyzed = gameState.analyzedStars.has(star.id);
+        const starDay = getStarDayRequirement(star.id);
+        const isPreviousDay = starDay < gameState.currentDay && !gameState.demoMode && gameState.currentDay > 0;
+        const isFutureDay = starDay > gameState.currentDay && !gameState.demoMode && gameState.currentDay > 0;
+
+        if (isFutureDay) return;
+
+        const sx = star.skyX;
+        const sy = star.skyY;
+
+        const isRoss128Decrypt = star.id === 8 && isPreviousDay && !gameState.decryptionComplete &&
+            gameState.scanResults.get(star.id)?.type === 'encrypted_signal';
+        const { color: spectralColor } = getSpectralColor(star.starType);
+        const isHighlighted = !isPreviousDay || isRoss128Decrypt;
+
+        let starColor, labelColor;
+        if (isRoss128Decrypt) {
+            const pulse = (Math.sin(Date.now() * 0.004) + 1) / 2;
+            ctx.globalAlpha = 0.7 + pulse * 0.3;
+            starColor = '#ff0';
+            labelColor = '#ff0';
+        } else if (isPreviousDay) {
+            ctx.globalAlpha = 0.4;
+            starColor = spectralColor;
+            labelColor = spectralColor;
+        } else if (isContacted) {
+            starColor = '#f0f';
+            labelColor = '#f0f';
+        } else {
+            starColor = spectralColor;
+            labelColor = spectralColor;
+        }
+
+        const radius = (isSelected && isHighlighted ? 6 : 4) / sc.scale;
+        ctx.fillStyle = starColor;
+        ctx.shadowColor = starColor;
+        ctx.shadowBlur = (isSelected && isHighlighted ? 18 : (isHighlighted ? 12 : 6)) / sc.scale;
+        ctx.beginPath();
+        ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Label (hide when scan box is showing for this star)
+        if (!isSelected) {
+            ctx.shadowBlur = 3 / sc.scale;
+            ctx.fillStyle = labelColor;
+            ctx.font = `${12 / sc.scale}px VT323`;
+            const labelWidth = ctx.measureText(star.name).width;
+            if (sx + radius + 5 / sc.scale + labelWidth > width - 5 / sc.scale) {
+                ctx.textAlign = 'right';
+                ctx.fillText(star.name, sx - radius - 5 / sc.scale, sy + 3 / sc.scale);
+            } else {
+                ctx.textAlign = 'left';
+                ctx.fillText(star.name, sx + radius + 5 / sc.scale, sy + 3 / sc.scale);
+            }
+        }
+
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+    });
+
+    // Draw dynamic stars at their sky chart positions
+    if (gameState.dynamicStars && gameState.dynamicStars.length > 0) {
+        gameState.dynamicStars.forEach(dStar => {
+            const pos = getDynamicStarSkyPos(dStar, width, height);
+            const isSelected = gameState.selectedStarId === dStar.id;
+            const pulse = (Math.sin(Date.now() * 0.004) + 1) / 2;
+            const age = dStar.addedAt ? (Date.now() - dStar.addedAt) / 1000 : 10;
+            const growScale = Math.min(1, age / 3);
+
+            if (dStar.dynamicType === 'signal') {
+                const size = ((isSelected ? 8 : 6) * growScale) / sc.scale;
+                ctx.save();
+                ctx.translate(pos.x, pos.y);
+                ctx.rotate(Math.PI / 4);
+                ctx.fillStyle = `rgba(0, 255, 255, ${0.6 + pulse * 0.4})`;
+                ctx.shadowColor = '#0ff';
+                ctx.shadowBlur = (15 + pulse * 10) / sc.scale;
+                ctx.fillRect(-size / 2, -size / 2, size, size);
+                ctx.restore();
+                if (growScale > 0.5) {
+                    ctx.fillStyle = `rgba(0, 255, 255, ${0.7 * growScale})`;
+                    ctx.font = `${16 / sc.scale}px VT323`;
+                    ctx.textAlign = 'center';
+                    ctx.shadowBlur = 5 / sc.scale;
+                    ctx.shadowColor = '#0ff';
+                    ctx.fillText('SRC-7024', pos.x, pos.y + 20 / sc.scale);
+                    ctx.shadowBlur = 0;
+                }
+            } else if (dStar.dynamicType === 'genesis') {
+                const size = ((isSelected ? 8 : 6) * growScale) / sc.scale;
+                const goldPulse = (Math.sin(Date.now() * 0.005) + 1) / 2;
+                ctx.fillStyle = `rgba(${Math.floor(50 + 200 * goldPulse)}, 255, ${Math.floor(50 * goldPulse)}, ${0.6 + pulse * 0.4})`;
+                ctx.shadowColor = '#0f0';
+                ctx.shadowBlur = (15 + pulse * 10) / sc.scale;
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2 - Math.PI / 6;
+                    const hx = pos.x + Math.cos(angle) * size;
+                    const hy = pos.y + Math.sin(angle) * size;
+                    if (i === 0) ctx.moveTo(hx, hy);
+                    else ctx.lineTo(hx, hy);
+                }
+                ctx.closePath();
+                ctx.fill();
+                if (growScale > 0.5) {
+                    ctx.fillStyle = `rgba(0, 255, 0, ${0.7 * growScale})`;
+                    ctx.font = `${16 / sc.scale}px VT323`;
+                    ctx.textAlign = 'center';
+                    ctx.shadowBlur = 5 / sc.scale;
+                    ctx.shadowColor = '#0f0';
+                    ctx.fillText('GENESIS POINT', pos.x, pos.y + 20 / sc.scale);
+                    ctx.shadowBlur = 0;
+                }
+            } else if (dStar.dynamicType === 'nexus') {
+                const size = ((isSelected ? 8 : 6) * growScale) / sc.scale;
+                const magentaPulse = (Math.sin(Date.now() * 0.006) + 1) / 2;
+                ctx.fillStyle = `rgba(255, ${Math.floor(100 * magentaPulse)}, 255, ${0.6 + pulse * 0.4})`;
+                ctx.shadowColor = '#f0f';
+                ctx.shadowBlur = (15 + pulse * 10) / sc.scale;
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2 + Date.now() * 0.001;
+                    const r = i % 2 === 0 ? size : size * 0.4;
+                    const hx = pos.x + Math.cos(angle) * r;
+                    const hy = pos.y + Math.sin(angle) * r;
+                    if (i === 0) ctx.moveTo(hx, hy);
+                    else ctx.lineTo(hx, hy);
+                }
+                ctx.closePath();
+                ctx.fill();
+                if (growScale > 0.5) {
+                    ctx.fillStyle = `rgba(255, 100, 255, ${0.7 * growScale})`;
+                    ctx.font = `${16 / sc.scale}px VT323`;
+                    ctx.textAlign = 'center';
+                    ctx.shadowBlur = 5 / sc.scale;
+                    ctx.shadowColor = '#f0f';
+                    ctx.fillText('NEXUS POINT', pos.x, pos.y + 20 / sc.scale);
+                    ctx.shadowBlur = 0;
+                }
+            }
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
+        });
+    }
+
+    // Draw crosshair on selected star
+    if (gameState.selectedStarId !== null) {
+        const star = getSelectedStar();
+        if (star) {
+            let cx, cy;
+            if (star.isDynamic) {
+                const pos = getDynamicStarSkyPos(star, width, height);
+                cx = pos.x;
+                cy = pos.y;
+            } else {
+                cx = star.skyX;
+                cy = star.skyY;
+            }
+
+            ctx.strokeStyle = '#0ff';
+            ctx.lineWidth = 2 / sc.scale;
+            ctx.shadowColor = '#0ff';
+            ctx.shadowBlur = 10 / sc.scale;
+
+            gameState.crosshairAngle += 0.02;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(gameState.crosshairAngle);
+
+            const crosshairSize = 20 / sc.scale;
+            const inner = 10 / sc.scale;
+            ctx.beginPath();
+            ctx.moveTo(-crosshairSize, 0); ctx.lineTo(-inner, 0);
+            ctx.moveTo(inner, 0); ctx.lineTo(crosshairSize, 0);
+            ctx.moveTo(0, -crosshairSize); ctx.lineTo(0, -inner);
+            ctx.moveTo(0, inner); ctx.lineTo(0, crosshairSize);
+            ctx.stroke();
+
+            const bracketSize = 15 / sc.scale;
+            const bLeg = 5 / sc.scale;
+            ctx.beginPath();
+            ctx.moveTo(-bracketSize, -bracketSize); ctx.lineTo(-bracketSize, -bracketSize + bLeg);
+            ctx.moveTo(-bracketSize, -bracketSize); ctx.lineTo(-bracketSize + bLeg, -bracketSize);
+            ctx.moveTo(bracketSize, -bracketSize); ctx.lineTo(bracketSize, -bracketSize + bLeg);
+            ctx.moveTo(bracketSize, -bracketSize); ctx.lineTo(bracketSize - bLeg, -bracketSize);
+            ctx.moveTo(-bracketSize, bracketSize); ctx.lineTo(-bracketSize, bracketSize - bLeg);
+            ctx.moveTo(-bracketSize, bracketSize); ctx.lineTo(-bracketSize + bLeg, bracketSize);
+            ctx.moveTo(bracketSize, bracketSize); ctx.lineTo(bracketSize, bracketSize - bLeg);
+            ctx.moveTo(bracketSize, bracketSize); ctx.lineTo(bracketSize - bLeg, bracketSize);
+            ctx.stroke();
+
+            ctx.restore();
+            ctx.shadowBlur = 0;
+        }
+    }
+
+    // Draw scan box on selected star
+    if (gameState.selectedStarId !== null) {
+        const star = getSelectedStar();
+        if (!star) { ctx.restore(); drawAxisLabels(ctx, width, height); return; }
+
+        let sx, sy;
+        if (star.isDynamic) {
+            const pos = getDynamicStarSkyPos(star, width, height);
+            sx = pos.x;
+            sy = pos.y;
+        } else {
+            sx = star.skyX;
+            sy = star.skyY;
+        }
+
+        const boxWidth = 120 / sc.scale;
+        const boxHeight = 60 / sc.scale;
+        let boxX = sx + 40 / sc.scale;
+        const boxY = sy - 20 / sc.scale;
+        if (boxX + boxWidth > width - 10 / sc.scale) boxX = sx - boxWidth - 10 / sc.scale;
+        if (boxX < 10 / sc.scale) boxX = 10 / sc.scale;
+
+        if (gameState.showScanConfirm) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+            ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+            ctx.strokeStyle = '#0ff';
+            ctx.lineWidth = 2 / sc.scale;
+            ctx.shadowColor = '#0ff';
+            ctx.shadowBlur = 10 / sc.scale;
+            ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+            ctx.fillStyle = '#0ff';
+            ctx.font = `${14 / sc.scale}px VT323`;
+            ctx.textAlign = 'center';
+            ctx.shadowBlur = 5 / sc.scale;
+            ctx.fillText(star.name, boxX + boxWidth / 2, boxY + 20 / sc.scale);
+            const flashAlpha = (Math.sin(Date.now() * 0.003) + 1) / 2 * 0.6 + 0.4;
+            ctx.font = `${18 / sc.scale}px VT323`;
+            ctx.globalAlpha = flashAlpha;
+            ctx.fillText('SCAN?', boxX + boxWidth / 2, boxY + 40 / sc.scale);
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+            ctx.textAlign = 'left';
+        } else {
+            const hasContact = gameState.contactedStars.has(gameState.selectedStarId);
+            const scanResult = gameState.scanResults.get(gameState.selectedStarId);
+            if (hasContact || scanResult) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+                ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+                const borderColor = hasContact ? '#f0f' : (scanResult && scanResult.type === 'false_positive' ? '#f00' : '#ff0');
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = 1 / sc.scale;
+                ctx.shadowColor = borderColor;
+                ctx.shadowBlur = 5 / sc.scale;
+                ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+                ctx.fillStyle = borderColor;
+                ctx.font = `${14 / sc.scale}px VT323`;
+                ctx.textAlign = 'center';
+                ctx.fillText(star.name, boxX + boxWidth / 2, boxY + 20 / sc.scale);
+                ctx.globalAlpha = 0.6;
+                ctx.font = `${16 / sc.scale}px VT323`;
+                const label = hasContact ? '★ CONTACT' : (scanResult && scanResult.type === 'false_positive' ? '⚠ FALSE POSITIVE' : '✓ COMPLETE');
+                ctx.fillText(label, boxX + boxWidth / 2, boxY + 40 / sc.scale);
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
+                ctx.textAlign = 'left';
+            }
+        }
+    }
+
+    // Restore zoom transform
+    ctx.restore();
+
+    // Draw axis labels on top (outside zoom)
+    drawAxisLabels(ctx, width, height);
+
+    // Draw zoom indicator
+    if (sc.scale > 1.01) {
+        ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+        ctx.font = '12px VT323';
+        ctx.textAlign = 'right';
+        ctx.fillText(`${sc.scale.toFixed(1)}x`, width - 10, 18);
+    }
+}
+
+// Array View — original parallax starmap
+function renderArrayView() {
     const canvas = document.getElementById('starmap-canvas');
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
@@ -774,8 +1487,15 @@ export function renderStarMap() {
 
     ctx.globalAlpha = 1;
 
+    // Draw nebula / milky way (pre-rendered, with parallax)
+    if (nebulaCanvas) {
+        const nebPx = gameState.parallaxOffsetX * 1.2 - 40;
+        const nebPy = gameState.parallaxOffsetY * 1.2 - 40;
+        ctx.drawImage(nebulaCanvas, nebPx, nebPy);
+    }
+
     // Draw grid lines
-    ctx.strokeStyle = 'rgba(0, 255, 0, 0.1)';
+    ctx.strokeStyle = 'rgba(0, 255, 0, 0.15)';
     ctx.lineWidth = 1;
 
     for (let x = 0; x < width; x += 50) {
@@ -814,47 +1534,54 @@ export function renderStarMap() {
         const isRoss128Decrypt = star.id === 8 && isPreviousDay && !gameState.decryptionComplete &&
             gameState.scanResults.get(star.id)?.type === 'encrypted_signal';
 
-        // Star color based on status
+        // Get spectral color for this star
+        const { color: spectralColor } = getSpectralColor(star.starType);
+        const isHighlighted = !isPreviousDay || isRoss128Decrypt;
+
+        // Determine star color and alpha based on status
+        let starColor, labelColor;
         if (isRoss128Decrypt) {
-            // Ross 128 on Day 2 - pulsing yellow highlight
             const pulse = (Math.sin(Date.now() * 0.004) + 1) / 2;
             ctx.globalAlpha = 0.7 + pulse * 0.3;
-            ctx.fillStyle = '#ff0';
-            ctx.shadowColor = '#ff0';
+            starColor = '#ff0';
+            labelColor = '#ff0';
         } else if (isPreviousDay) {
-            // Previous day stars are dimmed
             ctx.globalAlpha = 0.4;
-            if (isContacted) {
-                ctx.fillStyle = '#808';
-                ctx.shadowColor = '#808';
-            } else {
-                ctx.fillStyle = '#880';
-                ctx.shadowColor = '#880';
-            }
+            starColor = spectralColor;
+            labelColor = spectralColor;
         } else if (isContacted) {
-            ctx.fillStyle = '#f0f';
-            ctx.shadowColor = '#f0f';
+            starColor = '#f0f';
+            labelColor = '#f0f';
         } else if (isAnalyzed) {
-            ctx.fillStyle = '#ff0';
-            ctx.shadowColor = '#ff0';
+            starColor = spectralColor;
+            labelColor = spectralColor;
         } else {
-            ctx.fillStyle = '#fff';
-            ctx.shadowColor = '#fff';
+            starColor = spectralColor;
+            labelColor = spectralColor;
         }
 
-        const isHighlighted = !isPreviousDay || isRoss128Decrypt;
-        ctx.shadowBlur = isSelected && isHighlighted ? 15 : (isHighlighted ? 10 : 5);
+        // Draw glowing circle
+        const radius = isSelected && isHighlighted ? 6 : 4;
+        ctx.fillStyle = starColor;
+        ctx.shadowColor = starColor;
+        ctx.shadowBlur = isSelected && isHighlighted ? 18 : (isHighlighted ? 12 : 6);
+        ctx.beginPath();
+        ctx.arc(parallaxX, parallaxY, radius, 0, Math.PI * 2);
+        ctx.fill();
 
-        // Draw star (pixel art style)
-        const size = isSelected && isHighlighted ? 5 : 3;
-        ctx.fillRect(parallaxX - size / 2, parallaxY - size / 2, size, size);
-
-        // Draw cross pattern (smaller for previous day)
-        if (isHighlighted) {
-            ctx.fillRect(parallaxX - size - 2, parallaxY - 1, 2, 2);
-            ctx.fillRect(parallaxX + size, parallaxY - 1, 2, 2);
-            ctx.fillRect(parallaxX - 1, parallaxY - size - 2, 2, 2);
-            ctx.fillRect(parallaxX - 1, parallaxY + size, 2, 2);
+        // Draw star name label (skip if this star has a scan/status box showing)
+        if (!isSelected) {
+            ctx.shadowBlur = 3;
+            ctx.fillStyle = labelColor;
+            ctx.font = '12px VT323';
+            const labelWidth = ctx.measureText(star.name).width;
+            if (parallaxX + radius + 5 + labelWidth > width - 5) {
+                ctx.textAlign = 'right';
+                ctx.fillText(star.name, parallaxX - radius - 5, parallaxY + 3);
+            } else {
+                ctx.textAlign = 'left';
+                ctx.fillText(star.name, parallaxX + radius + 5, parallaxY + 3);
+            }
         }
 
         ctx.shadowBlur = 0;
@@ -873,7 +1600,19 @@ export function renderStarMap() {
 
             // Animate grow-in if recently added
             const age = dStar.addedAt ? (Date.now() - dStar.addedAt) / 1000 : 10;
-            const growScale = Math.min(1, age / 2); // Grows over 2 seconds
+            const growScale = Math.min(1, age / 3); // Grows over 3 seconds
+
+            // Extra glow burst during grow-in
+            if (age < 3) {
+                const burstAlpha = Math.max(0, 0.5 - age * 0.17);
+                const burstRadius = 20 + age * 15;
+                const burstColor = dStar.dynamicType === 'signal' ? '0, 255, 255'
+                    : dStar.dynamicType === 'genesis' ? '0, 255, 0' : '255, 100, 255';
+                ctx.fillStyle = `rgba(${burstColor}, ${burstAlpha})`;
+                ctx.beginPath();
+                ctx.arc(parallaxX, parallaxY, burstRadius * growScale, 0, Math.PI * 2);
+                ctx.fill();
+            }
 
             if (dStar.dynamicType === 'signal') {
                 // SRC-7024: Pulsing cyan diamond
@@ -1115,6 +1854,9 @@ export function renderStarMap() {
             }
         }
     }
+
+    // Draw RA/Dec axis labels as decorative overlay
+    drawAxisLabels(ctx, width, height);
 }
 
 // Start star map animation loop
@@ -1137,6 +1879,21 @@ export function setupStarMapCanvas() {
 
     // Mouse move for parallax effect - uses delta (movement) not absolute position
     canvas.addEventListener('mousemove', (e) => {
+        // No parallax in sky chart mode (pan is handled separately)
+        if (gameState.starmapMode === 'skychart') {
+            // Handle pan drag
+            const sc = gameState.skyChart;
+            if (sc.isDragging) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                sc.panX = sc.lastPanX + (e.clientX - sc.dragStartX) * scaleX;
+                sc.panY = sc.lastPanY + (e.clientY - sc.dragStartY) * scaleY;
+                clampPan(canvas.width, canvas.height);
+            }
+            return;
+        }
+
         const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
@@ -1190,6 +1947,68 @@ export function setupStarMapCanvas() {
         const x = (e.clientX - rect.left) * scaleX;
         const y = (e.clientY - rect.top) * scaleY;
 
+        if (gameState.starmapMode === 'skychart') {
+            // Inverse zoom transform to get world coordinates
+            const sc = gameState.skyChart;
+            const wx = (x - sc.panX) / sc.scale;
+            const wy = (y - sc.panY) / sc.scale;
+            const hitRadius = 15 / sc.scale;
+
+            // Check scan box click (box is in world coords)
+            if (gameState.showScanConfirm && gameState.selectedStarId !== null) {
+                const star = getSelectedStar();
+                if (star) {
+                    let sx, sy;
+                    if (star.isDynamic) {
+                        const pos = getDynamicStarSkyPos(star, canvas.width, canvas.height);
+                        sx = pos.x; sy = pos.y;
+                    } else {
+                        sx = star.skyX; sy = star.skyY;
+                    }
+                    const boxWidth = 120 / sc.scale;
+                    const boxHeight = 60 / sc.scale;
+                    let boxX = sx + 40 / sc.scale;
+                    const boxY = sy - 20 / sc.scale;
+                    if (boxX + boxWidth > canvas.width - 10 / sc.scale) boxX = sx - boxWidth - 10 / sc.scale;
+                    if (boxX < 10 / sc.scale) boxX = 10 / sc.scale;
+
+                    if (wx >= boxX && wx <= boxX + boxWidth && wy >= boxY && wy <= boxY + boxHeight) {
+                        startScanSequence();
+                        return;
+                    }
+                }
+            }
+
+            // Check dynamic stars
+            let clickedDynamic = false;
+            if (gameState.dynamicStars) {
+                for (const dStar of gameState.dynamicStars) {
+                    const pos = getDynamicStarSkyPos(dStar, canvas.width, canvas.height);
+                    const ddist = Math.sqrt((pos.x - wx) ** 2 + (pos.y - wy) ** 2);
+                    if (ddist < hitRadius) {
+                        selectDynamicStar(dStar);
+                        clickedDynamic = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!clickedDynamic) {
+                // Check catalog stars at sky positions
+                gameState.stars.forEach(star => {
+                    const dx = star.skyX - wx;
+                    const dy = star.skyY - wy;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < hitRadius) {
+                        gameState.selectedStarId = star.id;
+                        selectStar(star.id);
+                    }
+                });
+            }
+            return;
+        }
+
+        // Array view click handling
         // Current parallax offset applied to stars during rendering
         const pOffX = gameState.parallaxOffsetX * 0.3;
         const pOffY = gameState.parallaxOffsetY * 0.3;
@@ -1240,6 +2059,103 @@ export function setupStarMapCanvas() {
             });
         }
     });
+
+    // Mouse wheel zoom for sky chart mode
+    canvas.addEventListener('wheel', (e) => {
+        if (gameState.starmapMode !== 'skychart') return;
+        e.preventDefault();
+
+        const sc = gameState.skyChart;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mx = (e.clientX - rect.left) * scaleX;
+        const my = (e.clientY - rect.top) * scaleY;
+
+        const oldScale = sc.scale;
+        const zoomFactor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+        sc.scale = Math.max(1, Math.min(4, sc.scale * zoomFactor));
+
+        // Play zoom sound if scale actually changed
+        if (sc.scale !== oldScale) {
+            if (e.deltaY < 0) playZoomIn(); else playZoomOut();
+        }
+
+        // Zoom toward cursor
+        sc.panX = mx - (mx - sc.panX) * (sc.scale / oldScale);
+        sc.panY = my - (my - sc.panY) * (sc.scale / oldScale);
+        clampPan(canvas.width, canvas.height);
+    }, { passive: false });
+
+    // Mouse down for pan dragging in sky chart mode
+    canvas.addEventListener('mousedown', (e) => {
+        if (gameState.starmapMode !== 'skychart') return;
+        // Right-click or middle-click or shift+click to pan
+        if (e.button === 1 || e.shiftKey) {
+            e.preventDefault();
+            const sc = gameState.skyChart;
+            sc.isDragging = true;
+            sc.dragStartX = e.clientX;
+            sc.dragStartY = e.clientY;
+            sc.lastPanX = sc.panX;
+            sc.lastPanY = sc.panY;
+        }
+    });
+
+    // Global mouseup to stop dragging
+    window.addEventListener('mouseup', () => {
+        gameState.skyChart.isDragging = false;
+    });
+}
+
+// Setup starmap mode toggle button and zoom controls
+export function setupStarmapToggle() {
+    const toggleBtn = document.getElementById('starmap-mode-toggle');
+    const zoomControls = document.getElementById('sky-chart-zoom-controls');
+    const zoomInBtn = document.getElementById('zoom-in-btn');
+    const zoomOutBtn = document.getElementById('zoom-out-btn');
+    const zoomResetBtn = document.getElementById('zoom-reset-btn');
+    const canvas = document.getElementById('starmap-canvas');
+
+    if (!toggleBtn) return;
+
+    toggleBtn.addEventListener('click', () => {
+        playClick();
+        if (gameState.starmapMode === 'array') {
+            gameState.starmapMode = 'skychart';
+            toggleBtn.textContent = 'ARRAY VIEW';
+            if (zoomControls) zoomControls.style.display = 'flex';
+        } else {
+            gameState.starmapMode = 'array';
+            toggleBtn.textContent = 'SKY CHART';
+            if (zoomControls) zoomControls.style.display = 'none';
+            // Reset zoom/pan when switching back
+            gameState.skyChart.scale = 1;
+            gameState.skyChart.panX = 0;
+            gameState.skyChart.panY = 0;
+        }
+    });
+
+    // Zoom helper: zoom toward canvas center
+    function zoomCenter(factor) {
+        const sc = gameState.skyChart;
+        const w = canvas.width, h = canvas.height;
+        const mx = w / 2, my = h / 2;
+        const oldScale = sc.scale;
+        sc.scale = Math.max(1, Math.min(4, sc.scale * factor));
+        sc.panX = mx - (mx - sc.panX) * (sc.scale / oldScale);
+        sc.panY = my - (my - sc.panY) * (sc.scale / oldScale);
+        clampPan(w, h);
+    }
+
+    if (zoomInBtn) zoomInBtn.addEventListener('click', () => { playZoomIn(); zoomCenter(1.3); });
+    if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => { playZoomOut(); zoomCenter(1 / 1.3); });
+    if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => {
+        playClick();
+        gameState.skyChart.scale = 1;
+        gameState.skyChart.panX = 0;
+        gameState.skyChart.panY = 0;
+    });
 }
 
 // Setup back/continue buttons event listeners
@@ -1273,7 +2189,9 @@ export function setupNavigationButtons() {
         // Stop ambient sounds
         stopNaturalPhenomenaSound();
         stopAlienSignalSound();
+        stopFragmentSignalSound();
         stopStaticHiss();
+        stopTuningTone();
 
         // Switch back to background music when returning to map
         switchToBackgroundMusic();
@@ -1314,7 +2232,9 @@ export function setupNavigationButtons() {
         // Stop ambient sounds
         stopNaturalPhenomenaSound();
         stopAlienSignalSound();
+        stopFragmentSignalSound();
         stopStaticHiss();
+        stopTuningTone();
 
         // Switch back to background music
         switchToBackgroundMusic();

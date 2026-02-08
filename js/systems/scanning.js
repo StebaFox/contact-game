@@ -6,7 +6,7 @@
 import { gameState } from '../core/game-state.js';
 import { autoSave } from '../core/save-system.js';
 import { showView, log, typeAnalysisText } from '../ui/rendering.js';
-import { playClick, playAnalysisSound, playContactSound, playSecurityBeep, playTypingBeep, playStaticBurst, stopNaturalPhenomenaSound, stopAlienSignalSound, switchToBackgroundMusic } from './audio.js';
+import { playClick, playAnalysisSound, playContactSound, playSecurityBeep, playTypingBeep, playStaticBurst, playPowerDownSound, stopAllMusic, stopNaturalPhenomenaSound, stopAlienSignalSound, startFragmentSignalSound, stopFragmentSignalSound, switchToBackgroundMusic } from './audio.js';
 import { startTuningMinigame } from './tuning-minigame.js';
 import { startPatternRecognitionGame } from './pattern-minigame.js';
 import { startDecryptionMinigame } from './decryption-minigame.js';
@@ -46,6 +46,7 @@ export function initiateScan() {
     // Stop any existing ambient sounds
     stopNaturalPhenomenaSound();
     stopAlienSignalSound();
+    stopFragmentSignalSound();
 
     // Clear cached data for Ross 128 if decryption is pending (Day 2 rescan)
     if (star.id === ROSS_128_INDEX && !gameState.decryptionComplete &&
@@ -110,8 +111,8 @@ export function initiateScan() {
     document.getElementById('target-class').textContent = star.starClass;
     document.getElementById('target-temp').textContent = star.temperature;
 
-    // Draw star visualization (skip for dynamic stars with non-numeric IDs)
-    if (drawStarVisualizationFn && !star.isDynamic) drawStarVisualizationFn(star, 'analysis-star-visual');
+    // Draw star visualization
+    if (drawStarVisualizationFn) drawStarVisualizationFn(star, 'analysis-star-visual');
 
     showView('analysis-view');
 
@@ -119,6 +120,7 @@ export function initiateScan() {
     if (star.isDynamic && star.hasIntelligence) {
         generateSignal(star, true);
         startSignalAnimation();
+        startFragmentSignalSound(star);
 
         document.getElementById('scan-btn').textContent = '✓ SCAN COMPLETE';
         document.getElementById('analyze-btn').disabled = true;
@@ -238,6 +240,63 @@ export function initiateSRC7024CrashScan() {
 }
 
 function startCrashSequence() {
+    // ── Phase 0: Screen glitch lead-up (distort the analysis view before overlay) ──
+    const analysisView = document.getElementById('analysis-view');
+    const gameContainer = document.querySelector('.game-container') || document.body;
+    let glitchFrame = 0;
+    const glitchDuration = 120; // ~2 seconds at 60fps
+
+    function runScreenGlitch() {
+        glitchFrame++;
+        const progress = glitchFrame / glitchDuration;
+
+        // Increasingly distort the underlying page
+        const skewX = (Math.random() - 0.5) * progress * 8;
+        const skewY = (Math.random() - 0.5) * progress * 3;
+        const translateX = (Math.random() - 0.5) * progress * 20;
+        const hueShift = Math.random() * progress * 180;
+        const saturation = 100 + progress * 300;
+        const blur = progress * 2;
+
+        gameContainer.style.transform = `skew(${skewX}deg, ${skewY}deg) translateX(${translateX}px)`;
+        gameContainer.style.filter = `hue-rotate(${hueShift}deg) saturate(${saturation}%) blur(${blur}px)`;
+
+        // Occasional hard flicker
+        if (Math.random() < progress * 0.3) {
+            gameContainer.style.opacity = Math.random() > 0.5 ? '0.3' : '1';
+        }
+
+        // Inject glitch text into analysis
+        if (progress > 0.3 && Math.random() < progress * 0.15) {
+            const analysisText = document.getElementById('analysis-text');
+            if (analysisText) {
+                const glitchChars = '█▓▒░╔╗╚╝║═┃━▲▼◆◇○●';
+                let glitchStr = '';
+                for (let i = 0; i < 20 + Math.random() * 30; i++) {
+                    glitchStr += glitchChars[Math.floor(Math.random() * glitchChars.length)];
+                }
+                const colors = ['#f00', '#ff0', '#f0f', '#0ff'];
+                analysisText.innerHTML += `<p style="color: ${colors[Math.floor(Math.random() * colors.length)]};">${glitchStr}</p>`;
+            }
+        }
+
+        if (glitchFrame < glitchDuration) {
+            requestAnimationFrame(runScreenGlitch);
+        } else {
+            // Reset styles and launch the full crash overlay
+            gameContainer.style.transform = '';
+            gameContainer.style.filter = '';
+            gameContainer.style.opacity = '1';
+            launchCrashOverlay();
+        }
+    }
+
+    // Start the screen glitch with a small static pop
+    playStaticBurst();
+    runScreenGlitch();
+}
+
+function launchCrashOverlay() {
     playStaticBurst();
 
     const overlay = document.createElement('div');
@@ -380,15 +439,21 @@ function startCrashSequence() {
         if (frame < totalFrames) {
             requestAnimationFrame(renderCrashFrame);
         } else {
-            // Hold black, then start reboot
+            // Screen is black — stop all music immediately
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, w, h);
-            setTimeout(() => {
-                overlay.remove();
-                import('./day-report.js').then(module => {
-                    module.advanceDay2Cliffhanger(2);
-                });
-            }, 1500);
+            stopAllMusic();
+
+            // Play power-down sound (fades out at end), wait for completion
+            playPowerDownSound().then(() => {
+                // 3 seconds of dead silence on black screen
+                setTimeout(() => {
+                    overlay.remove();
+                    import('./day-report.js').then(module => {
+                        module.advanceDay2Cliffhanger(2);
+                    });
+                }, 3000);
+            });
         }
     }
 
@@ -1405,6 +1470,7 @@ function showDynamicEncryptedResult(star, display) {
         yesBtn.style.cssText = 'background: rgba(0, 255, 0, 0.1); border: 2px solid #0f0; color: #0f0; margin: 5px; padding: 8px 20px;';
         yesBtn.addEventListener('click', () => {
             playClick();
+            stopFragmentSignalSound();
             buttonContainer.remove();
             question.textContent = '[INITIALIZING QUANTUM PROCESSOR...]';
 
@@ -1517,6 +1583,7 @@ function showDynamicEncryptedResult(star, display) {
         noBtn.style.cssText = 'background: rgba(255, 0, 0, 0.1); border: 2px solid #f00; color: #f00; margin: 5px; padding: 8px 20px;';
         noBtn.addEventListener('click', () => {
             playClick();
+            stopFragmentSignalSound();
             buttonContainer.remove();
             question.textContent = '[DECRYPTION ABORTED]';
             question.style.cssText = 'color: #f00; text-shadow: 0 0 5px #f00; font-size: 16px;';

@@ -166,7 +166,15 @@ DEEP SPACE SIGNAL ANALYSIS SYSTEM  ·  Version 1.3.7
 
                         <!-- Star Map (Center) -->
                         <div class="starmap-container">
-                            <canvas id="starmap-canvas" width="1000" height="550"></canvas>
+                            <div class="starmap-canvas-wrap">
+                                <button id="starmap-mode-toggle" class="starmap-mode-btn">SKY CHART</button>
+                                <div id="sky-chart-zoom-controls" class="sky-chart-zoom" style="display: none;">
+                                    <button id="zoom-in-btn" class="zoom-btn">+</button>
+                                    <button id="zoom-out-btn" class="zoom-btn">-</button>
+                                    <button id="zoom-reset-btn" class="zoom-btn">1:1</button>
+                                </div>
+                                <canvas id="starmap-canvas" width="1000" height="550"></canvas>
+                            </div>
                         </div>
 
                         <!-- Target Info (Right) -->
@@ -599,6 +607,16 @@ DEEP SPACE SIGNAL ANALYSIS SYSTEM  ·  Version 1.3.7
     <!-- Metallic Door Shut (power failure) -->
     <audio id="door-shut-sound" preload="auto">
         <source src="freesound_community-metallic-door-shut-98740.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Power Down SFX -->
+    <audio id="power-down-sound" preload="auto">
+        <source src="freesound_community-power-down-45784.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Computer Boot Up SFX -->
+    <audio id="boot-up-sound" preload="auto">
+        <source src="freesound_community-computer-boot-up-86535.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Fade Overlay for End Transition -->

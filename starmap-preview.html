@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Starmap RA/Dec Preview</title>
+<style>
+  body { background: #111; margin: 20px; font-family: monospace; color: #0f0; }
+  canvas { border: 1px solid #0f0; display: block; margin: 10px auto; }
+  h3 { text-align: center; letter-spacing: 2px; }
+  .note { text-align: center; color: #888; font-size: 12px; margin-top: 10px; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+</head>
+<body>
+<h3>STARMAP PROJECTION PREVIEW — RA/DEC TO CANVAS</h3>
+<canvas id="preview" width="1000" height="550"></canvas>
+<div class="note">Green = current day stars | Yellow = analyzed | Magenta = alien contact | Dimmed = previous day<br>
+Milky Way band shown for reference. Padding applied to keep stars away from edges.</div>
+
+<script>
+const STAR_NAMES = [
+    "ALPHA CENTAURI","BARNARD'S STAR","WOLF 359","LALANDE 21185","SIRIUS",
+    "UV CETI","ROSS 154","ROSS 248","ROSS 128","LACAILLE 9352",
+    "EPSILON ERIDANI","61 CYGNI","PROCYON","STRUVE 2398","GROOMBRIDGE 34",
+    "EPSILON INDI","TAU CETI","YZ CETI","LUYTEN'S STAR","KAPTEYN'S STAR",
+    "KRUGER 60","VAN MAANEN'S STAR","WOLF 424","GLIESE 687","GLIESE 674",
+    "GLIESE 832","82 ERIDANI","DELTA PAVONIS","VEGA"
+];
+
+const STAR_COORDINATES = [
+    { ra: { h: 14, m: 39 }, dec: { deg: -60, m: 50 } },
+    { ra: { h: 17, m: 57 }, dec: { deg: 4, m: 41 } },
+    { ra: { h: 10, m: 56 }, dec: { deg: 7, m: 0 } },
+    { ra: { h: 11, m: 3 }, dec: { deg: 35, m: 58 } },
+    { ra: { h: 6, m: 45 }, dec: { deg: -16, m: 42 } },
+    { ra: { h: 1, m: 39 }, dec: { deg: -17, m: 57 } },
+    { ra: { h: 18, m: 49 }, dec: { deg: -23, m: 50 } },
+    { ra: { h: 23, m: 41 }, dec: { deg: 44, m: 10 } },
+    { ra: { h: 11, m: 47 }, dec: { deg: 0, m: 48 } },
+    { ra: { h: 23, m: 5 }, dec: { deg: -35, m: 51 } },
+    { ra: { h: 3, m: 32 }, dec: { deg: -9, m: 27 } },
+    { ra: { h: 21, m: 6 }, dec: { deg: 38, m: 44 } },
+    { ra: { h: 7, m: 39 }, dec: { deg: 5, m: 13 } },
+    { ra: { h: 18, m: 42 }, dec: { deg: 59, m: 37 } },
+    { ra: { h: 0, m: 18 }, dec: { deg: 44, m: 1 } },
+    { ra: { h: 22, m: 3 }, dec: { deg: -56, m: 47 } },
+    { ra: { h: 1, m: 44 }, dec: { deg: -15, m: 56 } },
+    { ra: { h: 1, m: 12 }, dec: { deg: -16, m: 59 } },
+    { ra: { h: 7, m: 27 }, dec: { deg: 5, m: 13 } },
+    { ra: { h: 5, m: 11 }, dec: { deg: -45, m: 1 } },
+    { ra: { h: 22, m: 28 }, dec: { deg: 57, m: 41 } },
+    { ra: { h: 0, m: 49 }, dec: { deg: 5, m: 23 } },
+    { ra: { h: 12, m: 33 }, dec: { deg: 9, m: 1 } },
+    { ra: { h: 17, m: 36 }, dec: { deg: 68, m: 20 } },
+    { ra: { h: 17, m: 28 }, dec: { deg: -46, m: 53 } },
+    { ra: { h: 21, m: 33 }, dec: { deg: -49, m: 0 } },
+    { ra: { h: 3, m: 19 }, dec: { deg: -43, m: 4 } },
+    { ra: { h: 20, m: 8 }, dec: { deg: -66, m: 10 } },
+    { ra: { h: 18, m: 36 }, dec: { deg: 38, m: 47 } }
+];
+
+const STAR_TYPES = [
+    "G2V","M4V","M6.5V","M2V","A1V","M5.5V","M3.5V","M5.5V","M4V","M1V",
+    "K2V","K5V","F5IV","M3V","M1.5V","K5V","G8V","M4.5V","M3.5V","M1V",
+    "M3V","DZ8","M5V","M3V","M3V","M1.5V","G8V","G8IV","A0V"
+];
+
+// Spectral class to color
+function getColor(type) {
+    const c = type.charAt(0);
+    switch(c) {
+        case 'O': return '#9bb0ff';
+        case 'B': return '#aabfff';
+        case 'A': return '#cad7ff';
+        case 'F': return '#f8f7ff';
+        case 'G': return '#fff4ea';
+        case 'K': return '#ffd2a1';
+        case 'M': return '#ffcc6f';
+        case 'D': return '#f0f0ff';
+        default: return '#ffffff';
+    }
+}
+
+const canvas = document.getElementById('preview');
+const ctx = canvas.getContext('2d');
+const W = canvas.width;
+const H = canvas.height;
+const PAD = 30; // padding from edges
+
+// Convert RA/Dec to canvas position
+function project(coord) {
+    const raHours = coord.ra.h + coord.ra.m / 60;
+    const decDeg = coord.dec.deg + (coord.dec.deg >= 0 ? coord.dec.m / 60 : -coord.dec.m / 60);
+
+    // RA: 0h = left, 24h = right (reversed so sky reads naturally)
+    const x = PAD + (raHours / 24) * (W - PAD * 2);
+    // Dec: +90 = top, -90 = bottom
+    const y = PAD + ((90 - decDeg) / 180) * (H - PAD * 2);
+    return { x, y };
+}
+
+// Background
+ctx.fillStyle = '#000';
+ctx.fillRect(0, 0, W, H);
+
+// Draw milky way band using real galactic plane coordinates
+// Galactic north pole: RA=192.859°, Dec=+27.128° (J2000)
+// Galactic longitude of north celestial pole: l_NCP = 122.932°
+const DEG = Math.PI / 180;
+const DEC_NGP = 27.128 * DEG;  // declination of galactic north pole
+const RA_NGP = 192.859 * DEG;  // right ascension of galactic north pole
+const L_NCP = 122.932 * DEG;   // galactic longitude of north celestial pole
+
+// Compute galactic plane (b=0) path in RA/Dec
+const galacticPoints = [];
+for (let l = 0; l < 360; l += 2) {
+    const lRad = l * DEG;
+    // For b=0: sin(dec) = cos(DEC_NGP) * cos(l - L_NCP)
+    const sinDec = Math.cos(DEC_NGP) * Math.cos(lRad - L_NCP);
+    const dec = Math.asin(sinDec);
+    // tan(ra - RA_NGP) = sin(l - L_NCP) / (-sin(DEC_NGP) * cos(l - L_NCP))
+    const ra = RA_NGP + Math.atan2(Math.sin(lRad - L_NCP), -Math.sin(DEC_NGP) * Math.cos(lRad - L_NCP));
+    const raH = ((ra / DEG / 15) % 24 + 24) % 24; // convert to hours 0-24
+    const decD = dec / DEG;
+    galacticPoints.push({ ra: raH, dec: decD, l: l });
+}
+// Sort by RA for drawing
+galacticPoints.sort((a, b) => a.ra - b.ra);
+
+// Draw glow blobs along the galactic plane
+galacticPoints.forEach(p => {
+    const px = PAD + (p.ra / 24) * (W - PAD * 2);
+    const py = PAD + ((90 - p.dec) / 180) * (H - PAD * 2);
+    // Brighter near galactic center (l ~ 0/360)
+    const distFromCenter = Math.min(p.l, 360 - p.l) / 180;
+    const brightness = 0.12 + 0.1 * (1 - distFromCenter);
+    const r = 30 + 20 * (1 - distFromCenter);
+    const grad = ctx.createRadialGradient(px, py, 0, px, py, r);
+    grad.addColorStop(0, `rgba(40, 50, 100, ${brightness})`);
+    grad.addColorStop(0.6, `rgba(35, 45, 85, ${brightness * 0.3})`);
+    grad.addColorStop(1, 'rgba(30, 40, 70, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(px - r, py - r, r * 2, r * 2);
+});
+
+// Dense stars along galactic plane
+for (let i = 0; i < 600; i++) {
+    const p = galacticPoints[Math.floor(Math.random() * galacticPoints.length)];
+    const px = PAD + (p.ra / 24) * (W - PAD * 2) + (Math.random() - 0.5) * 10;
+    const py = PAD + ((90 - p.dec) / 180) * (H - PAD * 2) + (Math.random() - 0.5) * 40;
+    const a = Math.random() * 0.3 + 0.1;
+    ctx.fillStyle = `rgba(190, 200, 230, ${a})`;
+    ctx.fillRect(px, py, Math.random() + 0.5, Math.random() + 0.5);
+}
+
+// Grid
+ctx.strokeStyle = 'rgba(0, 255, 0, 0.07)';
+ctx.lineWidth = 1;
+for (let x = 0; x < W; x += 50) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+}
+for (let y = 0; y < H; y += 50) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+}
+
+// RA axis labels
+ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+ctx.font = '10px VT323, monospace';
+ctx.textAlign = 'center';
+for (let h = 0; h <= 24; h += 3) {
+    const x = PAD + (h / 24) * (W - PAD * 2);
+    ctx.fillText(h + 'h', x, H - 5);
+}
+// Dec axis labels
+ctx.textAlign = 'right';
+for (let d = -60; d <= 60; d += 30) {
+    const y = PAD + ((90 - d) / 180) * (H - PAD * 2);
+    ctx.fillText((d >= 0 ? '+' : '') + d + '°', PAD - 5, y + 3);
+}
+
+// Draw stars
+const positions = [];
+STAR_NAMES.forEach((name, i) => {
+    const pos = project(STAR_COORDINATES[i]);
+    positions.push(pos);
+    const color = getColor(STAR_TYPES[i]);
+
+    // Glow
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Label (flip if near right edge)
+    ctx.fillStyle = color;
+    ctx.font = '12px VT323, monospace';
+    const labelW = ctx.measureText(name).width;
+    if (pos.x + 10 + labelW > W - 5) {
+        ctx.textAlign = 'right';
+        ctx.fillText(name, pos.x - 9, pos.y + 3);
+    } else {
+        ctx.textAlign = 'left';
+        ctx.fillText(name, pos.x + 9, pos.y + 3);
+    }
+});
+
+// Check for overlapping stars
+console.log('=== Star positions ===');
+for (let i = 0; i < positions.length; i++) {
+    for (let j = i + 1; j < positions.length; j++) {
+        const dx = positions[i].x - positions[j].x;
+        const dy = positions[i].y - positions[j].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 30) {
+            console.log(`CLOSE: ${STAR_NAMES[i]} & ${STAR_NAMES[j]} — ${dist.toFixed(1)}px apart`);
+        }
+    }
+}
+</script>
+</body>
+</html>

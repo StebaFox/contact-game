@@ -5,7 +5,7 @@
 
 import { gameState } from '../core/game-state.js';
 import { showView, log } from '../ui/rendering.js';
-import { playClick, playSecurityBeep } from './audio.js';
+import { playClick, playSecurityBeep, playBootUpSound, resumeAllMusic } from './audio.js';
 import { autoSave } from '../core/save-system.js';
 import { getDayProgress, advanceDay, DAY_CONFIG, checkDayComplete } from '../core/day-system.js';
 import { startFinalAlignment } from './alignment-minigame.js';
@@ -138,6 +138,8 @@ export function advanceDay2Cliffhanger(triggerPhase) {
 }
 
 function startQuickReboot() {
+    playBootUpSound();
+
     const overlay = document.createElement('div');
     overlay.id = 'reboot-overlay';
     overlay.style.cssText = `
@@ -172,7 +174,12 @@ function startQuickReboot() {
                 overlay.style.opacity = '0';
                 setTimeout(() => {
                     overlay.remove();
+                    resumeAllMusic();
                     showView('starmap-view');
+                    // Run the starmap loading sequence (progress bar + array init)
+                    import('../ui/boot-sequence.js').then(module => {
+                        module.initializeStarmapSequence();
+                    });
                     advanceDay2Cliffhanger(3);
                 }, 1000);
             }, 1000);
