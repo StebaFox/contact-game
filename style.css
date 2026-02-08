@@ -160,6 +160,106 @@ body {
     transform: scale(1.05);
 }
 
+/* Audio Settings Dropdown */
+.audio-settings-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.audio-settings-btn {
+    background: rgba(0, 255, 0, 0.1);
+    border: 2px solid #0f0;
+    color: #0f0;
+    padding: 5px 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-shadow: 0 0 3px #0f0;
+}
+
+.audio-settings-btn:hover {
+    background: rgba(0, 255, 0, 0.2);
+    box-shadow: 0 0 10px #0f0;
+    transform: scale(1.05);
+}
+
+.audio-settings-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid #0f0;
+    padding: 12px 14px;
+    z-index: 1000;
+    min-width: 240px;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.15);
+}
+
+.audio-settings-dropdown.open {
+    display: block;
+}
+
+.audio-setting-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.audio-setting-row:last-child {
+    margin-bottom: 0;
+}
+
+.audio-label {
+    color: #0f0;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    min-width: 48px;
+    text-shadow: 0 0 3px #0f0;
+}
+
+.audio-value {
+    color: #0f0;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    min-width: 32px;
+    text-align: right;
+    text-shadow: 0 0 3px #0f0;
+}
+
+.audio-setting-row input[type="range"] {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #333;
+    outline: none;
+    cursor: pointer;
+}
+
+.audio-setting-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #0f0;
+    border-radius: 0;
+    cursor: pointer;
+    box-shadow: 0 0 6px #0f0;
+}
+
+.audio-setting-row input[type="range"]::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: #0f0;
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+    box-shadow: 0 0 6px #0f0;
+}
+
 .mailbox-btn {
     background: rgba(0, 255, 255, 0.1);
     border: 2px solid #0ff;
@@ -3067,8 +3167,9 @@ body.white-mode .layout-toggle-btn:hover {
         display: none;
     }
 
-    body:not(.force-desktop) #volume-slider {
-        width: 60px !important;
+    body:not(.force-desktop) .audio-settings-btn {
+        padding: 8px 12px;
+        font-size: 12px;
     }
 
     body:not(.force-desktop) .color-scheme-btn,
@@ -3616,8 +3717,9 @@ body.force-mobile .system-time > span:first-child {
     display: none;
 }
 
-body.force-mobile #volume-slider {
-    width: 60px !important;
+body.force-mobile .audio-settings-btn {
+    padding: 8px 12px;
+    font-size: 12px;
 }
 
 body.force-mobile .color-scheme-btn,

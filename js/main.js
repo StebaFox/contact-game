@@ -51,7 +51,11 @@ import {
     playMachineSound,
     stopMachineSound,
     playSecurityBeep,
-    setMasterVolume
+    setMusicVolume,
+    setSfxVolume,
+    getMusicVolume,
+    getSfxVolume,
+    loadVolumeSettings
 } from './systems/audio.js';
 import { openMailbox, closeMailbox, checkForNewMail } from './systems/mailbox.js';
 import {
@@ -172,12 +176,47 @@ function setupEventListeners() {
     // Tuning sliders
     setupTuningSliders();
 
-    // Volume slider
-    const volumeSlider = document.getElementById('volume-slider');
-    volumeSlider.addEventListener('input', (e) => {
+    // Audio settings dropdown
+    const audioBtn = document.getElementById('audio-settings-btn');
+    const audioDropdown = document.getElementById('audio-settings-dropdown');
+    const musicSlider = document.getElementById('music-volume-slider');
+    const sfxSlider = document.getElementById('sfx-volume-slider');
+
+    // Load saved volumes and apply to sliders
+    loadVolumeSettings();
+    const savedMusic = Math.round(getMusicVolume() * 100);
+    const savedSfx = Math.round(getSfxVolume() * 100);
+    musicSlider.value = savedMusic;
+    sfxSlider.value = savedSfx;
+    document.getElementById('music-volume-value').textContent = savedMusic + '%';
+    document.getElementById('sfx-volume-value').textContent = savedSfx + '%';
+
+    // Toggle dropdown
+    audioBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playClick();
+        audioDropdown.classList.toggle('open');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#audio-settings-wrapper')) {
+            audioDropdown.classList.remove('open');
+        }
+    });
+
+    // Music volume slider
+    musicSlider.addEventListener('input', (e) => {
         const volume = parseInt(e.target.value) / 100;
-        setMasterVolume(volume);
-        document.getElementById('volume-value').textContent = e.target.value + '%';
+        setMusicVolume(volume);
+        document.getElementById('music-volume-value').textContent = e.target.value + '%';
+    });
+
+    // SFX volume slider
+    sfxSlider.addEventListener('input', (e) => {
+        const volume = parseInt(e.target.value) / 100;
+        setSfxVolume(volume);
+        document.getElementById('sfx-volume-value').textContent = e.target.value + '%';
     });
 
     // Color scheme toggle

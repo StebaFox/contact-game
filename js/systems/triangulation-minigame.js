@@ -5,7 +5,7 @@
 
 import { gameState } from '../core/game-state.js';
 import { log } from '../ui/rendering.js';
-import { playClick, getMasterVolume } from './audio.js';
+import { playClick, getSfxVolume } from './audio.js';
 import { autoSave } from '../core/save-system.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1022,7 +1022,7 @@ function completeTriangulation(success) {
 
 function playSuccessSound() {
     try {
-        const vol = getMasterVolume();
+        const vol = getSfxVolume();
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
 
         [400, 600, 800, 1000, 1200].forEach((freq, i) => {

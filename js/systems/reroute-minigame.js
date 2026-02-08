@@ -5,7 +5,7 @@
 
 import { gameState } from '../core/game-state.js';
 import { log } from '../ui/rendering.js';
-import { playClick, playStaticBurst, playLockAchieved, getMasterVolume } from './audio.js';
+import { playClick, playStaticBurst, playLockAchieved, getSfxVolume } from './audio.js';
 
 // Reroute state
 let rerouteState = {
@@ -1261,7 +1261,7 @@ function getRerouteAudioCtx() {
 
 function playAlarmSound() {
     try {
-        const vol = getMasterVolume();
+        const vol = getSfxVolume();
         const ctx = getRerouteAudioCtx();
 
         // Urgent two-tone alarm with repeat
@@ -1288,7 +1288,7 @@ function playAlarmSound() {
 
 function playRotateSound() {
     try {
-        const vol = getMasterVolume();
+        const vol = getSfxVolume();
         const ctx = getRerouteAudioCtx();
 
         // Mechanical switch click - two-part sound
@@ -1333,7 +1333,7 @@ function playRotateSound() {
 
 function playErrorBlip() {
     try {
-        const vol = getMasterVolume();
+        const vol = getSfxVolume();
         const ctx = getRerouteAudioCtx();
 
         // Denied buzzer sound
@@ -1355,7 +1355,7 @@ function playErrorBlip() {
 
 function playPowerConnectSound() {
     try {
-        const vol = getMasterVolume();
+        const vol = getSfxVolume();
         const ctx = getRerouteAudioCtx();
 
         // Electrical zap/connection sound
@@ -1388,7 +1388,7 @@ function playPowerConnectSound() {
 
 function playPowerDisconnectSound() {
     try {
-        const vol = getMasterVolume();
+        const vol = getSfxVolume();
         const ctx = getRerouteAudioCtx();
 
         // Power down sound
@@ -1408,7 +1408,7 @@ function playPowerDisconnectSound() {
 
 function playPowerRestoreSound() {
     try {
-        const vol = getMasterVolume();
+        const vol = getSfxVolume();
         const ctx = getRerouteAudioCtx();
 
         // Big power-up sequence
@@ -1465,7 +1465,7 @@ function playPowerRestoreSound() {
 
 function playTrapOverloadSound() {
     try {
-        const vol = getMasterVolume();
+        const vol = getSfxVolume();
         const ctx = getRerouteAudioCtx();
 
         // Electrical overload - descending buzz

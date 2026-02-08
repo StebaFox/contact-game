@@ -162,11 +162,11 @@ export function checkForNewMail() {
 
     // Check if enough time has passed since last mail
     const timeSinceLastMail = Date.now() - gameState.lastMailTime;
-    const minInterval = 120000; // 2 minutes minimum between messages
+    const minInterval = 300000; // 5 minutes minimum between messages
 
     if (timeSinceLastMail > minInterval) {
         // Random chance to receive mail
-        if (Math.random() < 0.3) { // 30% chance each check
+        if (Math.random() < 0.2) { // 20% chance each check
             sendRandomMail();
             gameState.lastMailTime = Date.now();
         }

@@ -8,7 +8,7 @@
 // ═════════════════════════════════════════════════════════════════════════════
 
 import { gameState } from '../core/game-state.js';
-import { playClick } from '../systems/audio.js';
+import { playClick, switchToGlassCathedral, restoreMusicAfterFinalMessage } from '../systems/audio.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Message Content - Edit this section to change the narrative
@@ -188,7 +188,12 @@ let messageState = {
     glowPulse: 0,
     breathingMode: false,
     onComplete: null,
-    skipped: false
+    skipped: false,
+    warpActive: false,
+    warpParticles: [],
+    downloadElement: null,
+    downloadProgress: 0,
+    downloadInterval: null
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -210,6 +215,7 @@ export function showFinalMessage(onComplete) {
 
     createMessageOverlay();
     startTesseractAnimation();
+    switchToGlassCathedral();
 
     // Let the tesseract breathe alone for 2 seconds, then begin typing
     const startTimeout = setTimeout(() => {
@@ -240,11 +246,11 @@ function createMessageOverlay() {
         @keyframes fm-finalPulse {
             0%, 100% {
                 text-shadow: 0 0 30px #0ff, 0 0 60px #0ff;
-                transform: translate(-50%, -50%) scale(1);
+                transform: translateY(-50%) scale(1);
             }
             50% {
                 text-shadow: 0 0 60px #0ff, 0 0 120px #0ff, 0 0 180px #08f;
-                transform: translate(-50%, -50%) scale(1.02);
+                transform: translateY(-50%) scale(1.02);
             }
         }
     `;
@@ -268,14 +274,14 @@ function createMessageOverlay() {
     textElement.id = 'fm-text';
     textElement.style.cssText = `
         position: absolute;
-        top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
+        top: 50%; left: 12%;
+        transform: translateY(-50%);
         font-family: 'VT323', monospace;
         font-size: 28px;
         line-height: 1.6;
-        text-align: center;
-        max-width: 800px;
-        width: 90%;
+        text-align: left;
+        max-width: 700px;
+        width: 76%;
         z-index: 2;
         opacity: 0;
         transition: opacity 0.8s ease-in-out;
@@ -344,6 +350,40 @@ const CODE_LINES = [
     'SIGNAL_LOCK', 'DRIFT:+0.02Hz/s', 'EPOCH:J1995.0'
 ];
 
+// Warp stream content — equations, elements, history, geometry, culture
+const WARP_CONTENT = [
+    'E=mc\u00B2', 'F=ma', '\u2207\u00D7B=\u03BC\u2080J', '\u0394S\u22650', 'PV=nRT', '\u03BB=h/p',
+    '\u03C8=Ae^(ikx)', '\u2202\u03C8/\u2202t=H\u03C8', 'S=k\u00B7ln\u03A9', 'G=6.674\u00D710\u207B\u00B9\u00B9',
+    'c=299,792,458', '\u210F=1.055\u00D710\u207B\u00B3\u2074',
+    'H', 'He', 'Li', 'C', 'N', 'O', 'Fe', 'Au', 'U', 'Si', 'Ca', 'Na', 'Mg', 'Ti',
+    'DNA', 'RNA', 'ATP', 'H\u2082O', 'CO\u2082', 'NaCl', 'C\u2086H\u2081\u2082O\u2086',
+    'PYRAMIDS', 'ROME', 'RENAISSANCE', 'GALILEO', 'NEWTON', 'DARWIN',
+    'EINSTEIN', 'APOLLO 11', 'VOYAGER 1', 'HUBBLE', 'FIRST LIGHT',
+    'CAVE PAINTINGS', 'MATHEMATICS', 'MUSIC', 'LANGUAGE', 'PHILOSOPHY',
+    '\u25B3', '\u25CB', '\u25A1', '\u2B21', '\u25C7', '\u2606', '\u2295', '\u221E', '\u2297',
+    'ART', 'POETRY', 'ETHICS', 'ASTRONOMY', 'BIOLOGY', 'CHEMISTRY', 'GENETICS'
+];
+
+const WARP_COLORS = [
+    [0, 255, 255],   // cyan
+    [0, 255, 100],   // green
+    [255, 215, 0],   // gold
+    [255, 0, 255],   // magenta
+    [100, 200, 255], // light blue
+    [255, 255, 255]  // white
+];
+
+const DOWNLOAD_CATEGORIES = [
+    'QUANTUM MECHANICS... STELLAR EVOLUTION... THERMODYNAMICS...',
+    'ART... MUSIC... LITERATURE... ARCHITECTURE...',
+    'MATHEMATICS... GEOMETRY... TOPOLOGY... NUMBER THEORY...',
+    'HISTORY... PHILOSOPHY... ETHICS... GOVERNANCE...',
+    'BIOLOGY... CHEMISTRY... GENETICS... NEUROSCIENCE...',
+    'LANGUAGES... CULTURES... TRADITIONS... MEMORIES...',
+    'ASTRONOMY... COSMOLOGY... DARK MATTER... DARK ENERGY...',
+    'ENGINEERING... MATERIALS... ENERGY SYSTEMS... PROPULSION...'
+];
+
 function rotate3D(x, y, z, rotX, rotY, cx, cy, focalLength) {
     let x1 = x * Math.cos(rotY) - z * Math.sin(rotY);
     let z1 = x * Math.sin(rotY) + z * Math.cos(rotY);
@@ -402,15 +442,80 @@ function drawBackgroundCode(ctx, w, h) {
 
 function drawVoidParticles(ctx, w, h, glow) {
     const time = Date.now() * 0.001;
-    for (let i = 0; i < 30; i++) {
-        const x = (Math.sin(time * 0.5 + i * 1.3) * 0.3 + 0.5) * w;
-        const y = (Math.cos(time * 0.4 + i * 1.7) * 0.3 + 0.5) * h;
-        const alpha = 0.1 + 0.15 * Math.sin(time * 2 + i);
+    for (let i = 0; i < 50; i++) {
+        const x = (Math.sin(time * 0.5 + i * 1.3) * 0.4 + 0.5) * w;
+        const y = (Math.cos(time * 0.4 + i * 1.7) * 0.4 + 0.5) * h;
+        const alpha = 0.35 + 0.35 * Math.sin(time * 2 + i);
         ctx.fillStyle = `rgba(0, 255, 0, ${alpha * glow})`;
         ctx.beginPath();
-        ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
         ctx.fill();
     }
+}
+
+function updateAndDrawWarpStreams(ctx, w, h) {
+    const cx = w / 2;
+    const cy = h / 2;
+    const maxDist = Math.max(w, h) * 0.85;
+
+    // Spawn new particles — burst of knowledge flying outward
+    if (Math.random() < 0.35) {
+        const angle = Math.random() * Math.PI * 2;
+        const contentIdx = Math.floor(Math.random() * WARP_CONTENT.length);
+        const color = WARP_COLORS[Math.floor(Math.random() * WARP_COLORS.length)];
+        messageState.warpParticles.push({
+            text: WARP_CONTENT[contentIdx],
+            angle: angle,
+            distance: 5,
+            speed: 1.2 + Math.random() * 2.5,
+            color: color,
+            born: Date.now()
+        });
+    }
+
+    messageState.warpParticles = messageState.warpParticles.filter(p => {
+        p.distance += p.speed;
+        p.speed *= 1.025; // accelerate outward
+
+        if (p.distance > maxDist) return false;
+
+        const progress = p.distance / maxDist;
+        const x = cx + Math.cos(p.angle) * p.distance;
+        const y = cy + Math.sin(p.angle) * p.distance;
+
+        // Opacity: fade in 0-10%, full 10-75%, fade out 75-100%
+        let alpha;
+        if (progress < 0.1) alpha = progress / 0.1;
+        else if (progress > 0.75) alpha = (1 - progress) / 0.25;
+        else alpha = 1;
+        alpha *= 0.5;
+
+        // Size grows with distance
+        const fontSize = Math.round(9 + 18 * progress);
+        ctx.font = `${fontSize}px "VT323", monospace`;
+        ctx.textAlign = 'center';
+
+        const [r, g, b] = p.color;
+
+        // Streak trail
+        const streakLen = p.speed * 4;
+        const sx = x - Math.cos(p.angle) * streakLen;
+        const sy = y - Math.sin(p.angle) * streakLen;
+        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.25})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+
+        // Text
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        ctx.fillText(p.text, x, y);
+
+        return true;
+    });
+
+    ctx.textAlign = 'left';
 }
 
 function drawTesseractWithJitter(ctx, cx, cy, scale, focalLength, colors, glow, jitter, rx, ry) {
@@ -443,9 +548,9 @@ function drawTesseractWithJitter(ctx, cx, cy, scale, focalLength, colors, glow, 
     const [cr, cg, cb] = colors.connecting;
 
     // Outer cube
-    ctx.shadowBlur = colors.glowBlur * glow;
+    ctx.shadowBlur = colors.glowBlur * glow * 0.4;
     ctx.shadowColor = `rgb(${or}, ${og}, ${ob})`;
-    ctx.strokeStyle = `rgba(${or}, ${og}, ${ob}, ${0.7 * glow})`;
+    ctx.strokeStyle = `rgba(${or}, ${og}, ${ob}, ${0.3 * glow})`;
     ctx.lineWidth = 1.5;
     CUBE_EDGES.forEach(([a, b]) => {
         ctx.beginPath();
@@ -456,7 +561,7 @@ function drawTesseractWithJitter(ctx, cx, cy, scale, focalLength, colors, glow, 
 
     // Inner cube
     ctx.shadowColor = `rgb(${ir}, ${ig}, ${ib})`;
-    ctx.strokeStyle = `rgba(${ir}, ${ig}, ${ib}, ${0.5 * glow})`;
+    ctx.strokeStyle = `rgba(${ir}, ${ig}, ${ib}, ${0.2 * glow})`;
     ctx.lineWidth = 1;
     CUBE_EDGES.forEach(([a, b]) => {
         ctx.beginPath();
@@ -467,7 +572,7 @@ function drawTesseractWithJitter(ctx, cx, cy, scale, focalLength, colors, glow, 
 
     // Connecting edges
     ctx.shadowColor = `rgb(${cr}, ${cg}, ${cb})`;
-    ctx.strokeStyle = `rgba(${cr}, ${cg}, ${cb}, ${0.35 * glow})`;
+    ctx.strokeStyle = `rgba(${cr}, ${cg}, ${cb}, ${0.15 * glow})`;
     ctx.lineWidth = 0.8;
     for (let i = 0; i < 8; i++) {
         ctx.beginPath();
@@ -479,15 +584,15 @@ function drawTesseractWithJitter(ctx, cx, cy, scale, focalLength, colors, glow, 
     // Vertices
     ctx.shadowBlur = 0;
     projOuter.forEach(p => {
-        ctx.fillStyle = `rgba(${or}, ${og}, ${ob}, ${0.9 * glow})`;
+        ctx.fillStyle = `rgba(${or}, ${og}, ${ob}, ${0.4 * glow})`;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
         ctx.fill();
     });
     projInner.forEach(p => {
-        ctx.fillStyle = `rgba(${ir}, ${ig}, ${ib}, ${0.7 * glow})`;
+        ctx.fillStyle = `rgba(${ir}, ${ig}, ${ib}, ${0.3 * glow})`;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
         ctx.fill();
     });
     ctx.shadowBlur = 0;
@@ -515,7 +620,7 @@ function startTesseractAnimation() {
         drawBackgroundCode(ctx, w, h);
 
         const progress = messageState.currentSectionIndex / (MESSAGE_SECTIONS.length - 1);
-        const scale = 200 + 150 * progress;
+        const scale = 450 + 250 * progress;
         const focalLength = 200;
 
         const rotSpeed = messageState.breathingMode ? 0.1 : 1.0;
@@ -535,6 +640,10 @@ function startTesseractAnimation() {
         }
 
         drawVoidParticles(ctx, w, h, glow);
+
+        if (messageState.warpActive) {
+            updateAndDrawWarpStreams(ctx, w, h);
+        }
 
         const colors = computeProgressColors(progress);
         drawTesseractWithJitter(
@@ -570,6 +679,13 @@ function typeSection(sectionIndex) {
 
     const section = MESSAGE_SECTIONS[sectionIndex];
     messageState.currentSectionIndex = sectionIndex;
+
+    // Trigger warp explosion + encyclopedia download at "give-everything"
+    if (section.id === 'give-everything' && !messageState.warpActive) {
+        messageState.warpActive = true;
+        messageState.warpParticles = [];
+        createEncyclopediaBar();
+    }
 
     if (section.type === 'divider') {
         messageState.jitterIntensity = 4.0;
@@ -639,7 +755,7 @@ function startTyping(section, onComplete) {
 
     messageState.isTyping = true;
     let charIdx = 0;
-    const CHAR_SPEED = 35;
+    const CHAR_SPEED = 50;
     const NEWLINE_PAUSE = 300;
 
     function typeNextChar() {
@@ -692,6 +808,21 @@ function computePause(section) {
 function startBreathingMoment() {
     messageState.breathingMode = true;
     messageState.currentSectionIndex = MESSAGE_SECTIONS.length - 1;
+
+    // Stop spawning warp particles (existing ones fly off naturally)
+    messageState.warpActive = false;
+
+    // Complete the download bar then fade it out
+    if (messageState.downloadElement) {
+        messageState.downloadProgress = 100;
+        const fill = document.getElementById('fm-download-fill');
+        const pct = document.getElementById('fm-download-pct');
+        const cat = document.getElementById('fm-download-category');
+        if (fill) fill.style.width = '100%';
+        if (pct) pct.textContent = '100.0%';
+        if (cat) cat.textContent = 'TRANSFER COMPLETE';
+        setTimeout(() => removeEncyclopediaBar(), 3000);
+    }
 
     const t = setTimeout(() => showContinueButton(), 12000);
     messageState.sectionTimeouts.push(t);
@@ -762,6 +893,94 @@ function showEndButton() {
 // Skip & Close
 // ─────────────────────────────────────────────────────────────────────────────
 
+function createEncyclopediaBar() {
+    if (messageState.downloadElement) return;
+    const overlay = messageState.overlay;
+    if (!overlay) return;
+
+    const container = document.createElement('div');
+    container.id = 'fm-download-bar';
+    container.style.cssText = `
+        position: absolute;
+        bottom: 40px; left: 50%;
+        transform: translateX(-50%);
+        width: 500px;
+        max-width: 90%;
+        font-family: 'VT323', monospace;
+        z-index: 3;
+        opacity: 0;
+        transition: opacity 1.5s;
+    `;
+
+    container.innerHTML = `
+        <div style="color: #0ff; font-size: 14px; margin-bottom: 6px; text-shadow: 0 0 10px #0ff;">
+            DOWNLOADING: ENCYCLOPEDIA GALACTICA
+        </div>
+        <div style="border: 1px solid rgba(0, 255, 255, 0.3); background: rgba(0,0,0,0.5); height: 16px; position: relative; overflow: hidden;">
+            <div id="fm-download-fill" style="
+                width: 0%;
+                height: 100%;
+                background: linear-gradient(90deg, #0f0, #0ff);
+                box-shadow: 0 0 10px #0ff;
+                transition: width 0.2s linear;
+            "></div>
+            <div id="fm-download-pct" style="
+                position: absolute; top: 0; right: 5px;
+                color: #0ff; font-size: 12px; line-height: 16px;
+            ">0.0%</div>
+        </div>
+        <div id="fm-download-category" style="
+            color: #0a0; font-size: 11px; margin-top: 4px;
+            text-shadow: 0 0 5px #0a0;
+            overflow: hidden; white-space: nowrap;
+        ">INITIALIZING TRANSFER...</div>
+    `;
+
+    overlay.appendChild(container);
+    requestAnimationFrame(() => { container.style.opacity = '1'; });
+
+    messageState.downloadElement = container;
+    messageState.downloadProgress = 0;
+
+    const progressInterval = setInterval(() => {
+        if (!messageState.downloadElement || messageState.skipped) {
+            clearInterval(progressInterval);
+            return;
+        }
+
+        messageState.downloadProgress = Math.min(99.9, messageState.downloadProgress + 0.18);
+
+        const fill = document.getElementById('fm-download-fill');
+        const pct = document.getElementById('fm-download-pct');
+        const cat = document.getElementById('fm-download-category');
+
+        if (fill) fill.style.width = messageState.downloadProgress + '%';
+        if (pct) pct.textContent = messageState.downloadProgress.toFixed(1) + '%';
+
+        if (cat && Math.random() < 0.05) {
+            cat.textContent = DOWNLOAD_CATEGORIES[Math.floor(Math.random() * DOWNLOAD_CATEGORIES.length)];
+        }
+    }, 100);
+
+    messageState.downloadInterval = progressInterval;
+}
+
+function removeEncyclopediaBar() {
+    if (messageState.downloadElement) {
+        messageState.downloadElement.style.opacity = '0';
+        setTimeout(() => {
+            if (messageState.downloadElement) {
+                messageState.downloadElement.remove();
+                messageState.downloadElement = null;
+            }
+        }, 1500);
+    }
+    if (messageState.downloadInterval) {
+        clearInterval(messageState.downloadInterval);
+        messageState.downloadInterval = null;
+    }
+}
+
 function skipToEnd() {
     messageState.skipped = true;
     messageState.sectionTimeouts.forEach(t => clearTimeout(t));
@@ -771,6 +990,9 @@ function skipToEnd() {
     messageState.isTyping = false;
     messageState.jitterIntensity = 0.5;
     messageState.breathingMode = true;
+    messageState.warpActive = false;
+    messageState.warpParticles = [];
+    removeEncyclopediaBar();
 
     const textEl = messageState.textElement;
     if (textEl) {
@@ -795,6 +1017,10 @@ function closeMessage() {
     stopTesseractAnimation();
     messageState.sectionTimeouts.forEach(t => clearTimeout(t));
     messageState.sectionTimeouts = [];
+    messageState.warpActive = false;
+    messageState.warpParticles = [];
+    removeEncyclopediaBar();
+    restoreMusicAfterFinalMessage();
 
     overlay.style.transition = 'opacity 2s';
     overlay.style.opacity = '0';

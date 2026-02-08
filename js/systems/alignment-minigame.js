@@ -5,7 +5,7 @@
 
 import { gameState } from '../core/game-state.js';
 import { showView, log } from '../ui/rendering.js';
-import { playClick, getMasterVolume, switchToBackgroundMusic, stopAlienSignalSound } from './audio.js';
+import { playClick, getSfxVolume, switchToBackgroundMusic, stopAlienSignalSound } from './audio.js';
 import { autoSave } from '../core/save-system.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1112,7 +1112,7 @@ function enableConfirmButton() {
 
 function playFragmentPickup() {
     try {
-        const vol = getMasterVolume();
+        const vol = getSfxVolume();
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -1132,7 +1132,7 @@ function playFragmentPickup() {
 
 function playAlignmentSuccess() {
     try {
-        const vol = getMasterVolume();
+        const vol = getSfxVolume();
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
 
         [600, 800, 1000].forEach((freq, i) => {
@@ -1155,7 +1155,7 @@ function playAlignmentSuccess() {
 
 function playAlignmentError() {
     try {
-        const vol = getMasterVolume();
+        const vol = getSfxVolume();
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();

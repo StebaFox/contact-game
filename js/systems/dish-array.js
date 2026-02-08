@@ -5,7 +5,7 @@
 
 import { gameState } from '../core/game-state.js';
 import { log } from '../ui/rendering.js';
-import { playClick, playStaticBurst, playLockAchieved, playMachineSound, stopMachineSound, getMachineSoundDuration, playDishRotationSound, playDishAlignedSound, playDoorShutSound, getMasterVolume } from './audio.js';
+import { playClick, playStaticBurst, playLockAchieved, playMachineSound, stopMachineSound, getMachineSoundDuration, playDishRotationSound, playDishAlignedSound, playDoorShutSound, getSfxVolume } from './audio.js';
 import { STAR_NAMES, STAR_COORDINATES } from '../narrative/stars.js';
 import { startRerouteMinigame } from './reroute-minigame.js';
 import { addMailMessage } from './mailbox.js';
@@ -399,7 +399,7 @@ function showMalfunctionPopup(code, dishIndex, dishLabel) {
             return;
         }
         try {
-            const vol = getMasterVolume();
+            const vol = getSfxVolume();
             const actx = new (window.AudioContext || window.webkitAudioContext)();
             // Two-tone alarm beep (high-low)
             [620, 440].forEach((freq, i) => {
