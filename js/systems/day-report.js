@@ -118,6 +118,7 @@ export function advanceDay2Cliffhanger(triggerPhase) {
             gameState.day2CliffhangerPhase = 4;
             autoSave();
 
+            // Delay long enough for the loading bar sequence to finish (~4s)
             setTimeout(() => {
                 const time = new Date().toTimeString().substring(0, 5);
                 const body = DAY2_BLACKOUT_EMAIL.body
@@ -125,7 +126,7 @@ export function advanceDay2Cliffhanger(triggerPhase) {
                     .replace(/{TIME}/g, time);
                 addMailMessage(DAY2_BLACKOUT_EMAIL.from, DAY2_BLACKOUT_EMAIL.subject, body);
                 log('EMERGENCY ALERT: New priority message received.', 'warning');
-            }, 2000);
+            }, 7000);
             break;
 
         case 4:
@@ -170,18 +171,21 @@ function startQuickReboot() {
     function typeNextLine() {
         if (lineIndex >= rebootLines.length) {
             setTimeout(() => {
-                overlay.style.transition = 'opacity 1s';
-                overlay.style.opacity = '0';
-                setTimeout(() => {
-                    overlay.remove();
-                    resumeAllMusic();
-                    showView('starmap-view');
-                    // Run the starmap loading sequence (progress bar + array init)
-                    import('../ui/boot-sequence.js').then(module => {
-                        module.initializeStarmapSequence();
-                    });
-                    advanceDay2Cliffhanger(3);
-                }, 1000);
+                // Switch to starmap view under the overlay
+                showView('starmap-view');
+                // Start the loading bar sequence FIRST so its overlay (z-index 9999)
+                // is already covering the starmap before we fade the reboot overlay
+                import('../ui/boot-sequence.js').then(module => {
+                    module.initializeStarmapSequence();
+                    // Now fade and remove the reboot overlay — loading bar overlay is underneath
+                    overlay.style.transition = 'opacity 0.5s';
+                    overlay.style.opacity = '0';
+                    setTimeout(() => {
+                        overlay.remove();
+                        resumeAllMusic();
+                        advanceDay2Cliffhanger(3);
+                    }, 500);
+                });
             }, 1000);
             return;
         }
@@ -333,8 +337,19 @@ function buildDay1ClassificationForm(choices) {
     choices.classifications = {};
     choices.recommendation = null;
 
-    // 4 key signals to classify: indices 0, 4, 6, 8
+    // 4 key signals flagged for review: indices 0, 4, 6, 8
     const displayStars = [0, 4, 6, 8];
+
+    // Helper to get scan result description
+    function getScanSummary(starIndex) {
+        const result = gameState.scanResults.get(starIndex);
+        if (!result) return { text: 'PENDING ANALYSIS', color: '#666' };
+        if (result.type === 'natural') return { text: `NATURAL — ${result.phenomenonType || 'Classified phenomenon'}`, color: '#0ff' };
+        if (result.type === 'false_positive') return { text: `FALSE POSITIVE — ${result.source || 'Terrestrial source'}`, color: '#f80' };
+        if (result.type === 'verified_signal') return { text: 'VERIFIED EXTRASOLAR SIGNAL', color: '#f0f' };
+        if (result.type === 'encrypted_signal') return { text: 'ENCRYPTED SIGNAL — DECRYPTION REQUIRED', color: '#ff0' };
+        return { text: 'SIGNAL DETECTED', color: '#0f0' };
+    }
 
     let signalRows = '';
     displayStars.forEach(idx => {
@@ -342,12 +357,14 @@ function buildDay1ClassificationForm(choices) {
         if (!star) return;
         const isRoss128 = idx === 8;
         const rowClass = isRoss128 ? 'signal-row signal-row-highlight' : 'signal-row';
+        const scan = getScanSummary(idx);
 
         signalRows += `
             <div class="${rowClass}" data-star-index="${idx}">
                 <div class="signal-info">
                     <span class="signal-name">${star.name}</span>
-                    <span class="signal-meta">${star.distance} ly | ${star.starClass}</span>
+                    <span class="signal-meta">${star.distance} ly | ${star.starType} ${star.starClass} | ${star.temperature}</span>
+                    <span class="signal-result" style="color: ${scan.color}; font-size: 11px; display: block; margin-top: 2px;">${scan.text}</span>
                 </div>
                 <div class="signal-buttons">
                     <button class="classify-btn" data-value="NATURAL">NATURAL</button>
@@ -364,11 +381,12 @@ function buildDay1ClassificationForm(choices) {
             <div class="classification-header">
                 DAILY SIGNAL CLASSIFICATION
                 <div class="classification-subheader">
-                    Review key signals and assign classifications for your report
+                    Automated pre-screening flagged ${displayStars.length} of 10 signals for manual review.<br>
+                    Remaining signals auto-classified. Assign your operator assessment below.
                 </div>
             </div>
             <div class="classification-body">
-                <div class="classification-section-label">SIGNAL REVIEW</div>
+                <div class="classification-section-label">FLAGGED SIGNALS</div>
                 ${signalRows}
 
                 <div class="classification-section-label" style="margin-top: 20px;">RECOMMENDATION</div>

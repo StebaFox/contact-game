@@ -184,6 +184,10 @@ export function advanceDay() {
     // Advance to next day
     gameState.currentDay++;
 
+    // Clear any selected star from the previous day
+    gameState.selectedStarId = null;
+    gameState.showScanConfirm = false;
+
     // Save progress
     autoSave();
 

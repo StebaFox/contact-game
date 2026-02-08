@@ -242,6 +242,10 @@ const SKY_PAD = 30; // padding from canvas edges
 // Pre-rendered sky chart background canvas
 let skyChartBgCanvas = null;
 
+// Cached label bounding boxes for click detection (populated during render)
+let cachedSkyLabelBounds = []; // { starId, x1, y1, x2, y2 } in world coords
+let cachedArrayLabelBounds = []; // { starId, x1, y1, x2, y2 } in screen coords
+
 // Convert RA/Dec coordinate to canvas x,y (equirectangular projection)
 function projectRADec(coord, canvasWidth, canvasHeight) {
     const raHours = coord.ra.h + coord.ra.m / 60 + (coord.ra.s || 0) / 3600;
@@ -290,6 +294,97 @@ function drawAxisLabels(ctx, width, height) {
         ctx.fillText((d >= 0 ? '+' : '') + d + '\u00B0', SKY_PAD - 5, y + 3);
     }
     ctx.restore();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Label collision avoidance
+// Pre-computes label side (left/right) for all visible stars so names don't overlap
+// ─────────────────────────────────────────────────────────────────────────────
+
+function resolveLabels(stars, ctx, canvasWidth, canvasHeight, scale = 1) {
+    // Returns Map<starId, { side: 'left'|'right', dy: number }> for label placement
+    const pad = 5 / scale;
+    const margin = 3 / scale; // extra gap between labels to prevent visual touching
+    const fontSize = 12 / scale;
+    ctx.font = `${fontSize}px VT323`;
+
+    // Pre-populate obstacles with star dot positions so labels avoid other stars
+    const placed = []; // { x1, y1, x2, y2 }
+    stars.forEach(s => {
+        const r = s.radius || 4 / scale;
+        placed.push({ x1: s.x - r, y1: s.y - r, x2: s.x + r, y2: s.y + r });
+    });
+
+    // Build candidate data for each star
+    const candidates = stars.map(s => {
+        const w = ctx.measureText(s.name).width;
+        const h = fontSize;
+        const r = s.radius || 4 / scale;
+        // Right-side bounding box (textAlign left)
+        const rx1 = s.x + r + pad;
+        const ry1 = s.y + 3 / scale - h;
+        // Left-side bounding box (textAlign right)
+        const lx1 = s.x - r - pad - w;
+        const ly1 = ry1;
+        // Fits within canvas?
+        const rightFits = rx1 + w <= canvasWidth - pad;
+        const leftFits = lx1 >= pad;
+        return { id: s.id, w, h, rx1, ry1, lx1, ly1, rightFits, leftFits, priority: s.priority || 0 };
+    });
+
+    // Sort by priority (current day first) then left-to-right so important stars place first
+    candidates.sort((a, b) => b.priority - a.priority || a.rx1 - b.rx1);
+
+    const result = new Map();
+
+    function overlaps(x1, y1, w, h) {
+        const x2 = x1 + w;
+        const y2 = y1 + h;
+        for (const box of placed) {
+            if (x1 - margin < box.x2 && x2 + margin > box.x1 &&
+                y1 - margin < box.y2 && y2 + margin > box.y1) return true;
+        }
+        return false;
+    }
+
+    for (const c of candidates) {
+        const rightOverlap = !c.rightFits || overlaps(c.rx1, c.ry1, c.w, c.h);
+        const leftOverlap = !c.leftFits || overlaps(c.lx1, c.ly1, c.w, c.h);
+
+        let side, dy = 0;
+        if (!rightOverlap) {
+            side = 'left'; // textAlign left = label goes to right of star
+            placed.push({ x1: c.rx1, y1: c.ry1, x2: c.rx1 + c.w, y2: c.ry1 + c.h });
+        } else if (!leftOverlap) {
+            side = 'right'; // textAlign right = label goes to left of star
+            placed.push({ x1: c.lx1, y1: c.ly1, x2: c.lx1 + c.w, y2: c.ly1 + c.h });
+        } else {
+            // Both sides overlap — try vertical offsets (below then above)
+            const shifts = [c.h + margin * 2, -(c.h + margin * 2)];
+            let found = false;
+            for (const shift of shifts) {
+                if (c.rightFits && !overlaps(c.rx1, c.ry1 + shift, c.w, c.h)) {
+                    side = 'left'; dy = shift;
+                    placed.push({ x1: c.rx1, y1: c.ry1 + shift, x2: c.rx1 + c.w, y2: c.ry1 + shift + c.h });
+                    found = true; break;
+                }
+                if (c.leftFits && !overlaps(c.lx1, c.ly1 + shift, c.w, c.h)) {
+                    side = 'right'; dy = shift;
+                    placed.push({ x1: c.lx1, y1: c.ly1 + shift, x2: c.lx1 + c.w, y2: c.ly1 + shift + c.h });
+                    found = true; break;
+                }
+            }
+            if (!found) {
+                // Last resort — place to right, accept overlap
+                side = c.rightFits ? 'left' : 'right';
+                const bx = side === 'left' ? c.rx1 : c.lx1;
+                placed.push({ x1: bx, y1: c.ry1, x2: bx + c.w, y2: c.ry1 + c.h });
+            }
+        }
+        result.set(c.id, { side, dy });
+    }
+
+    return result;
 }
 
 // Generate sky chart background with real galactic plane
@@ -797,7 +892,7 @@ export function selectStar(starId) {
     const needsDecryption = star.id === 8 && !gameState.decryptionComplete && gameState.currentDay >= 2;
 
     // Determine if this star is "complete" (can't be scanned again)
-    const isComplete = needsDecryption || hasContact || (scanResult && (scanResult.type === 'false_positive' || scanResult.type === 'natural' || scanResult.type === 'verified_signal'));
+    const isComplete = needsDecryption || hasContact || (scanResult && (scanResult.type === 'false_positive' || scanResult.type === 'natural' || scanResult.type === 'verified_signal' || scanResult.type === 'encrypted_signal'));
 
     // Only show scan confirmation if not complete
     gameState.showScanConfirm = !isComplete;
@@ -809,7 +904,6 @@ export function selectStar(starId) {
             <div style="color: #ff0; text-shadow: 0 0 5px #ff0; font-size: 14px;">⚠ ENCRYPTED SIGNAL</div>
             <div style="color: #0ff; font-size: 12px; margin-top: 8px;">EXTRASOLAR ORIGIN - ENCODED</div>
             <div style="color: #0f0; font-size: 12px; margin-top: 8px; text-shadow: 0 0 5px #0f0;">QUANTUM DECRYPTION: AVAILABLE</div>
-            <button id="direct-decrypt-btn" class="btn" style="margin-top: 8px; background: rgba(0, 255, 0, 0.1); border: 1px solid #0f0; color: #0f0; padding: 8px 18px; font-family: 'VT323', monospace; font-size: 18px; cursor: pointer; display: inline-block; width: auto; text-shadow: 0 0 5px #0f0; animation: pulse 2s infinite;">BEGIN DECRYPTION</button>
         </div>`;
     } else if (hasContact) {
         statusBadge = '<div style="color: #f0f; text-shadow: 0 0 5px #f0f; margin-top: 12px; padding-top: 12px; border-top: 2px solid #0f0; font-size: 14px;">★ CONTACT ESTABLISHED</div>';
@@ -845,7 +939,7 @@ export function selectStar(starId) {
                 statusBadge = `<div style="margin-top: 12px; padding-top: 12px; border-top: 2px solid #ff0; animation: warningPulse 1.5s ease-in-out infinite;">
                     <div style="color: #ff0; text-shadow: 0 0 5px #ff0; font-size: 14px;">⚠ ENCRYPTED SIGNAL</div>
                     <div style="color: #0ff; font-size: 12px; margin-top: 8px;">EXTRASOLAR ORIGIN - ENCODED</div>
-                    <div style="color: #f00; font-size: 12px; margin-top: 8px;">DECRYPTION: REQUIRES LEVEL 5</div>
+                    <div style="color: #f00; font-size: 12px; margin-top: 8px;">DECRYPTION: REQUIRES SIGMA CLEARANCE</div>
                 </div>`;
             }
         }
@@ -896,18 +990,6 @@ export function selectStar(starId) {
         ${statusBadge}
     `;
 
-    // Attach direct decryption button handler for Ross 128
-    if (needsDecryption) {
-        const decryptBtn = document.getElementById('direct-decrypt-btn');
-        if (decryptBtn && startDirectDecryptionFn) {
-            decryptBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                playClick();
-                startDirectDecryptionFn();
-            });
-        }
-    }
-
     // Draw star visualization
     drawStarVisualization(star);
 
@@ -939,7 +1021,25 @@ export function selectStar(starId) {
         if (updateTelemetryFn) updateTelemetryFn(star);
         // Show ready status for non-complete stars, default for complete
         const statusEl = document.getElementById('starmap-array-status');
-        if (statusEl) {
+        const starmapScanBtn = document.getElementById('starmap-array-scan-btn');
+        if (needsDecryption) {
+            // Ross 128 Day 2+: show decryption prompt in array panel
+            if (statusEl) {
+                statusEl.innerHTML = '<span style="color: #ff0; animation: warningPulse 1.5s ease-in-out infinite;">⚠ ENCRYPTED SIGNAL DETECTED</span>';
+            }
+            if (starmapScanBtn) {
+                starmapScanBtn.textContent = 'BEGIN DECRYPTION';
+                starmapScanBtn.style.display = 'block';
+                starmapScanBtn.style.borderColor = '#0f0';
+                starmapScanBtn.style.color = '#0f0';
+                starmapScanBtn.style.animation = 'pulse 2s infinite';
+                // Replace click handler for decryption
+                starmapScanBtn.onclick = () => {
+                    playClick();
+                    if (startDirectDecryptionFn) startDirectDecryptionFn();
+                };
+            }
+        } else if (statusEl) {
             if (!isComplete) {
                 statusEl.textContent = 'ARRAY READY';
                 statusEl.className = 'starmap-array-status';
@@ -949,11 +1049,15 @@ export function selectStar(starId) {
                 statusEl.className = 'starmap-array-status';
                 statusEl.style.color = '#ff0';
             }
-        }
-        // Show BEGIN ANALYSIS button for non-complete stars
-        const starmapScanBtn = document.getElementById('starmap-array-scan-btn');
-        if (starmapScanBtn) {
-            starmapScanBtn.style.display = !isComplete ? 'block' : 'none';
+            // Show BEGIN ANALYSIS button for non-complete stars
+            if (starmapScanBtn) {
+                starmapScanBtn.textContent = 'BEGIN ANALYSIS';
+                starmapScanBtn.style.display = !isComplete ? 'block' : 'none';
+                starmapScanBtn.style.borderColor = '';
+                starmapScanBtn.style.color = '';
+                starmapScanBtn.style.animation = '';
+                starmapScanBtn.onclick = null; // Reset to default handler
+            }
         }
         // Reset dish visuals to all aligned for normal signals
         gameState.dishArray.dishes.forEach(d => {
@@ -1164,6 +1268,27 @@ function renderSkyChart() {
         ctx.stroke();
     }
 
+    // Pre-compute label placements to avoid overlaps
+    cachedSkyLabelBounds = []; // Reset for this frame
+    const skyLabelStars = [];
+    gameState.stars.forEach(star => {
+        const starDay = getStarDayRequirement(star.id);
+        const isPreviousDay = starDay < gameState.currentDay && !gameState.demoMode && gameState.currentDay > 0;
+        const isFutureDay = starDay > gameState.currentDay && !gameState.demoMode && gameState.currentDay > 0;
+        if (isFutureDay) return;
+        const isSelected = gameState.selectedStarId === star.id;
+        if (isSelected) return; // selected stars show scan box, not label
+        const isHighlighted = !isPreviousDay || (star.id === 8 && isPreviousDay && !gameState.decryptionComplete &&
+            gameState.scanResults.get(star.id)?.type === 'encrypted_signal');
+        skyLabelStars.push({
+            id: star.id, name: star.name,
+            x: star.skyX, y: star.skyY,
+            radius: (isHighlighted ? 4 : 4) / sc.scale,
+            priority: isPreviousDay ? 0 : 1
+        });
+    });
+    const skyLabelSides = resolveLabels(skyLabelStars, ctx, width, height, sc.scale);
+
     // Draw catalog stars at RA/Dec positions
     gameState.stars.forEach(star => {
         const isSelected = gameState.selectedStarId === star.id;
@@ -1190,7 +1315,7 @@ function renderSkyChart() {
             starColor = '#ff0';
             labelColor = '#ff0';
         } else if (isPreviousDay) {
-            ctx.globalAlpha = 0.4;
+            ctx.globalAlpha = 0.15;
             starColor = spectralColor;
             labelColor = spectralColor;
         } else if (isContacted) {
@@ -1213,14 +1338,23 @@ function renderSkyChart() {
         if (!isSelected) {
             ctx.shadowBlur = 3 / sc.scale;
             ctx.fillStyle = labelColor;
-            ctx.font = `${12 / sc.scale}px VT323`;
-            const labelWidth = ctx.measureText(star.name).width;
-            if (sx + radius + 5 / sc.scale + labelWidth > width - 5 / sc.scale) {
+            const labelFontSize = 12 / sc.scale;
+            ctx.font = `${labelFontSize}px VT323`;
+            const pad = 5 / sc.scale;
+            const labelInfo = skyLabelSides.get(star.id) || { side: 'left', dy: 0 };
+            const labelY = sy + 3 / sc.scale + labelInfo.dy;
+            const textW = ctx.measureText(star.name).width;
+            let labelDrawX;
+            if (labelInfo.side === 'right') {
                 ctx.textAlign = 'right';
-                ctx.fillText(star.name, sx - radius - 5 / sc.scale, sy + 3 / sc.scale);
+                labelDrawX = sx - radius - pad;
+                ctx.fillText(star.name, labelDrawX, labelY);
+                cachedSkyLabelBounds.push({ starId: star.id, x1: labelDrawX - textW, y1: labelY - labelFontSize, x2: labelDrawX, y2: labelY });
             } else {
                 ctx.textAlign = 'left';
-                ctx.fillText(star.name, sx + radius + 5 / sc.scale, sy + 3 / sc.scale);
+                labelDrawX = sx + radius + pad;
+                ctx.fillText(star.name, labelDrawX, labelY);
+                cachedSkyLabelBounds.push({ starId: star.id, x1: labelDrawX, y1: labelY - labelFontSize, x2: labelDrawX + textW, y2: labelY });
             }
         }
 
@@ -1408,28 +1542,54 @@ function renderSkyChart() {
             ctx.shadowBlur = 0;
             ctx.textAlign = 'left';
         } else {
-            const hasContact = gameState.contactedStars.has(gameState.selectedStarId);
-            const scanResult = gameState.scanResults.get(gameState.selectedStarId);
-            if (hasContact || scanResult) {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+            // Check if this star needs decryption (Ross 128 Day 2+)
+            const starNeedsDecrypt = !star.isDynamic && star.id === 8 && !gameState.decryptionComplete && gameState.currentDay >= 2;
+            if (starNeedsDecrypt) {
+                // Decrypt prompt box (like SCAN? but for decryption)
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
                 ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-                const borderColor = hasContact ? '#f0f' : (scanResult && scanResult.type === 'false_positive' ? '#f00' : '#ff0');
-                ctx.strokeStyle = borderColor;
-                ctx.lineWidth = 1 / sc.scale;
-                ctx.shadowColor = borderColor;
-                ctx.shadowBlur = 5 / sc.scale;
+                ctx.strokeStyle = '#0f0';
+                ctx.lineWidth = 2 / sc.scale;
+                ctx.shadowColor = '#0f0';
+                ctx.shadowBlur = 10 / sc.scale;
                 ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
-                ctx.fillStyle = borderColor;
+                ctx.fillStyle = '#ff0';
                 ctx.font = `${14 / sc.scale}px VT323`;
                 ctx.textAlign = 'center';
+                ctx.shadowBlur = 5 / sc.scale;
                 ctx.fillText(star.name, boxX + boxWidth / 2, boxY + 20 / sc.scale);
-                ctx.globalAlpha = 0.6;
-                ctx.font = `${16 / sc.scale}px VT323`;
-                const label = hasContact ? '★ CONTACT' : (scanResult && scanResult.type === 'false_positive' ? '⚠ FALSE POSITIVE' : '✓ COMPLETE');
-                ctx.fillText(label, boxX + boxWidth / 2, boxY + 40 / sc.scale);
+                const flashAlpha = (Math.sin(Date.now() * 0.003) + 1) / 2 * 0.6 + 0.4;
+                ctx.font = `${18 / sc.scale}px VT323`;
+                ctx.fillStyle = '#0f0';
+                ctx.globalAlpha = flashAlpha;
+                ctx.fillText('DECRYPT?', boxX + boxWidth / 2, boxY + 40 / sc.scale);
                 ctx.globalAlpha = 1;
                 ctx.shadowBlur = 0;
                 ctx.textAlign = 'left';
+            } else {
+                const hasContact = gameState.contactedStars.has(gameState.selectedStarId);
+                const scanResult = gameState.scanResults.get(gameState.selectedStarId);
+                if (hasContact || scanResult) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+                    ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+                    const borderColor = hasContact ? '#f0f' : (scanResult && scanResult.type === 'false_positive' ? '#f00' : '#ff0');
+                    ctx.strokeStyle = borderColor;
+                    ctx.lineWidth = 1 / sc.scale;
+                    ctx.shadowColor = borderColor;
+                    ctx.shadowBlur = 5 / sc.scale;
+                    ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+                    ctx.fillStyle = borderColor;
+                    ctx.font = `${14 / sc.scale}px VT323`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(star.name, boxX + boxWidth / 2, boxY + 20 / sc.scale);
+                    ctx.globalAlpha = 0.6;
+                    ctx.font = `${16 / sc.scale}px VT323`;
+                    const label = hasContact ? '★ CONTACT' : (scanResult && scanResult.type === 'false_positive' ? '⚠ FALSE POSITIVE' : '✓ COMPLETE');
+                    ctx.fillText(label, boxX + boxWidth / 2, boxY + 40 / sc.scale);
+                    ctx.globalAlpha = 1;
+                    ctx.shadowBlur = 0;
+                    ctx.textAlign = 'left';
+                }
             }
         }
     }
@@ -1512,6 +1672,26 @@ function renderArrayView() {
         ctx.stroke();
     }
 
+    // Pre-compute label placements to avoid overlaps in array view
+    cachedArrayLabelBounds = []; // Reset for this frame
+    const arrayLabelStars = [];
+    gameState.stars.forEach(star => {
+        const starDay = getStarDayRequirement(star.id);
+        const isPreviousDay = starDay < gameState.currentDay && !gameState.demoMode && gameState.currentDay > 0;
+        const isFutureDay = starDay > gameState.currentDay && !gameState.demoMode && gameState.currentDay > 0;
+        if (isFutureDay) return;
+        const isSelected = gameState.selectedStarId === star.id;
+        if (isSelected) return;
+        const pX = star.x + gameState.parallaxOffsetX * 0.3;
+        const pY = star.y + gameState.parallaxOffsetY * 0.3;
+        arrayLabelStars.push({
+            id: star.id, name: star.name,
+            x: pX, y: pY, radius: 4,
+            priority: isPreviousDay ? 0 : 1
+        });
+    });
+    const arrayLabelSides = resolveLabels(arrayLabelStars, ctx, width, height);
+
     // Draw catalog stars with subtle parallax
     gameState.stars.forEach(star => {
         const isSelected = gameState.selectedStarId === star.id;
@@ -1546,7 +1726,7 @@ function renderArrayView() {
             starColor = '#ff0';
             labelColor = '#ff0';
         } else if (isPreviousDay) {
-            ctx.globalAlpha = 0.4;
+            ctx.globalAlpha = 0.15;
             starColor = spectralColor;
             labelColor = spectralColor;
         } else if (isContacted) {
@@ -1574,13 +1754,20 @@ function renderArrayView() {
             ctx.shadowBlur = 3;
             ctx.fillStyle = labelColor;
             ctx.font = '12px VT323';
-            const labelWidth = ctx.measureText(star.name).width;
-            if (parallaxX + radius + 5 + labelWidth > width - 5) {
+            const labelInfo = arrayLabelSides.get(star.id) || { side: 'left', dy: 0 };
+            const labelY = parallaxY + 3 + labelInfo.dy;
+            const textW = ctx.measureText(star.name).width;
+            let labelDrawX;
+            if (labelInfo.side === 'right') {
                 ctx.textAlign = 'right';
-                ctx.fillText(star.name, parallaxX - radius - 5, parallaxY + 3);
+                labelDrawX = parallaxX - radius - 5;
+                ctx.fillText(star.name, labelDrawX, labelY);
+                cachedArrayLabelBounds.push({ starId: star.id, x1: labelDrawX - textW, y1: labelY - 12, x2: labelDrawX, y2: labelY });
             } else {
                 ctx.textAlign = 'left';
-                ctx.fillText(star.name, parallaxX + radius + 5, parallaxY + 3);
+                labelDrawX = parallaxX + radius + 5;
+                ctx.fillText(star.name, labelDrawX, labelY);
+                cachedArrayLabelBounds.push({ starId: star.id, x1: labelDrawX, y1: labelY - 12, x2: labelDrawX + textW, y2: labelY });
             }
         }
 
@@ -1823,34 +2010,60 @@ function renderArrayView() {
             ctx.shadowBlur = 0;
             ctx.textAlign = 'left';
         } else {
-            // Show completion indicator for already-scanned stars
-            const hasContact = gameState.contactedStars.has(gameState.selectedStarId);
-            const scanResult = gameState.scanResults.get(gameState.selectedStarId);
-
-            if (hasContact || scanResult) {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+            // Check if this star needs decryption (Ross 128 Day 2+)
+            const starNeedsDecrypt = !star.isDynamic && star.id === 8 && !gameState.decryptionComplete && gameState.currentDay >= 2;
+            if (starNeedsDecrypt) {
+                // Decrypt prompt box
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
                 ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-
-                const borderColor = hasContact ? '#f0f' : (scanResult && scanResult.type === 'false_positive' ? '#f00' : '#ff0');
-                ctx.strokeStyle = borderColor;
-                ctx.lineWidth = 1;
-                ctx.shadowColor = borderColor;
-                ctx.shadowBlur = 5;
+                ctx.strokeStyle = '#0f0';
+                ctx.lineWidth = 2;
+                ctx.shadowColor = '#0f0';
+                ctx.shadowBlur = 10;
                 ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
-
-                ctx.fillStyle = borderColor;
+                ctx.fillStyle = '#ff0';
                 ctx.font = '14px VT323';
                 ctx.textAlign = 'center';
+                ctx.shadowBlur = 5;
                 ctx.fillText(star.name, boxX + boxWidth / 2, boxY + 20);
-
-                ctx.globalAlpha = 0.6;
-                ctx.font = '16px VT323';
-                const label = hasContact ? '★ CONTACT' : (scanResult && scanResult.type === 'false_positive' ? '⚠ FALSE POSITIVE' : '✓ COMPLETE');
-                ctx.fillText(label, boxX + boxWidth / 2, boxY + 40);
+                const flashAlpha = (Math.sin(Date.now() * 0.003) + 1) / 2 * 0.6 + 0.4;
+                ctx.font = '18px VT323';
+                ctx.fillStyle = '#0f0';
+                ctx.globalAlpha = flashAlpha;
+                ctx.fillText('DECRYPT?', boxX + boxWidth / 2, boxY + 40);
                 ctx.globalAlpha = 1;
-
                 ctx.shadowBlur = 0;
                 ctx.textAlign = 'left';
+            } else {
+                // Show completion indicator for already-scanned stars
+                const hasContact = gameState.contactedStars.has(gameState.selectedStarId);
+                const scanResult = gameState.scanResults.get(gameState.selectedStarId);
+
+                if (hasContact || scanResult) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+                    ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+                    const borderColor = hasContact ? '#f0f' : (scanResult && scanResult.type === 'false_positive' ? '#f00' : '#ff0');
+                    ctx.strokeStyle = borderColor;
+                    ctx.lineWidth = 1;
+                    ctx.shadowColor = borderColor;
+                    ctx.shadowBlur = 5;
+                    ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+
+                    ctx.fillStyle = borderColor;
+                    ctx.font = '14px VT323';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(star.name, boxX + boxWidth / 2, boxY + 20);
+
+                    ctx.globalAlpha = 0.6;
+                    ctx.font = '16px VT323';
+                    const label = hasContact ? '★ CONTACT' : (scanResult && scanResult.type === 'false_positive' ? '⚠ FALSE POSITIVE' : '✓ COMPLETE');
+                    ctx.fillText(label, boxX + boxWidth / 2, boxY + 40);
+                    ctx.globalAlpha = 1;
+
+                    ctx.shadowBlur = 0;
+                    ctx.textAlign = 'left';
+                }
             }
         }
     }
@@ -1890,6 +2103,35 @@ export function setupStarMapCanvas() {
                 sc.panX = sc.lastPanX + (e.clientX - sc.dragStartX) * scaleX;
                 sc.panY = sc.lastPanY + (e.clientY - sc.dragStartY) * scaleY;
                 clampPan(canvas.width, canvas.height);
+            } else {
+                // Cursor feedback: pointer when over a star or label
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const mx = (e.clientX - rect.left) * scaleX;
+                const my = (e.clientY - rect.top) * scaleY;
+                const wx = (mx - sc.panX) / sc.scale;
+                const wy = (my - sc.panY) / sc.scale;
+                const hitR = 15 / sc.scale;
+                let hovering = false;
+                // Check star dots
+                for (const star of gameState.stars) {
+                    if (Math.hypot(star.skyX - wx, star.skyY - wy) < hitR) { hovering = true; break; }
+                }
+                // Check dynamic stars
+                if (!hovering && gameState.dynamicStars) {
+                    for (const ds of gameState.dynamicStars) {
+                        const pos = getDynamicStarSkyPos(ds, canvas.width, canvas.height);
+                        if (Math.hypot(pos.x - wx, pos.y - wy) < hitR) { hovering = true; break; }
+                    }
+                }
+                // Check labels
+                if (!hovering) {
+                    for (const lb of cachedSkyLabelBounds) {
+                        if (wx >= lb.x1 && wx <= lb.x2 && wy >= lb.y1 && wy <= lb.y2) { hovering = true; break; }
+                    }
+                }
+                canvas.style.cursor = hovering ? 'pointer' : 'default';
             }
             return;
         }
@@ -1917,6 +2159,29 @@ export function setupStarMapCanvas() {
         // Store current position for next frame
         lastMouseX = x;
         lastMouseY = y;
+
+        // Cursor feedback: pointer when over a star or label
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mx = x * scaleX;
+        const my = y * scaleY;
+        const pOffX = gameState.parallaxOffsetX * 0.3;
+        const pOffY = gameState.parallaxOffsetY * 0.3;
+        let hovering = false;
+        for (const star of gameState.stars) {
+            if (Math.hypot(star.x + pOffX - mx, star.y + pOffY - my) < 10) { hovering = true; break; }
+        }
+        if (!hovering && gameState.dynamicStars) {
+            for (const ds of gameState.dynamicStars) {
+                if (Math.hypot(ds.x * canvas.width + pOffX - mx, ds.y * canvas.height + pOffY - my) < 15) { hovering = true; break; }
+            }
+        }
+        if (!hovering) {
+            for (const lb of cachedArrayLabelBounds) {
+                if (mx >= lb.x1 && mx <= lb.x2 && my >= lb.y1 && my <= lb.y2) { hovering = true; break; }
+            }
+        }
+        canvas.style.cursor = hovering ? 'pointer' : 'default';
     });
 
     // Start reset timer when mouse leaves (5 second delay)
@@ -1954,8 +2219,8 @@ export function setupStarMapCanvas() {
             const wy = (y - sc.panY) / sc.scale;
             const hitRadius = 15 / sc.scale;
 
-            // Check scan box click (box is in world coords)
-            if (gameState.showScanConfirm && gameState.selectedStarId !== null) {
+            // Check scan/decrypt box click (box is in world coords)
+            if (gameState.selectedStarId !== null) {
                 const star = getSelectedStar();
                 if (star) {
                     let sx, sy;
@@ -1973,8 +2238,16 @@ export function setupStarMapCanvas() {
                     if (boxX < 10 / sc.scale) boxX = 10 / sc.scale;
 
                     if (wx >= boxX && wx <= boxX + boxWidth && wy >= boxY && wy <= boxY + boxHeight) {
-                        startScanSequence();
-                        return;
+                        // Check if this is a decrypt box or scan box
+                        const isDecryptBox = !star.isDynamic && star.id === 8 && !gameState.decryptionComplete && gameState.currentDay >= 2;
+                        if (isDecryptBox && startDirectDecryptionFn) {
+                            playClick();
+                            startDirectDecryptionFn();
+                            return;
+                        } else if (gameState.showScanConfirm) {
+                            startScanSequence();
+                            return;
+                        }
                     }
                 }
             }
@@ -1994,16 +2267,31 @@ export function setupStarMapCanvas() {
             }
 
             if (!clickedDynamic) {
-                // Check catalog stars at sky positions
+                // Check catalog stars at sky positions — find closest match
+                let closestDist = hitRadius;
+                let closestStar = null;
                 gameState.stars.forEach(star => {
                     const dx = star.skyX - wx;
                     const dy = star.skyY - wy;
                     const distance = Math.sqrt(dx * dx + dy * dy);
-                    if (distance < hitRadius) {
-                        gameState.selectedStarId = star.id;
-                        selectStar(star.id);
+                    if (distance < closestDist) {
+                        closestDist = distance;
+                        closestStar = star;
                     }
                 });
+                if (closestStar) {
+                    gameState.selectedStarId = closestStar.id;
+                    selectStar(closestStar.id);
+                } else {
+                    // Check if click is on a label (world coords)
+                    for (const lb of cachedSkyLabelBounds) {
+                        if (wx >= lb.x1 && wx <= lb.x2 && wy >= lb.y1 && wy <= lb.y2) {
+                            gameState.selectedStarId = lb.starId;
+                            selectStar(lb.starId);
+                            break;
+                        }
+                    }
+                }
             }
             return;
         }
@@ -2013,18 +2301,25 @@ export function setupStarMapCanvas() {
         const pOffX = gameState.parallaxOffsetX * 0.3;
         const pOffY = gameState.parallaxOffsetY * 0.3;
 
-        // Check if clicking on scan confirmation box
-        if (gameState.showScanConfirm && gameState.selectedStarId !== null) {
+        // Check if clicking on scan/decrypt confirmation box
+        if (gameState.selectedStarId !== null) {
             const star = getSelectedStar();
-            if (!star) return;
-            const pos = getStarPixelXY(star, canvas.width, canvas.height);
-            const positionedStar = star.isDynamic ? { ...star, x: pos.x, y: pos.y } : star;
-            const { boxX, boxY, boxWidth, boxHeight } = calculateScanBoxPosition(positionedStar, canvas.width);
+            if (star) {
+                const pos = getStarPixelXY(star, canvas.width, canvas.height);
+                const positionedStar = star.isDynamic ? { ...star, x: pos.x, y: pos.y } : star;
+                const { boxX, boxY, boxWidth, boxHeight } = calculateScanBoxPosition(positionedStar, canvas.width);
 
-            if (x >= boxX && x <= boxX + boxWidth && y >= boxY && y <= boxY + boxHeight) {
-                // Clicked on scan box
-                startScanSequence();
-                return;
+                if (x >= boxX && x <= boxX + boxWidth && y >= boxY && y <= boxY + boxHeight) {
+                    const isDecryptBox = !star.isDynamic && star.id === 8 && !gameState.decryptionComplete && gameState.currentDay >= 2;
+                    if (isDecryptBox && startDirectDecryptionFn) {
+                        playClick();
+                        startDirectDecryptionFn();
+                        return;
+                    } else if (gameState.showScanConfirm) {
+                        startScanSequence();
+                        return;
+                    }
+                }
             }
         }
 
@@ -2044,7 +2339,9 @@ export function setupStarMapCanvas() {
         }
 
         if (!clickedDynamic) {
-            // Find clicked catalog star
+            // Find clicked catalog star — closest match
+            let closestDist = 10;
+            let closestStar = null;
             gameState.stars.forEach(star => {
                 const sx = star.x + pOffX;
                 const sy = star.y + pOffY;
@@ -2052,11 +2349,24 @@ export function setupStarMapCanvas() {
                 const dy = sy - y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
-                if (distance < 10) {
-                    gameState.selectedStarId = star.id;
-                    selectStar(star.id);
+                if (distance < closestDist) {
+                    closestDist = distance;
+                    closestStar = star;
                 }
             });
+            if (closestStar) {
+                gameState.selectedStarId = closestStar.id;
+                selectStar(closestStar.id);
+            } else {
+                // Check if click is on a label (screen coords)
+                for (const lb of cachedArrayLabelBounds) {
+                    if (x >= lb.x1 && x <= lb.x2 && y >= lb.y1 && y <= lb.y2) {
+                        gameState.selectedStarId = lb.starId;
+                        selectStar(lb.starId);
+                        break;
+                    }
+                }
+            }
         }
     });
 

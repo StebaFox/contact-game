@@ -56,7 +56,7 @@ const FRAGMENT_PATTERNS = {
         glyph: '▓▒░',
         color: '#0ff',
         encrypted: '7F4A 2C91',
-        message: 'WE ARE',
+        message: 'BEFORE YOU',
         // Extra alien decorations
         alienChars: ['Ψ', 'Ω', '∆', '⊕'],
         borderPattern: '░▒▓▒',
@@ -67,7 +67,7 @@ const FRAGMENT_PATTERNS = {
         glyph: '░▒▓',
         color: '#0f0',
         encrypted: 'B3D8 E6F0',
-        message: 'NOT ALONE',
+        message: 'WE WAITED',
         alienChars: ['Σ', '∞', '⬡', '⊗'],
         borderPattern: '▓▒░▒',
         pulseColor: '#00ff00'

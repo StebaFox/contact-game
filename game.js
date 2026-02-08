@@ -963,11 +963,11 @@ function generateOperatorNotes(contactCount, totalStars) {
 
 ${totalStars} targets surveyed. ${contactCount} confirmed contact${contactCount > 1 ? 's' : ''}.
 
-We're not alone. We were never alone.
+Something was here before us. Something that wanted to be found.
 
 I keep replaying the signal analysis in my head. The patterns, the
 structure... there's no mistaking it. This is intelligence. This is
-communication. Someone out there is trying to reach us.
+communication. But it feels old. Older than it should be.
 
 The implications are... I can't even begin to process them. Everything
 changes now. Everything.

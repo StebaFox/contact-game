@@ -148,6 +148,12 @@ export function startRoss128DirectDecryption() {
     const star = gameState.currentStar;
     if (!star || star.id !== ROSS_128_INDEX) return;
 
+    // Prevent re-decryption if already completed
+    if (gameState.decryptionComplete) {
+        log('Ross 128 signal already decrypted.', 'info');
+        return;
+    }
+
     // Set up analysis view target info
     document.getElementById('target-name').textContent = star.name;
     document.getElementById('target-coords').textContent = star.coordinates;
@@ -240,6 +246,9 @@ export function initiateSRC7024CrashScan() {
 }
 
 function startCrashSequence() {
+    // Stop signal animation audio before crash takes over
+    stopSignalAnimation();
+
     // ── Phase 0: Screen glitch lead-up (distort the analysis view before overlay) ──
     const analysisView = document.getElementById('analysis-view');
     const gameContainer = document.querySelector('.game-container') || document.body;
@@ -297,8 +306,6 @@ function startCrashSequence() {
 }
 
 function launchCrashOverlay() {
-    playStaticBurst();
-
     const overlay = document.createElement('div');
     overlay.id = 'crash-overlay';
     overlay.style.cssText = `
@@ -456,10 +463,6 @@ function launchCrashOverlay() {
             });
         }
     }
-
-    // Additional static bursts for buildup
-    setTimeout(() => playStaticBurst(), 1200);
-    setTimeout(() => playStaticBurst(), 2800);
 
     renderCrashFrame();
 }
@@ -1279,11 +1282,11 @@ function showEncryptedSignalResult(star, display) {
                 </span><br><br>
                 <span style="color: #f00;">
                     QUANTUM DECRYPTION SYSTEM: UNAVAILABLE<br>
-                    REQUIRES ELEVATED CLEARANCE (LEVEL 5+)
+                    REQUIRES SIGMA CLEARANCE
                 </span><br><br>
                 <span style="color: #0f0; font-size: 12px;">
                     Signal data archived for future analysis.<br>
-                    Request clearance elevation in daily report.
+                    Request Sigma clearance elevation in daily report.
                 </span>
             </div>
         `;
@@ -1298,11 +1301,23 @@ function showEncryptedSignalResult(star, display) {
             returnBtn.style.cssText = 'margin-top: 15px; background: rgba(0, 255, 0, 0.1); border: 2px solid #0f0; color: #0f0;';
             returnBtn.addEventListener('click', () => {
                 playClick();
+                stopAlienSignalSound();
+                switchToBackgroundMusic();
                 document.getElementById('contact-protocol-box').style.display = 'none';
                 document.getElementById('analyze-btn').disabled = false;
                 showView('starmap-view');
-                log(`Encrypted signal from ${star.name} archived - elevated clearance required`);
+                log(`Encrypted signal from ${star.name} archived - Sigma clearance required`);
                 checkAndShowDayComplete();
+
+                // Send follow-up email about the encrypted signal discovery
+                const name = gameState.playerName;
+                setTimeout(() => {
+                    addMailMessage(
+                        'Dr. Eleanor Chen - Radio Astronomy',
+                        `RE: ${star.name} — Encrypted Signal`,
+                        `${name},\n\nI just saw the alert come through — an encrypted signal from ${star.name}? That's not something you see every day. Or ever, frankly.\n\nThe encoding structure doesn't match anything in our terrestrial database. No known satellite, no military comm protocol, nothing. I ran it through three different pattern libraries and got zero hits.\n\nWhatever this is, it's not noise. Something put that structure there deliberately.\n\nThe bad news is we can't touch it without Sigma clearance — the quantum decryption system is locked behind that. I'd recommend flagging it in your daily report. If Oversight sees what I'm seeing, they'll have to approve the upgrade.\n\nThis could be the one, ${name}. Don't let it slip through the cracks.\n\n- Eleanor`
+                    );
+                }, 15000);
             });
             display.appendChild(returnBtn);
         }, 1500);
@@ -1358,6 +1373,16 @@ function showEncryptedSignalResult(star, display) {
                             gameState.scanResults.set(8, { type: 'verified_signal' });
                             autoSave();
                             updateStarCatalogDisplay();
+
+                            // Send post-decryption email about what was found
+                            const pName = gameState.playerName;
+                            setTimeout(() => {
+                                addMailMessage(
+                                    'Dr. Eleanor Chen - Radio Astronomy',
+                                    'RE: Ross 128 — Decryption Results',
+                                    `${pName},\n\nI've been staring at the decoded output for the last hour. I don't even know where to begin.\n\nThe signal isn't just a message. Embedded alongside it are fragments of what can only be described as scientific data — mathematical constants, molecular structures, quantum states. Some of it maps to known physics. Some of it... doesn't. Not yet.\n\nBut here's what's keeping me up: the encoding predates anything we thought possible. The timestamp markers in the signal structure suggest an origin point that shouldn't exist. I've triple-checked. The math doesn't lie.\n\nWhoever sent this was thinking in timescales we can barely comprehend.\n\nWe need to keep scanning. If Ross 128 had this, there may be more signals out there — more pieces of whatever puzzle this is. I have a feeling we've only scratched the surface.\n\nStay sharp out there.\n\n- Eleanor`
+                                );
+                            }, 20000);
 
                             // Launch alignment tutorial if not completed
                             if (!gameState.tutorialCompleted) {
