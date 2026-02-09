@@ -9,6 +9,9 @@
 
 import { gameState } from '../core/game-state.js';
 import { playClick, switchToGlassCathedral, restoreMusicAfterFinalMessage } from '../systems/audio.js';
+import { showView } from '../ui/rendering.js';
+import { addMailMessage } from '../systems/mailbox.js';
+import { addPersonalLog } from '../systems/journal.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Message Content - Edit this section to change the narrative
@@ -412,12 +415,12 @@ function computeProgressColors(progress) {
         inner = lerpColor(0, 255, 255, 255, 0, 255, t);
         connecting = lerpColor(255, 0, 255, 255, 215, 0, t);
     } else {
-        const t = (progress - 0.5) * 2;
-        outer = lerpColor(0, 255, 255, 255, 255, 255, t);
-        inner = lerpColor(255, 0, 255, 255, 255, 255, t);
-        connecting = lerpColor(255, 215, 0, 255, 255, 255, t);
+        // Hold at vibrant cyan/magenta/gold — don't wash out to white
+        outer = [0, 255, 255];
+        inner = [255, 0, 255];
+        connecting = [255, 215, 0];
     }
-    return { outer, inner, connecting, glowBlur: 15 + 25 * progress };
+    return { outer, inner, connecting, glowBlur: 15 + 25 * Math.min(progress, 0.5) };
 }
 
 function drawBackgroundCode(ctx, w, h) {
@@ -753,14 +756,8 @@ function typeSection(sectionIndex) {
     }
 
     if (section.id === 'remember-us' && messageState.downloadElement) {
-        messageState.downloadProgress = 100;
-        const fill = document.getElementById('fm-download-fill');
-        const pct = document.getElementById('fm-download-pct');
-        const cat = document.getElementById('fm-download-category');
-        if (fill) fill.style.width = '100%';
-        if (pct) pct.textContent = '100.0%';
-        if (cat) cat.textContent = 'TRANSFER COMPLETE';
-        removeEncyclopediaBar();
+        // Smoothly fill to 100% over ~3 seconds instead of jumping
+        messageState.downloadCompleting = true;
     }
 
     if (section.type === 'divider') {
@@ -888,16 +885,9 @@ function startBreathingMoment() {
     // Stop spawning warp particles (existing ones fly off naturally)
     messageState.warpActive = false;
 
-    // Complete the download bar then fade it out
+    // Complete the download bar then fade it out (safety net — should already be done)
     if (messageState.downloadElement) {
-        messageState.downloadProgress = 100;
-        const fill = document.getElementById('fm-download-fill');
-        const pct = document.getElementById('fm-download-pct');
-        const cat = document.getElementById('fm-download-category');
-        if (fill) fill.style.width = '100%';
-        if (pct) pct.textContent = '100.0%';
-        if (cat) cat.textContent = 'TRANSFER COMPLETE';
-        setTimeout(() => removeEncyclopediaBar(), 3000);
+        messageState.downloadCompleting = true;
     }
 
     const t = setTimeout(() => showContinueButton(), 12000);
@@ -1017,6 +1007,7 @@ function createEncyclopediaBar() {
 
     messageState.downloadElement = container;
     messageState.downloadProgress = 0;
+    messageState.downloadCompleting = false;
 
     const progressInterval = setInterval(() => {
         if (!messageState.downloadElement || messageState.skipped) {
@@ -1024,7 +1015,21 @@ function createEncyclopediaBar() {
             return;
         }
 
-        messageState.downloadProgress = Math.min(99.9, messageState.downloadProgress + 0.08);
+        if (messageState.downloadCompleting) {
+            // Smooth ramp to 100% (~3 seconds at 100ms intervals = 30 ticks)
+            const remaining = 100 - messageState.downloadProgress;
+            messageState.downloadProgress = Math.min(100, messageState.downloadProgress + Math.max(remaining * 0.1, 0.3));
+
+            if (messageState.downloadProgress >= 99.9) {
+                messageState.downloadProgress = 100;
+                const cat = document.getElementById('fm-download-category');
+                if (cat) cat.textContent = 'TRANSFER COMPLETE';
+                clearInterval(progressInterval);
+                setTimeout(() => removeEncyclopediaBar(), 2000);
+            }
+        } else {
+            messageState.downloadProgress = Math.min(99.9, messageState.downloadProgress + 0.08);
+        }
 
         const fill = document.getElementById('fm-download-fill');
         const pct = document.getElementById('fm-download-pct');
@@ -1033,7 +1038,7 @@ function createEncyclopediaBar() {
         if (fill) fill.style.width = messageState.downloadProgress + '%';
         if (pct) pct.textContent = messageState.downloadProgress.toFixed(1) + '%';
 
-        if (cat && Math.random() < 0.05) {
+        if (!messageState.downloadCompleting && cat && Math.random() < 0.05) {
             cat.textContent = DOWNLOAD_CATEGORIES[Math.floor(Math.random() * DOWNLOAD_CATEGORIES.length)];
         }
     }, 100);
@@ -1109,12 +1114,96 @@ function closeMessage() {
         messageState.canvas = null;
         messageState.ctx = null;
         messageState.textElement = null;
-        gameState.finalMessageActive = false;
 
-        if (messageState.onComplete) {
-            messageState.onComplete();
-        }
+        returnToStarmap();
     }, 2000);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Credits Screen (shown from main menu)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function showCreditsScreen() {
+    const credits = document.createElement('div');
+    credits.id = 'credits-overlay';
+    credits.style.cssText = `
+        position: fixed; inset: 0; z-index: 10000;
+        background: #000; display: flex; align-items: center; justify-content: center;
+        flex-direction: column; opacity: 0; transition: opacity 2s;
+        font-family: 'VT323', monospace; color: #8af;
+    `;
+
+    credits.innerHTML = `
+        <div style="text-align:center; max-width:500px; line-height:1.8;">
+            <div style="font-size:16px; color:#556; margin-bottom:40px; letter-spacing:4px;">A GAME BY</div>
+            <div style="font-size:32px; color:#0ff; text-shadow:0 0 20px rgba(0,255,255,0.4); margin-bottom:60px; letter-spacing:3px;">STEPHEN REPONEN</div>
+
+            <div style="font-size:16px; color:#556; margin-bottom:20px; letter-spacing:4px;">THANK YOU</div>
+            <div style="font-size:22px; color:#aad; margin-bottom:10px;">Henrik Wetterstrand</div>
+            <div style="font-size:22px; color:#aad; margin-bottom:60px;">Elina Adams</div>
+
+            <div id="credits-continue" style="
+                font-size:18px; color:#0ff; cursor:pointer; opacity:0;
+                transition: opacity 2s; letter-spacing:6px;
+                border: 1px solid rgba(0,255,255,0.3); padding: 12px 40px;
+            ">BACK</div>
+        </div>
+    `;
+
+    document.body.appendChild(credits);
+
+    // Fade in
+    requestAnimationFrame(() => {
+        credits.style.opacity = '1';
+    });
+
+    // Show back button after 3s
+    setTimeout(() => {
+        const continueBtn = document.getElementById('credits-continue');
+        if (continueBtn) {
+            continueBtn.style.opacity = '1';
+            continueBtn.addEventListener('click', () => {
+                playClick();
+                credits.style.opacity = '0';
+                setTimeout(() => {
+                    credits.remove();
+                }, 2000);
+            });
+        }
+    }, 3000);
+}
+
+function returnToStarmap() {
+    gameState.finalMessageActive = false;
+
+    if (messageState.onComplete) {
+        messageState.onComplete();
+    } else {
+        showView('starmap-view');
+    }
+
+    // Post-revelation email (delayed so it feels like a response)
+    setTimeout(() => {
+        addMailMessage(
+            'Dr. James Whitmore - SETI Director',
+            'What Comes Next',
+            `Dr. ${gameState.playerName},\n\nI've been staring at the data for hours. I don't think any of us have slept.\n\nThe full contents of the transmission are still being cataloged — mathematical frameworks, physical constants, compressed visual data, entire knowledge structures we don't even have classifications for yet. The Encyclopedia alone will take decades to fully decode.\n\nBut the message itself... I keep coming back to it. They were alone for ten billion years. They built an entire universe so that no one else would have to experience that silence.\n\nI've spent my entire career searching for proof that we're not alone. I never imagined the answer would be this.\n\nEverything changes now. Everything.\n\nI've already been on the phone with Geneva, Washington, and Beijing. The world will know soon. And when they ask who found it — who actually listened — I'll make sure they know your name.\n\nThank you, ${gameState.playerName}. For all of it.\n\n- James`
+        );
+    }, 8000);
+
+    // Post-revelation journal entry (immediate — the player would write this right away)
+    setTimeout(() => {
+        addPersonalLog('After the Message',
+            `It's over. Or maybe it's just beginning — I don't know anymore.\n\nThey were alone. For ten billion years, a civilization existed in a universe full of stars and worlds — but no other life. No other voices. Just them, surrounded by an empty cosmos, for longer than our universe has existed.\n\nAnd instead of accepting it, they built... this. Everything. The stars, the constants, the framework for life itself. They engineered a universe where loneliness would be impossible. Where every corner of the sky would be filled with the potential for someone to exist.\n\nI found their message buried in the oldest light in the universe. They put it there knowing that someday, someone would listen closely enough to hear it.\n\nI was that someone.\n\nI don't know what happens next. Whitmore is already talking to world governments. The data we received — the Encyclopedia — contains more knowledge than humanity has accumulated in its entire history. It will take generations to decode it all.\n\nBut right now, in this moment, I'm not thinking about the science or the politics or what comes next.\n\nI'm thinking about them. Alone in the dark. Choosing to create rather than despair.\n\nAnd I'm thinking about the last thing they said:\n\nRemember us. Not as creators. But as family.`
+        );
+    }, 3000);
+
+    // Trigger the Day 3 classification + final report after a moment
+    setTimeout(() => {
+        import('../systems/day-report.js').then(module => {
+            module.triggerPostFinalReport();
+        });
+    }, 5000);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

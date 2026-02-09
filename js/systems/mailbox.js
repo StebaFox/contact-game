@@ -208,7 +208,12 @@ export function sendRandomMail() {
         default: pool = DAY1_EMAILS; break;
     }
 
-    const randomEmail = pool[Math.floor(Math.random() * pool.length)];
+    // Filter out emails already in the mailbox (by subject)
+    const sentSubjects = new Set(gameState.mailboxMessages.map(m => m.subject));
+    const unsent = pool.filter(e => !sentSubjects.has(e.subject));
+    if (unsent.length === 0) return; // All emails from this pool already sent
+
+    const randomEmail = unsent[Math.floor(Math.random() * unsent.length)];
 
     // Replace {PLAYER_NAME} placeholder with actual player name
     const body = randomEmail.body.replace(/{PLAYER_NAME}/g, gameState.playerName);

@@ -22,6 +22,7 @@ import {
 } from '../core/save-system.js';
 import { getCurrentDayConfig, getDayBootMessages, DAY_CONFIG } from '../core/day-system.js';
 import { updateStarCatalogDisplay } from './starmap.js';
+import { showCreditsScreen } from '../narrative/final-message.js';
 
 // Show all nav bar buttons (called once when entering the game)
 function showNavButtons() {
@@ -242,6 +243,21 @@ function updateStartScreen() {
         dayCodeBtn.addEventListener('click', () => {
             playClick();
             showSecurityLogin();
+        });
+    }
+
+    // Add credits button
+    if (!document.getElementById('credits-btn')) {
+        const creditsBtn = document.createElement('button');
+        creditsBtn.id = 'credits-btn';
+        creditsBtn.className = 'btn';
+        creditsBtn.textContent = 'CREDITS';
+        creditsBtn.style.cssText = secondaryButtonStyle;
+        startBtnContainer.appendChild(creditsBtn);
+
+        creditsBtn.addEventListener('click', () => {
+            playClick();
+            showCreditsScreen();
         });
     }
 }

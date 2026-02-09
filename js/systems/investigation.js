@@ -472,13 +472,11 @@ function showTransmissionBridge(onComplete) {
 
     function typeLine() {
         if (lineIndex >= lines.length) {
-            // Fade out and launch final message
+            // Launch final message first (its overlay sits on top), then fade bridge underneath
+            onComplete();
             overlay.style.transition = 'opacity 2s';
             overlay.style.opacity = '0';
-            setTimeout(() => {
-                overlay.remove();
-                onComplete();
-            }, 2000);
+            setTimeout(() => overlay.remove(), 2000);
             return;
         }
 

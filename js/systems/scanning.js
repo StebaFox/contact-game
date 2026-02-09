@@ -1715,6 +1715,226 @@ function showDecodeContactButton(star, display) {
     playSecurityBeep('success');
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Fragment Decode Reveal — post-alignment data dump for each fragment
+// ─────────────────────────────────────────────────────────────────────────────
+
+const FRAGMENT_DECODE_SEQUENCES = {
+    src7024: {
+        header: 'FRAGMENT 1 — SRC-7024 ANALYSIS',
+        lines: [
+            { text: '[ALIGNMENT LOCKED — DECODING FRAGMENT DATA...]', color: '#0f0', delay: 800, style: 'font-size: 16px; text-shadow: 0 0 8px #0f0;' },
+            { text: '', delay: 300 },
+            { text: '0xA2 \u2588\u2588 7F 0xE1 \u2588\u2588 0xBC \u25883 0x4D \u2588\u2588 9A 0xF7 \u2588\u2588 0x3B...', color: '#0a0', delay: 100, style: 'opacity: 0.6; font-size: 11px;' },
+            { text: '\u2588\u2588 0xD3 0x\u2588\u2588 5E 0x8A \u2588\u2588 \u2588\u2588 0xC1 6B 0xF2 \u2588\u2588 0x7E...', color: '#0a0', delay: 100, style: 'opacity: 0.6; font-size: 11px;' },
+            { text: '', delay: 400 },
+            { text: 'SOURCE VERIFICATION:', color: '#0ff', delay: 500, style: 'font-size: 13px;' },
+            { text: '  Star catalog match:       NONE', color: '#ff0', delay: 400 },
+            { text: '  Pulsar database match:    NONE', color: '#ff0', delay: 400 },
+            { text: '  Known emitter match:      NONE', color: '#ff0', delay: 400 },
+            { text: '  Deep space network match: NONE', color: '#ff0', delay: 400 },
+            { text: '', delay: 300 },
+            { text: 'SIGNAL STRUCTURE:', color: '#0ff', delay: 400, style: 'font-size: 13px;' },
+            { text: '  Layer 1: Coordinate framework    DECODED', color: '#0f0', delay: 400 },
+            { text: '  Layer 2: Mathematical primitives  DECODED', color: '#0f0', delay: 400 },
+            { text: '  Layer 3: Compressed data payload  PARTIAL', color: '#ff0', delay: 400 },
+            { text: '  Layer 4: \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588          LOCKED', color: '#f44', delay: 500, style: 'text-shadow: 0 0 3px #f00;' },
+            { text: '', delay: 400 },
+            { text: '\u26A0 Signal broadcasts from coordinates with no known stellar object', color: '#ff0', delay: 600 },
+            { text: '\u26A0 Data structure suggests additional fragments required', color: '#ff0', delay: 600 },
+            { text: '', delay: 500 },
+            { text: '\u2550'.repeat(45), color: '#0ff', delay: 300, style: 'text-shadow: 0 0 5px #0ff;' },
+            { text: '  SOURCE:        UNCHARTED', color: '#fff', delay: 400, style: 'font-size: 15px;' },
+            { text: '  DATA TYPE:     LAYERED ENCODING', color: '#0ff', delay: 400, style: 'font-size: 15px;' },
+            { text: '  STATUS:        FRAGMENT 1 OF ? ACQUIRED', color: '#0f0', delay: 500, style: 'font-size: 15px; text-shadow: 0 0 8px #0f0;' },
+            { text: '\u2550'.repeat(45), color: '#0ff', delay: 300, style: 'text-shadow: 0 0 5px #0ff;' },
+        ],
+        buttonText: '[ ARCHIVE FRAGMENT DATA ]',
+        buttonColor: '#0ff'
+    },
+    nexusPoint: {
+        header: 'FRAGMENT 2 — NEXUS POINT ANALYSIS',
+        lines: [
+            { text: '[ALIGNMENT LOCKED — DECODING FRAGMENT DATA...]', color: '#0f0', delay: 800, style: 'font-size: 16px; text-shadow: 0 0 8px #0f0;' },
+            { text: '', delay: 300 },
+            { text: '0xF1 \u2588\u2588 3D 0xA8 \u2588\u2588 0x6E \u25887 0xBB \u2588\u2588 2C 0xD9 \u2588\u2588 0x51...', color: '#0a0', delay: 100, style: 'opacity: 0.6; font-size: 11px;' },
+            { text: '\u2588\u2588 0x94 0x\u2588\u2588 E2 0x7A \u2588\u2588 \u2588\u2588 0x1F 8D 0xC5 \u2588\u2588 0xA6...', color: '#0a0', delay: 100, style: 'opacity: 0.6; font-size: 11px;' },
+            { text: '', delay: 400 },
+            { text: 'NETWORK TOPOLOGY DETECTED:', color: '#f0f', delay: 500, style: 'font-size: 13px;' },
+            { text: '  SRC-7024 \u2500\u2500\u2500\u2500 NEXUS \u2500\u2500\u2500\u2500 ???', color: '#f0f', delay: 500, style: 'text-shadow: 0 0 5px #f0f;' },
+            { text: '     \u2502                 \u2502', color: '#f0f', delay: 200, style: 'text-shadow: 0 0 3px #f0f;' },
+            { text: '     \u2514\u2500\u2500\u2500\u2500 Ross 128 \u2500\u2500\u2500\u2518', color: '#f0f', delay: 500, style: 'text-shadow: 0 0 3px #f0f;' },
+            { text: '', delay: 400 },
+            { text: 'DISTANCE ANALYSIS:', color: '#0ff', delay: 400, style: 'font-size: 13px;' },
+            { text: '  SRC-7024 \u2194 NEXUS:  \u2588\u2588\u2588\u2588\u2588 Mpc    EXCEEDS OBSERVABLE UNIVERSE', color: '#f44', delay: 500, style: 'text-shadow: 0 0 3px #f00;' },
+            { text: '  Signal latency:     0.000 seconds', color: '#f44', delay: 500, style: 'text-shadow: 0 0 3px #f00;' },
+            { text: '', delay: 300 },
+            { text: '\u26A0 Instantaneous signal propagation — violates known physics', color: '#ff0', delay: 700, style: 'animation: warningPulse 1.5s ease-in-out infinite;' },
+            { text: '\u26A0 Network predates all known signal sources', color: '#ff0', delay: 600 },
+            { text: '', delay: 500 },
+            { text: '\u2550'.repeat(45), color: '#f0f', delay: 300, style: 'text-shadow: 0 0 5px #f0f;' },
+            { text: '  SOURCE:        EXTRAGALACTIC RELAY', color: '#fff', delay: 400, style: 'font-size: 15px;' },
+            { text: '  DATA TYPE:     NETWORK INFRASTRUCTURE', color: '#f0f', delay: 400, style: 'font-size: 15px;' },
+            { text: '  STATUS:        FRAGMENT 2 OF ? ACQUIRED', color: '#0f0', delay: 500, style: 'font-size: 15px; text-shadow: 0 0 8px #0f0;' },
+            { text: '\u2550'.repeat(45), color: '#f0f', delay: 300, style: 'text-shadow: 0 0 5px #f0f;' },
+        ],
+        buttonText: '[ ARCHIVE FRAGMENT DATA ]',
+        buttonColor: '#f0f'
+    },
+    eridani82: {
+        header: 'FRAGMENT 3 — 82 ERIDANI COLLABORATIVE DATA',
+        lines: [
+            { text: '[ALIGNMENT LOCKED — DECODING FRAGMENT DATA...]', color: '#0f0', delay: 800, style: 'font-size: 16px; text-shadow: 0 0 8px #0f0;' },
+            { text: '', delay: 300 },
+            { text: '0x5C \u2588\u2588 B1 0x3E \u2588\u2588 0xD7 \u25889 0x62 \u2588\u2588 FA 0x84 \u2588\u2588 0xC0...', color: '#0a0', delay: 100, style: 'opacity: 0.6; font-size: 11px;' },
+            { text: '\u2588\u2588 0xE6 0x\u2588\u2588 49 0xAB \u2588\u2588 \u2588\u2588 0x73 DE 0x1B \u2588\u2588 0x96...', color: '#0a0', delay: 100, style: 'opacity: 0.6; font-size: 11px;' },
+            { text: '', delay: 400 },
+            { text: 'ENCODING COMPARISON:', color: '#0ff', delay: 500, style: 'font-size: 13px;' },
+            { text: '  Human decryption key:   0x7A3F\u2588\u2588E4\u2588\u25881C\u2588\u2588', color: '#0ff', delay: 400 },
+            { text: '  82 Eridani cipher key:  0x7A3F\u2588\u2588E4\u2588\u25881C\u2588\u2588', color: '#0ff', delay: 400 },
+            { text: '  Match confidence:       99.97%', color: '#0f0', delay: 500, style: 'text-shadow: 0 0 5px #0f0;' },
+            { text: '', delay: 300 },
+            { text: 'DATA INTEGRATION:', color: '#0ff', delay: 400, style: 'font-size: 13px;' },
+            { text: '  Fragment 1 (SRC-7024)  + Fragment 3 (82 Eridani)  = COMPLEMENTARY', color: '#0f0', delay: 500 },
+            { text: '  Fragment 2 (NEXUS)     + Fragment 3 (82 Eridani)  = COMPLEMENTARY', color: '#0f0', delay: 500 },
+            { text: '  Combined coherence:     78.4% \u2192 Insufficient for full decode', color: '#ff0', delay: 500 },
+            { text: '', delay: 300 },
+            { text: '\u26A0 Signal designed for multi-species convergence', color: '#ff0', delay: 600 },
+            { text: '\u26A0 One remaining fragment required for complete message', color: '#ff0', delay: 600 },
+            { text: '', delay: 500 },
+            { text: '\u2550'.repeat(45), color: '#0ff', delay: 300, style: 'text-shadow: 0 0 5px #0ff;' },
+            { text: '  SOURCE:        82 ERIDANI (COLLABORATIVE)', color: '#fff', delay: 400, style: 'font-size: 15px;' },
+            { text: '  DATA TYPE:     CONVERGENT SIGNAL', color: '#0ff', delay: 400, style: 'font-size: 15px;' },
+            { text: '  STATUS:        FRAGMENT 3 OF 4 ACQUIRED', color: '#0f0', delay: 500, style: 'font-size: 15px; text-shadow: 0 0 8px #0f0;' },
+            { text: '\u2550'.repeat(45), color: '#0ff', delay: 300, style: 'text-shadow: 0 0 5px #0ff;' },
+        ],
+        buttonText: '[ ARCHIVE FRAGMENT DATA ]',
+        buttonColor: '#0ff'
+    },
+    synthesis: {
+        header: 'FRAGMENT 4 — GENESIS POINT PRIMORDIAL DATA',
+        lines: [
+            { text: '[ALIGNMENT LOCKED — DECODING FRAGMENT DATA...]', color: '#0f0', delay: 800, style: 'font-size: 16px; text-shadow: 0 0 8px #0f0;' },
+            { text: '', delay: 300 },
+            { text: '0x00 \u2588\u2588 00 0x00 \u2588\u2588 0x00 \u258800 0x00 \u2588\u2588 00 0x00 \u2588\u2588 0x00...', color: '#0a0', delay: 100, style: 'opacity: 0.6; font-size: 11px;' },
+            { text: '!!TEMPORAL ANOMALY!! DATA PREDATES T=0', color: '#f44', delay: 300, style: 'font-size: 12px; text-shadow: 0 0 5px #f00;' },
+            { text: '', delay: 400 },
+            { text: 'TEMPORAL ANALYSIS:', color: '#f0f', delay: 500, style: 'font-size: 13px;' },
+            { text: '  Signal timestamp:     T < 0', color: '#f44', delay: 400, style: 'text-shadow: 0 0 3px #f00;' },
+            { text: '  Reference frame:      PRE-COSMIC', color: '#f44', delay: 400, style: 'text-shadow: 0 0 3px #f00;' },
+            { text: '  Signal age:           \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588 (OVERFLOW)', color: '#f44', delay: 500, style: 'text-shadow: 0 0 5px #f00;' },
+            { text: '', delay: 300 },
+            { text: 'FRAGMENT INTEGRATION:', color: '#0ff', delay: 400, style: 'font-size: 13px;' },
+            { text: '  Fragment 1 (SRC-7024):    LOADED', color: '#0f0', delay: 300 },
+            { text: '  Fragment 2 (NEXUS POINT): LOADED', color: '#0f0', delay: 300 },
+            { text: '  Fragment 3 (82 Eridani):  LOADED', color: '#0f0', delay: 300 },
+            { text: '  Fragment 4 (GENESIS):     LOADED', color: '#0f0', delay: 300 },
+            { text: '  Combined coherence:       100.0%', color: '#0f0', delay: 500, style: 'font-size: 15px; text-shadow: 0 0 10px #0f0;' },
+            { text: '', delay: 400 },
+            { text: '\u26A0 COMPLETE MESSAGE RECONSTRUCTABLE', color: '#f0f', delay: 700, style: 'font-size: 14px; animation: warningPulse 1.5s ease-in-out infinite; text-shadow: 0 0 8px #f0f;' },
+            { text: '', delay: 500 },
+            { text: '\u2550'.repeat(45), color: '#f0f', delay: 300, style: 'text-shadow: 0 0 5px #f0f;' },
+            { text: '  SOURCE:        PRE-UNIVERSAL', color: '#fff', delay: 400, style: 'font-size: 15px;' },
+            { text: '  DATA TYPE:     ORIGIN TRANSMISSION', color: '#f0f', delay: 400, style: 'font-size: 15px; text-shadow: 0 0 5px #f0f;' },
+            { text: '  STATUS:        ALL FRAGMENTS ACQUIRED', color: '#0f0', delay: 500, style: 'font-size: 15px; text-shadow: 0 0 10px #0f0;' },
+            { text: '\u2550'.repeat(45), color: '#f0f', delay: 300, style: 'text-shadow: 0 0 5px #f0f;' },
+        ],
+        buttonText: '[ ARCHIVE FINAL FRAGMENT ]',
+        buttonColor: '#f0f'
+    }
+};
+
+function showFragmentDecodeReveal(fragmentKey, onComplete) {
+    const config = FRAGMENT_DECODE_SEQUENCES[fragmentKey];
+    if (!config) { onComplete(); return; }
+
+    const overlay = document.createElement('div');
+    overlay.id = 'decode-reveal-overlay';
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.98); z-index: 10000;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        font-family: 'VT323', monospace;
+    `;
+
+    const container = document.createElement('div');
+    container.style.cssText = `
+        border: 2px solid #0f0; background: #000; padding: 0;
+        width: 700px; max-width: 95vw;
+        box-shadow: 0 0 50px rgba(0, 255, 0, 0.3);
+    `;
+
+    const header = document.createElement('div');
+    header.style.cssText = `
+        background: linear-gradient(180deg, #020 0%, #010 100%);
+        border-bottom: 2px solid #0f0; padding: 12px 20px;
+        text-align: center; color: #0f0; font-size: 18px;
+        text-shadow: 0 0 10px #0f0; letter-spacing: 3px;
+    `;
+    header.textContent = config.header;
+    container.appendChild(header);
+
+    const display = document.createElement('div');
+    display.style.cssText = 'text-align: left; font-size: 14px; line-height: 1.8; max-height: 60vh; overflow-y: auto; padding: 20px 25px;';
+    container.appendChild(display);
+    overlay.appendChild(container);
+    document.body.appendChild(overlay);
+
+    let lineIndex = 0;
+
+    function showNextLine() {
+        if (lineIndex >= config.lines.length) {
+            // Show continue button
+            const buttonWrapper = document.createElement('div');
+            buttonWrapper.style.cssText = 'text-align: center; margin-top: 25px;';
+
+            const btn = document.createElement('button');
+            btn.textContent = config.buttonText;
+            btn.className = 'btn';
+            btn.style.cssText = `
+                background: rgba(0, 0, 0, 0.3);
+                border: 2px solid ${config.buttonColor};
+                color: ${config.buttonColor};
+                font-family: 'VT323', monospace;
+                font-size: 20px; padding: 12px 30px; cursor: pointer;
+                text-shadow: 0 0 10px ${config.buttonColor};
+                box-shadow: 0 0 20px ${config.buttonColor}40;
+                animation: contactBtnPulse 2s ease-in-out infinite;
+            `;
+            btn.addEventListener('click', () => {
+                playClick();
+                overlay.style.transition = 'opacity 0.5s';
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.remove();
+                    onComplete();
+                }, 500);
+            });
+            buttonWrapper.appendChild(btn);
+            display.appendChild(buttonWrapper);
+            display.scrollTop = display.scrollHeight;
+            playSecurityBeep('success');
+            return;
+        }
+
+        const line = config.lines[lineIndex];
+        const div = document.createElement('div');
+        div.textContent = line.text;
+        div.style.cssText = `color: ${line.color || '#0f0'}; ${line.style || ''}`;
+        div.style.opacity = '0';
+        div.style.transition = 'opacity 0.3s';
+        display.appendChild(div);
+        requestAnimationFrame(() => { div.style.opacity = '1'; });
+        if (line.text.length > 0) playTypingBeep();
+        display.scrollTop = display.scrollHeight;
+        lineIndex++;
+        setTimeout(showNextLine, line.delay);
+    }
+
+    playSecurityBeep('success');
+    setTimeout(showNextLine, 500);
+}
+
 // Show encrypted result for dynamic stars (SRC-7024, NEXUS POINT, GENESIS POINT)
 function showDynamicEncryptedResult(star, display) {
     const isSrc7024 = star.id === 'src7024';
@@ -1790,19 +2010,21 @@ function showDynamicEncryptedResult(star, display) {
                                 '\u03A8\u2234\u232C\u2609 \u25C6 \u221E\u27D0\u238E\u2B21 \u25C6 \u2609\u232C\u2234\u03A8',
                                 // Alignment success
                                 () => {
-                                    if (!gameState.fragments.sources[fragmentKey]) {
-                                        gameState.fragments.collected.push(fragmentKey);
-                                        gameState.fragments.sources[fragmentKey] = true;
-                                        log(`FRAGMENT ${fragmentNum} ACQUIRED: ${fragmentLabel}`, 'highlight');
-                                        addPersonalLog('Fragment 1: SRC-7024',
-                                            `The first fragment. Pulled from a signal source that shouldn't exist — no star, no known object, just... a point in space, broadcasting.\n\nThe data has structure. Layers. Like pages of a book written in mathematics we almost understand.\n\nThere's more out there. I can feel it.`
-                                        );
-                                    }
-                                    gameState.scanResults.set(star.id, { type: 'verified_signal' });
-                                    autoSave();
-                                    showView('starmap-view');
-                                    document.getElementById('analyze-btn').disabled = false;
-                                    scheduleSrc7024PostAlignmentEmails();
+                                    showFragmentDecodeReveal('src7024', () => {
+                                        if (!gameState.fragments.sources[fragmentKey]) {
+                                            gameState.fragments.collected.push(fragmentKey);
+                                            gameState.fragments.sources[fragmentKey] = true;
+                                            log(`FRAGMENT ${fragmentNum} ACQUIRED: ${fragmentLabel}`, 'highlight');
+                                            addPersonalLog('Fragment 1: SRC-7024',
+                                                `The first fragment. Pulled from a signal source that shouldn't exist — no star, no known object, just... a point in space, broadcasting.\n\nThe data has structure. Layers. Like pages of a book written in mathematics we almost understand.\n\nThere's more out there. I can feel it.`
+                                            );
+                                        }
+                                        gameState.scanResults.set(star.id, { type: 'verified_signal' });
+                                        autoSave();
+                                        showView('starmap-view');
+                                        document.getElementById('analyze-btn').disabled = false;
+                                        scheduleSrc7024PostAlignmentEmails();
+                                    });
                                 },
                                 // Alignment cancel
                                 () => {
@@ -1820,21 +2042,23 @@ function showDynamicEncryptedResult(star, display) {
                                 '\u03A3\u221E\u2295\u2297 \u25C6 \u2B21\u03A8\u25CA\u03A9 \u25C6 \u2297\u2295\u221E\u03A3',
                                 // Alignment success
                                 () => {
-                                    if (!gameState.fragments.sources[fragmentKey]) {
-                                        gameState.fragments.collected.push(fragmentKey);
-                                        gameState.fragments.sources[fragmentKey] = true;
-                                        log(`FRAGMENT ${fragmentNum} ACQUIRED: ${fragmentLabel}`, 'highlight');
-                                        addPersonalLog('Fragment 4: Genesis Point',
-                                            `The final fragment. Primordial. The timestamp on this data predates everything — stars, galaxies, the cosmic microwave background itself.\n\nFour fragments. Four pieces of something that was never meant to stay hidden forever.\n\nI think it was meant to be found. By someone patient enough. Curious enough.\n\nI think it was meant for us.`
-                                        );
-                                    }
-                                    gameState.scanResults.set(star.id, { type: 'verified_signal' });
-                                    onFragmentCollected();
-                                    schedulePostGenesisEmails();
-                                    autoSave();
-                                    showView('starmap-view');
-                                    document.getElementById('analyze-btn').disabled = false;
-                                    checkAndShowDayComplete();
+                                    showFragmentDecodeReveal('synthesis', () => {
+                                        if (!gameState.fragments.sources[fragmentKey]) {
+                                            gameState.fragments.collected.push(fragmentKey);
+                                            gameState.fragments.sources[fragmentKey] = true;
+                                            log(`FRAGMENT ${fragmentNum} ACQUIRED: ${fragmentLabel}`, 'highlight');
+                                            addPersonalLog('Fragment 4: Genesis Point',
+                                                `The final fragment. Primordial. The timestamp on this data predates everything — stars, galaxies, the cosmic microwave background itself.\n\nFour fragments. Four pieces of something that was never meant to stay hidden forever.\n\nI think it was meant to be found. By someone patient enough. Curious enough.\n\nI think it was meant for us.`
+                                            );
+                                        }
+                                        gameState.scanResults.set(star.id, { type: 'verified_signal' });
+                                        onFragmentCollected();
+                                        schedulePostGenesisEmails();
+                                        autoSave();
+                                        showView('starmap-view');
+                                        document.getElementById('analyze-btn').disabled = false;
+                                        checkAndShowDayComplete();
+                                    });
                                 },
                                 // Alignment cancel
                                 () => {
@@ -1849,24 +2073,26 @@ function showDynamicEncryptedResult(star, display) {
                             log('DECRYPTION COMPLETE — Initiating fragment alignment...', 'highlight');
                             startSingleFragmentAlignment(
                                 'nexusPoint',
-                                '\u03A9\u2235\u238E\u26A1 \u25C7 \u039B\u2080\u221E\u210F \u25C7 \u26A1\u238E\u2235\u03A9',
+                                '\u03A9\u2235\u238E\u2302 \u25C7 \u039B\u2080\u221E\u210F \u25C7 \u2302\u238E\u2235\u03A9',
                                 // Alignment success
                                 () => {
-                                    if (!gameState.fragments.sources[fragmentKey]) {
-                                        gameState.fragments.collected.push(fragmentKey);
-                                        gameState.fragments.sources[fragmentKey] = true;
-                                        log(`FRAGMENT ${fragmentNum} ACQUIRED: ${fragmentLabel}`, 'highlight');
-                                        addPersonalLog('Fragment 2: Nexus Point',
-                                            `A nexus. Something is connecting these signals across distances that should make communication impossible.\n\nThe coordinates don't correspond to any cataloged object. It's extragalactic — or beyond even that.\n\nWhoever built this network didn't just send a message. They built an infrastructure.`
-                                        );
-                                    }
-                                    gameState.scanResults.set(star.id, { type: 'verified_signal' });
-                                    onFragmentCollected();
-                                    schedulePreBigBangEmails();
-                                    autoSave();
-                                    showView('starmap-view');
-                                    document.getElementById('analyze-btn').disabled = false;
-                                    checkAndShowDayComplete();
+                                    showFragmentDecodeReveal('nexusPoint', () => {
+                                        if (!gameState.fragments.sources[fragmentKey]) {
+                                            gameState.fragments.collected.push(fragmentKey);
+                                            gameState.fragments.sources[fragmentKey] = true;
+                                            log(`FRAGMENT ${fragmentNum} ACQUIRED: ${fragmentLabel}`, 'highlight');
+                                            addPersonalLog('Fragment 2: Nexus Point',
+                                                `A nexus. Something is connecting these signals across distances that should make communication impossible.\n\nThe coordinates don't correspond to any cataloged object. It's extragalactic — or beyond even that.\n\nWhoever built this network didn't just send a message. They built an infrastructure.`
+                                            );
+                                        }
+                                        gameState.scanResults.set(star.id, { type: 'verified_signal' });
+                                        onFragmentCollected();
+                                        schedulePreBigBangEmails();
+                                        autoSave();
+                                        showView('starmap-view');
+                                        document.getElementById('analyze-btn').disabled = false;
+                                        checkAndShowDayComplete();
+                                    });
                                 },
                                 // Alignment cancel
                                 () => {
@@ -2392,19 +2618,21 @@ function displayContactMessage(messageData, star) {
                             '\u2206\u25CA\u2B21\u2727 \u25CF \u221E\u2295\u2234\u2297 \u25CF \u2727\u2B21\u25CA\u2206',
                             // Alignment success
                             () => {
-                                if (!gameState.fragments.sources.eridani82) {
-                                    gameState.fragments.collected.push('eridani82');
-                                    gameState.fragments.sources.eridani82 = true;
-                                    log('FRAGMENT 3 ACQUIRED: 82 Eridani collaborative data', 'highlight');
-                                    addPersonalLog('Fragment 3: 82 Eridani',
-                                        `82 Eridani sees the same patterns we do. Different species, different star, different everything — and yet they recognized the signal too.\n\nWe're not alone in being not alone.\n\nTheir data fits with ours like a key in a lock. Whoever designed this wanted multiple civilizations to find it. To work together. To piece it together.\n\nOne fragment left.`
-                                    );
-                                }
-                                onFragmentCollected();
-                                scheduleGenesisTriangulationEmails();
-                                autoSave();
-                                showView('starmap-view');
-                                checkAndShowDayComplete();
+                                showFragmentDecodeReveal('eridani82', () => {
+                                    if (!gameState.fragments.sources.eridani82) {
+                                        gameState.fragments.collected.push('eridani82');
+                                        gameState.fragments.sources.eridani82 = true;
+                                        log('FRAGMENT 3 ACQUIRED: 82 Eridani collaborative data', 'highlight');
+                                        addPersonalLog('Fragment 3: 82 Eridani',
+                                            `82 Eridani sees the same patterns we do. Different species, different star, different everything — and yet they recognized the signal too.\n\nWe're not alone in being not alone.\n\nTheir data fits with ours like a key in a lock. Whoever designed this wanted multiple civilizations to find it. To work together. To piece it together.\n\nOne fragment left.`
+                                        );
+                                    }
+                                    onFragmentCollected();
+                                    scheduleGenesisTriangulationEmails();
+                                    autoSave();
+                                    showView('starmap-view');
+                                    checkAndShowDayComplete();
+                                });
                             },
                             // Alignment cancel
                             () => {

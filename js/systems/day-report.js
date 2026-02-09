@@ -1228,12 +1228,18 @@ function generateDay3Report(natural, falsePos, verified, verifiedStars, choices 
                 </div>
             </div>
         `,
-        footer: classification === 'COSMIC_REVELATION'
-            ? 'Classification: TOP SECRET // COSMIC. The origin point awaits.'
-            : classification === 'FIRST_CONTACT'
-            ? 'Report forwarded to First Contact Committee. Initiate final sequence.'
-            : 'Report submitted to the International Astronomical Union. Initiate final sequence.',
-        buttonText: 'BEGIN FINAL SEQUENCE'
+        footer: gameState.finalPuzzleComplete
+            ? (classification === 'COSMIC_REVELATION'
+                ? 'Classification: TOP SECRET // COSMIC. Report filed. Humanity will remember this day.'
+                : classification === 'FIRST_CONTACT'
+                ? 'Report forwarded to First Contact Committee. The search is over.'
+                : 'Report submitted to the International Astronomical Union. History has been made.')
+            : (classification === 'COSMIC_REVELATION'
+                ? 'Classification: TOP SECRET // COSMIC. The origin point awaits.'
+                : classification === 'FIRST_CONTACT'
+                ? 'Report forwarded to First Contact Committee. Initiate final sequence.'
+                : 'Report submitted to the International Astronomical Union. Initiate final sequence.'),
+        buttonText: gameState.finalPuzzleComplete ? 'SUBMIT FINAL REPORT' : 'BEGIN FINAL SEQUENCE'
     };
 }
 
@@ -1250,6 +1256,11 @@ function transitionToNextDay() {
     }
 
     if (currentDay >= 3) {
+        // If final message already played, show thank-you screen
+        if (gameState.finalPuzzleComplete) {
+            showThankYouScreen();
+            return;
+        }
         // Day 3 complete - trigger final sequence
         triggerFinalSequence();
         return;
@@ -1257,6 +1268,69 @@ function transitionToNextDay() {
 
     // Show authorization screen before advancing
     showAuthorizationScreen(currentDay);
+}
+
+function showThankYouScreen() {
+    autoSave();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'thank-you-overlay';
+    overlay.style.cssText = `
+        position: fixed; inset: 0; z-index: 9000;
+        background: #000; display: flex; align-items: center; justify-content: center;
+        flex-direction: column; opacity: 0; transition: opacity 2s;
+        font-family: 'VT323', monospace;
+    `;
+
+    overlay.innerHTML = `
+        <div style="text-align:center; max-width:550px; line-height:1.8;">
+            <div style="font-size:14px; color:#556; letter-spacing:4px; margin-bottom:30px;">
+                SIGNAL MONITORING ARRAY — SECTOR 7
+            </div>
+            <div style="font-size:36px; color:#0ff; text-shadow:0 0 30px rgba(0,255,255,0.4); margin-bottom:20px; letter-spacing:3px;">
+                THANK YOU FOR PLAYING
+            </div>
+            <div style="font-size:18px; color:#8af; line-height:1.8; margin-bottom:40px;">
+                Dr. ${gameState.playerName},<br>
+                your contribution to humanity's greatest discovery<br>
+                will not be forgotten.
+            </div>
+            <div style="display:flex; gap:20px; justify-content:center;">
+                <button id="thank-you-explore-btn" style="
+                    background: transparent; border: 1px solid #0ff; color: #0ff;
+                    font-family: 'VT323', monospace; font-size: 16px;
+                    padding: 12px 30px; cursor: pointer;
+                    text-shadow: 0 0 8px rgba(0,255,255,0.5);
+                ">RETURN TO ARRAY</button>
+                <button id="thank-you-menu-btn" style="
+                    background: transparent; border: 1px solid #556; color: #888;
+                    font-family: 'VT323', monospace; font-size: 16px;
+                    padding: 12px 30px; cursor: pointer;
+                ">MAIN MENU</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => { overlay.style.opacity = '1'; });
+
+    document.getElementById('thank-you-explore-btn').addEventListener('click', () => {
+        playClick();
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+            overlay.remove();
+            showView('starmap-view');
+        }, 1000);
+    });
+
+    document.getElementById('thank-you-menu-btn').addEventListener('click', () => {
+        playClick();
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+            overlay.remove();
+            window.location.href = window.location.pathname;
+        }, 1000);
+    });
 }
 
 function showAuthorizationScreen(completedDay) {
@@ -1560,4 +1634,9 @@ export function initDayReportState() {
     if (gameState.dayReportShown === undefined) {
         gameState.dayReportShown = 0;
     }
+}
+
+// Trigger the Day 3 classification + report after the final message has played
+export function triggerPostFinalReport() {
+    showInteractiveClassification();
 }
