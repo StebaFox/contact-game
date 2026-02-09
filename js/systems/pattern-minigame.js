@@ -7,7 +7,7 @@ import { gameState } from '../core/game-state.js';
 import { log, typeAnalysisText } from '../ui/rendering.js';
 import { playClick, playLockAchieved, playStaticBurst, switchToAlienMusic, startAlienSignalSound, startNaturalPhenomenaSound } from './audio.js';
 import { checkAndShowDayComplete } from './day-report.js';
-import { addJournalEntry } from './journal.js';
+import { addJournalEntry, showJournalButton, addFirstScanMusing } from './journal.js';
 
 // External function references (set by main.js)
 let stopSignalAnimationFn = null;
@@ -978,6 +978,8 @@ function completePatternGame(star) {
             title: `Natural: ${phenomenon.type}`,
             content: `Source: ${phenomenon.source}\n${phenomenon.details.join('\n')}`
         });
+        showJournalButton();
+        addFirstScanMusing(star, 'natural');
 
         const lines = [
             'ANALYSIS COMPLETE',

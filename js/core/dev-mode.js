@@ -5,7 +5,7 @@
 
 import { gameState } from './game-state.js';
 import { showView, log } from '../ui/rendering.js';
-import { applyDayCode, autoSave } from './save-system.js';
+import { applyDayCode, autoSave, deleteSave } from './save-system.js';
 import { loadDayWithProgress } from '../ui/boot-sequence.js';
 import { DAY_CONFIG } from './day-system.js';
 import { checkAndShowDayComplete } from '../systems/day-report.js';
@@ -118,6 +118,7 @@ export function showDevPanel() {
             <button data-action="skipToDay2">Skip to Day 2</button>
             <button data-action="skipToDay3">Skip to Day 3</button>
             <button data-action="completeCurrentDay">Complete Current Day</button>
+            <button data-action="restartCurrentDay">Restart Current Day</button>
 
             <div class="dev-section">NAVIGATION</div>
             <button data-action="skipToStarmap">Skip to Starmap</button>
@@ -154,6 +155,7 @@ export function showDevPanel() {
             <div class="dev-section">MISC</div>
             <button data-action="addRandomMail">Add Random Email</button>
             <button data-action="logState">Log Game State</button>
+            <button data-action="fullReset" style="border-color:#f44;color:#f44;">Full Reset (Fresh Start)</button>
 
             <div class="dev-section">END STATE</div>
             <button data-action="showFinalMessage">Show Final Message</button>
@@ -235,6 +237,7 @@ export function showDevPanel() {
                 case 'skipToDay2': devSkipToDay(2); break;
                 case 'skipToDay3': devSkipToDay(3); break;
                 case 'completeCurrentDay': devCompleteCurrentDay(); break;
+                case 'restartCurrentDay': devRestartCurrentDay(); break;
                 case 'skipToStarmap': devSkipToStarmap(); break;
                 case 'showSignalScan': devShowSignalScan(); break;
                 case 'showTuningGame': devShowTuningGame(); break;
@@ -261,6 +264,7 @@ export function showDevPanel() {
                 case 'giveFragment3': devGiveFragment('eridani82'); break;
                 case 'giveFragment4': devGiveFragment('synthesis'); break;
                 case 'giveAllFragments': devGiveAllFragments(); break;
+                case 'fullReset': devFullReset(); break;
                 case 'showFinalMessage': devShowFinalMessage(); break;
                 case 'triggerEndState': devTriggerEndState(); break;
             }
@@ -337,6 +341,12 @@ function devCompleteCurrentDay() {
     dayConfig.availableStars.forEach(starIndex => {
         gameState.analyzedStars.add(starIndex);
 
+        // Ross 128 (index 8): keep as encrypted until decrypted
+        if (starIndex === 8 && !gameState.decryptionComplete) {
+            gameState.scanResults.set(starIndex, { type: 'encrypted_signal' });
+            return;
+        }
+
         // Check if this star has an alien contact
         const hasContact = ALIEN_CONTACTS.some(m => m.starIndex === starIndex);
 
@@ -372,6 +382,34 @@ function devCompleteCurrentDay() {
     setTimeout(() => {
         checkAndShowDayComplete();
     }, 500);
+}
+
+function devRestartCurrentDay() {
+    const day = gameState.currentDay;
+    if (!day || day === 0) {
+        log('DEV: Cannot restart in demo mode', 'warning');
+        return;
+    }
+    // Re-apply the day code for the current day to get a clean slate
+    devSkipToDay(day);
+    log(`DEV: Restarted Day ${day}`, 'highlight');
+}
+
+function devFullReset() {
+    // Nuke all saved data
+    deleteSave();
+    localStorage.removeItem('setiPlayerName');
+    localStorage.removeItem('setiScannedSignals');
+    localStorage.removeItem('setiAnalyzedStars');
+    localStorage.removeItem('setiContactedStars');
+    localStorage.removeItem('setiDiscoveredMessages');
+    localStorage.removeItem('setiReadEmails');
+    localStorage.removeItem('setiScanResults');
+    log('DEV: Full reset — reloading...', 'warning');
+    // Reload the page so the boot sequence / name entry plays from scratch
+    setTimeout(() => {
+        window.location.href = window.location.pathname;
+    }, 300);
 }
 
 function devSkipToStarmap() {

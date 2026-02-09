@@ -30,7 +30,15 @@ export function autoSave() {
 
         // Scan results (convert Map to Array of entries)
         scanResults: Array.from(gameState.scanResults?.entries() || []),
-        scannedSignals: Array.from(gameState.scannedSignals?.entries() || []),
+        // Strip ImageData (canvas pixel data) from scannedSignals — too large for localStorage
+        scannedSignals: Array.from(gameState.scannedSignals?.entries() || []).map(
+            ([key, val]) => [key, {
+                ...val,
+                waveformData: undefined,
+                spectrogramData: undefined,
+                star: val.star ? { id: val.star.id, name: val.star.name } : undefined
+            }]
+        ),
 
         // Messages
         discoveredMessages: gameState.discoveredMessages || [],
@@ -294,7 +302,12 @@ export function applyDayCode(code) {
     gameState.analyzedStars = new Set(codeData.scannedStars);
     gameState.scanResults = new Map();
     codeData.scannedStars.forEach(starIndex => {
-        gameState.scanResults.set(starIndex, { type: 'completed', fromCode: true });
+        // Ross 128 (index 8) keeps encrypted_signal type if decryption isn't done yet
+        if (starIndex === 8 && !codeData.flags?.decryptionComplete) {
+            gameState.scanResults.set(starIndex, { type: 'encrypted_signal', fromCode: true });
+        } else {
+            gameState.scanResults.set(starIndex, { type: 'completed', fromCode: true });
+        }
     });
 
     // Apply fragments

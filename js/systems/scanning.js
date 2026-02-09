@@ -6,7 +6,7 @@
 import { gameState } from '../core/game-state.js';
 import { autoSave } from '../core/save-system.js';
 import { showView, log, typeAnalysisText } from '../ui/rendering.js';
-import { playClick, playAnalysisSound, playContactSound, playSecurityBeep, playTypingBeep, playStaticBurst, playPowerDownSound, stopAllMusic, stopNaturalPhenomenaSound, stopAlienSignalSound, startFragmentSignalSound, stopFragmentSignalSound, switchToBackgroundMusic } from './audio.js';
+import { playClick, playAnalysisSound, playContactSound, playSecurityBeep, playTypingBeep, playStaticBurst, playPowerDownSound, stopAllMusic, stopNaturalPhenomenaSound, stopAlienSignalSound, startFragmentSignalSound, stopFragmentSignalSound, switchToBackgroundMusic, switchToAlienMusic } from './audio.js';
 import { startTuningMinigame } from './tuning-minigame.js';
 import { startPatternRecognitionGame } from './pattern-minigame.js';
 import { startDecryptionMinigame } from './decryption-minigame.js';
@@ -17,7 +17,7 @@ import { checkAndShowDayComplete } from './day-report.js';
 import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
 import { unlockInvestigation, onFragmentCollected } from './investigation.js';
 import { updateStarCatalogDisplay } from '../ui/starmap.js';
-import { addJournalEntry, showJournalButton } from './journal.js';
+import { addJournalEntry, showJournalButton, addFirstScanMusing, addPersonalLog } from './journal.js';
 
 // Ross 128 star index - requires decryption
 const ROSS_128_INDEX = 8;
@@ -85,34 +85,38 @@ export function initiateScan() {
         gameState.analyzedStars.delete(star.id);
     }
 
-    // Check for cached scan data
+    // Check for cached scan data (with canvas data intact — not from a save/load cycle)
     if (gameState.scannedSignals.has(star.id)) {
-        log(`Retrieving archived scan data: ${star.name}`, 'highlight');
-
         const cachedSignal = gameState.scannedSignals.get(star.id);
-        gameState.currentSignal = cachedSignal;
 
-        document.getElementById('analysis-text').innerHTML =
-            '<p>LOADING ARCHIVED SCAN DATA...</p>';
+        // If canvas data is available, use it for instant replay
+        if (cachedSignal.waveformData instanceof ImageData) {
+            log(`Retrieving archived scan data: ${star.name}`, 'highlight');
+            gameState.currentSignal = cachedSignal;
 
-        const waveCanvas = document.getElementById('waveform-canvas');
-        const waveCtx = waveCanvas.getContext('2d');
-        waveCtx.putImageData(cachedSignal.waveformData, 0, 0);
+            document.getElementById('analysis-text').innerHTML =
+                '<p>LOADING ARCHIVED SCAN DATA...</p>';
 
-        const specCanvas = document.getElementById('spectrogram-canvas');
-        const specCtx = specCanvas.getContext('2d');
-        specCtx.putImageData(cachedSignal.spectrogramData, 0, 0);
+            const waveCanvas = document.getElementById('waveform-canvas');
+            const waveCtx = waveCanvas.getContext('2d');
+            waveCtx.putImageData(cachedSignal.waveformData, 0, 0);
 
-        startSignalAnimation();
-        log('Archived scan data loaded');
-        // Only enable analyze if signal hasn't been fully analyzed yet
-        const alreadyAnalyzed = cachedSignal.analyzed || gameState.scanResults.has(star.id);
-        document.getElementById('analyze-btn').disabled = alreadyAnalyzed;
-        // Keep scan button disabled and mark as complete
-        const scanBtn = document.getElementById('scan-btn');
-        scanBtn.disabled = true;
-        scanBtn.textContent = '✓ SCAN COMPLETE';
-        return;
+            const specCanvas = document.getElementById('spectrogram-canvas');
+            const specCtx = specCanvas.getContext('2d');
+            specCtx.putImageData(cachedSignal.spectrogramData, 0, 0);
+
+            startSignalAnimation();
+            log('Archived scan data loaded');
+            // Only enable analyze if signal hasn't been fully analyzed yet
+            const alreadyAnalyzed = cachedSignal.analyzed || gameState.scanResults.has(star.id);
+            document.getElementById('analyze-btn').disabled = alreadyAnalyzed;
+            // Keep scan button disabled and mark as complete
+            const scanBtn = document.getElementById('scan-btn');
+            scanBtn.disabled = true;
+            scanBtn.textContent = '✓ SCAN COMPLETE';
+            return;
+        }
+        // If no canvas data (restored from save), fall through to re-scan
     }
 
     log(`Initiating deep space scan: ${star.name}`, 'highlight');
@@ -1195,6 +1199,9 @@ function showFalsePositiveResult(star, cause, display) {
     });
     showJournalButton();
 
+    // First scan musing — introduce journal on Day 1
+    addFirstScanMusing(star, 'false_positive', cause.source);
+
     // Auto-save after scan result
     autoSave();
 
@@ -1260,6 +1267,9 @@ function showVerifiedSignalResult(star, display) {
         content: `Non-natural signal confirmed at ${star.distance}.\nAll terrestrial interference checks negative.\nIntelligent origin probable.`
     });
     showJournalButton();
+
+    // First scan musing — introduce journal on Day 1
+    addFirstScanMusing(star, 'verified_signal');
 
     // Auto-save after scan result
     autoSave();
@@ -1369,6 +1379,11 @@ function showEncryptedSignalResult(star, display) {
         display.appendChild(resultDiv);
         playSecurityBeep('warning');
 
+        // Ross 128 encrypted signal musing
+        addPersonalLog('The Ross 128 Anomaly',
+            `Something is different about Ross 128. The signal has structure — layers of it. Mathematical precision that no natural process could produce.\n\nThe system can't decode it. Not yet. We need Sigma clearance for the quantum decryption array.\n\nI keep staring at the waveform. It's almost like... it's waiting to be read.`
+        );
+
         setTimeout(() => {
             const returnBtn = document.createElement('button');
             returnBtn.textContent = 'RETURN TO ARRAY';
@@ -1440,45 +1455,20 @@ function showEncryptedSignalResult(star, display) {
                 setTimeout(() => {
                     document.getElementById('contact-protocol-box').style.display = 'none';
                     startDecryptionMinigame(
-                        // Success callback
+                        // Success callback — dramatic decode reveal
                         () => {
-                            log('DECRYPTION COMPLETE - Signal decoded!', 'highlight');
                             gameState.decryptionComplete = true;
                             gameState.scanResults.set(8, { type: 'verified_signal' });
                             autoSave();
+
+                            // Decryption musing
+                            addPersonalLog('Decryption Complete',
+                                `Confirmed intelligent. Extrasolar. The mathematical constants alone would be enough — pi, e, the fine structure constant. But there's more. Visual data. Compressed layers we haven't even begun to decode.\n\nI keep checking the results, looking for the error. There is no error.\n\nThis is real.`
+                            );
                             updateStarCatalogDisplay();
 
-                            // Send post-decryption email about what was found
-                            const pName = gameState.playerName;
-                            setTimeout(() => {
-                                addMailMessage(
-                                    'Dr. Eleanor Chen - Radio Astronomy',
-                                    'RE: Ross 128 — Decryption Results',
-                                    `${pName},\n\nI've been staring at the decoded output for the last hour. I don't even know where to begin.\n\nThe signal isn't just a message. Embedded alongside it are fragments of what can only be described as scientific data — mathematical constants, molecular structures, quantum states. Some of it maps to known physics. Some of it... doesn't. Not yet.\n\nBut here's what's keeping me up: the encoding predates anything we thought possible. The timestamp markers in the signal structure suggest an origin point that shouldn't exist. I've triple-checked. The math doesn't lie.\n\nWhoever sent this was thinking in timescales we can barely comprehend.\n\nWe need to keep scanning. If Ross 128 had this, there may be more signals out there — more pieces of whatever puzzle this is. I have a feeling we've only scratched the surface.\n\nStay sharp out there.\n\n- Eleanor`
-                                );
-                            }, 20000);
-
-                            // Launch alignment tutorial if not completed
-                            if (!gameState.tutorialCompleted) {
-                                log('INITIALIZING ALIGNMENT TRAINING...', 'info');
-                                startAlignmentTutorial(
-                                    () => {
-                                        log('Training complete! Return to Ross 128 to establish contact.', 'info');
-                                        showView('starmap-view');
-                                        document.getElementById('analyze-btn').disabled = false;
-                                    },
-                                    () => {
-                                        log('Training skipped. Return to Ross 128 to establish contact.', 'info');
-                                        gameState.tutorialCompleted = true;
-                                        showView('starmap-view');
-                                        document.getElementById('analyze-btn').disabled = false;
-                                    }
-                                );
-                            } else {
-                                showView('starmap-view');
-                                log('Return to Ross 128 to establish contact.', 'info');
-                                document.getElementById('analyze-btn').disabled = false;
-                            }
+                            // Show dramatic decode sequence instead of just a log
+                            showRoss128DecodeReveal(star);
                         },
                         // Cancel callback
                         () => {
@@ -1509,6 +1499,205 @@ function showEncryptedSignalResult(star, display) {
             display.appendChild(decryptDiv);
         }, 1500);
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ross 128 Dramatic Decode Reveal
+// After decryption minigame, show streaming decoded data before contact protocol
+// ─────────────────────────────────────────────────────────────────────────────
+
+function showRoss128DecodeReveal(star) {
+    // Create full-screen overlay (like decryption minigame) so the decode sequence is unmissable
+    const overlay = document.createElement('div');
+    overlay.id = 'decode-reveal-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.98);
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-family: 'VT323', monospace;
+    `;
+
+    const container = document.createElement('div');
+    container.style.cssText = `
+        border: 2px solid #0f0;
+        background: #000;
+        padding: 0;
+        width: 700px;
+        max-width: 95vw;
+        box-shadow: 0 0 50px rgba(0, 255, 0, 0.3);
+    `;
+
+    // Header bar
+    const header = document.createElement('div');
+    header.style.cssText = `
+        background: linear-gradient(180deg, #020 0%, #010 100%);
+        border-bottom: 2px solid #0f0;
+        padding: 12px 20px;
+        text-align: center;
+        color: #0f0;
+        font-size: 18px;
+        text-shadow: 0 0 10px #0f0;
+        letter-spacing: 3px;
+    `;
+    header.textContent = 'SIGNAL DECODE IN PROGRESS';
+    container.appendChild(header);
+
+    const display = document.createElement('div');
+    display.style.cssText = 'text-align: left; font-size: 14px; line-height: 1.8; max-height: 60vh; overflow-y: auto; padding: 20px 25px;';
+    container.appendChild(display);
+    overlay.appendChild(container);
+    document.body.appendChild(overlay);
+
+    // Define the decode sequence — each entry: { text, color, delay (ms before next), style }
+    const decodeLines = [
+        // Phase 1: Header
+        { text: '[QUANTUM DECRYPTION... COMPLETE]', color: '#0f0', delay: 800, style: 'font-size: 16px; text-shadow: 0 0 8px #0f0;' },
+        { text: '[PARSING DECODED DATA STREAM...]', color: '#0f0', delay: 600 },
+        { text: '', delay: 300 },
+
+        // Phase 2: Hex noise (fast)
+        { text: '0x7A 3F \u2588B \u25882 0xE4 \u2588\u2588 0x1C \u2588F 0xAA 6D \u25883 0xBB 0x9E \u2588\u2588 0x4F...', color: '#0a0', delay: 100, style: 'opacity: 0.6; font-size: 11px;' },
+        { text: '\u2588\u2588 0x5E 0x\u2588\u2588 7B 0x9D \u2588\u2588 \u2588\u2588 0xF3 8A 0xD1 \u2588\u2588 0x7C 0xA3 \u2588\u2588...', color: '#0a0', delay: 100, style: 'opacity: 0.6; font-size: 11px;' },
+        { text: '0x\u2588\u2588 FF 0x2B \u2588\u2588 0x6C \u25884 0xE8 \u2588\u2588 \u2588\u2588 7A 0x3D \u2588B 0xC6 \u2588\u2588...', color: '#0a0', delay: 100, style: 'opacity: 0.6; font-size: 11px;' },
+        { text: '', delay: 400 },
+
+        // Phase 3: Math constants
+        { text: 'MATHEMATICAL CONSTANTS DETECTED:', color: '#0ff', delay: 500, style: 'font-size: 13px; margin-top: 5px;' },
+        { text: '  \u03C0 = 3.14159265358979...     VERIFIED', color: '#0ff', delay: 400 },
+        { text: '  e = 2.71828182845904...     VERIFIED', color: '#0ff', delay: 400 },
+        { text: '  \u03C6 = 1.61803398874989...     VERIFIED', color: '#0ff', delay: 400 },
+        { text: '  \u03B1 = 7.297352569\u00D710\u207B\u00B3       FINE STRUCTURE CONSTANT \u2014 MATCH', color: '#0f0', delay: 500, style: 'text-shadow: 0 0 5px #0f0;' },
+        { text: '', delay: 300 },
+
+        // Phase 4: Physical constants
+        { text: 'PHYSICAL CONSTANTS:', color: '#0ff', delay: 400, style: 'font-size: 13px;' },
+        { text: '  c  = 299,792,458 m/s        MATCH', color: '#0f0', delay: 400 },
+        { text: '  \u210F  = 1.054571817\u00D710\u207B\u00B3\u2074 J\u00B7s MATCH', color: '#0f0', delay: 400 },
+        { text: '  G  = 6.674\u2588\u2588\u00D710\u207B\u00B9\u00B9         \u2588\u2588\u2588ORRUPT\u2588\u2588', color: '#f44', delay: 600, style: 'text-shadow: 0 0 3px #f00;' },
+        { text: '', delay: 300 },
+
+        // Phase 5: Unknown references
+        { text: 'UNKNOWN REFERENCES:', color: '#ff0', delay: 400, style: 'font-size: 13px;' },
+        { text: '  \u2588\u2588\u2588\u2588 = \u2588\u2588.\u2588\u2588\u2588 \u00D7 10\u207B\u00B2\u2077      UNRECOGNIZED', color: '#ff0', delay: 500 },
+        { text: '  \u2588\u2588\u2588\u2588\u2588\u2588 = 1.616255\u00D710\u207B\u00B3\u2075  PLANCK LENGTH... \u2588\u2588TENDED?', color: '#ff0', delay: 500 },
+        { text: '', delay: 400 },
+
+        // Phase 6: Temporal markers
+        { text: '\u26A0 TIMESTAMP PREDATES KNOWN REFERENCE FRAMES', color: '#ff0', delay: 700, style: 'animation: warningPulse 1.5s ease-in-out infinite;' },
+        { text: '\u26A0 SIGNAL AGE: \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588 years (OVERFLOW)', color: '#f44', delay: 800, style: 'text-shadow: 0 0 5px #f00;' },
+        { text: '', delay: 400 },
+
+        // Phase 7: Data structure
+        { text: '[DATA STRUCTURE ANALYSIS]', color: '#0ff', delay: 400, style: 'font-size: 13px;' },
+        { text: '  LAYER 1: Mathematical framework    DECODED', color: '#0f0', delay: 400 },
+        { text: '  LAYER 2: Visual data (compressed)  DECODED', color: '#0f0', delay: 400 },
+        { text: '  LAYER 3: \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588              ENCRYPTED \u2014 DEEPER LAYER', color: '#f44', delay: 600, style: 'text-shadow: 0 0 3px #f00;' },
+        { text: '', delay: 800 },
+
+        // Phase 8: Conclusion
+        { text: '\u2550'.repeat(45), color: '#f0f', delay: 300, style: 'text-shadow: 0 0 5px #f0f;' },
+        { text: '  SIGNAL ORIGIN:      EXTRASOLAR', color: '#fff', delay: 500, style: 'font-size: 15px; text-shadow: 0 0 8px #fff;' },
+        { text: '  CLASSIFICATION:     INTELLIGENT', color: '#f0f', delay: 500, style: 'font-size: 15px; text-shadow: 0 0 10px #f0f;' },
+        { text: '  STATUS:             CONFIRMED', color: '#0f0', delay: 500, style: 'font-size: 15px; text-shadow: 0 0 10px #0f0;' },
+        { text: '\u2550'.repeat(45), color: '#f0f', delay: 300, style: 'text-shadow: 0 0 5px #f0f;' },
+    ];
+
+    let lineIndex = 0;
+
+    function showNextLine() {
+        if (lineIndex >= decodeLines.length) {
+            // All lines shown — add the contact protocol button
+            showDecodeContactButton(star, display);
+            return;
+        }
+
+        const line = decodeLines[lineIndex];
+        const div = document.createElement('div');
+        div.textContent = line.text;
+        div.style.cssText = `color: ${line.color || '#0f0'}; ${line.style || ''}`;
+        div.style.opacity = '0';
+        div.style.transition = 'opacity 0.3s';
+        display.appendChild(div);
+
+        // Fade in
+        requestAnimationFrame(() => { div.style.opacity = '1'; });
+
+        // Play typing beep for non-empty lines
+        if (line.text.length > 0) {
+            playTypingBeep();
+        }
+
+        // Scroll to bottom
+        display.scrollTop = display.scrollHeight;
+
+        lineIndex++;
+        setTimeout(showNextLine, line.delay);
+    }
+
+    // Play security beep for dramatic start
+    playSecurityBeep('success');
+    log('DECRYPTION COMPLETE \u2014 Signal decoded!', 'highlight');
+
+    // Start the sequence
+    setTimeout(showNextLine, 500);
+}
+
+function showDecodeContactButton(star, display) {
+    const buttonWrapper = document.createElement('div');
+    buttonWrapper.style.cssText = 'text-align: center; margin-top: 25px;';
+
+    const btn = document.createElement('button');
+    btn.textContent = '[ INITIATE CONTACT PROTOCOL ]';
+    btn.className = 'btn';
+    btn.style.cssText = `
+        background: rgba(255, 0, 255, 0.1);
+        border: 2px solid #f0f;
+        color: #f0f;
+        font-family: 'VT323', monospace;
+        font-size: 20px;
+        padding: 12px 30px;
+        cursor: pointer;
+        text-shadow: 0 0 10px #f0f;
+        box-shadow: 0 0 20px rgba(255, 0, 255, 0.3);
+        animation: contactBtnPulse 2s ease-in-out infinite;
+    `;
+
+    // Add pulse animation
+    if (!document.getElementById('decode-contact-btn-style')) {
+        const style = document.createElement('style');
+        style.id = 'decode-contact-btn-style';
+        style.textContent = `
+            @keyframes contactBtnPulse {
+                0%, 100% { box-shadow: 0 0 20px rgba(255, 0, 255, 0.3); }
+                50% { box-shadow: 0 0 40px rgba(255, 0, 255, 0.6); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    btn.addEventListener('click', () => {
+        playClick();
+        // Remove the decode reveal overlay before showing contact
+        const overlay = document.getElementById('decode-reveal-overlay');
+        if (overlay) overlay.remove();
+        switchToAlienMusic();
+        initiateContact(star);
+    });
+
+    buttonWrapper.appendChild(btn);
+    display.appendChild(buttonWrapper);
+    display.scrollTop = display.scrollHeight;
+
+    // Play a dramatic beep when button appears
+    playSecurityBeep('success');
 }
 
 // Show encrypted result for dynamic stars (SRC-7024, NEXUS POINT, GENESIS POINT)
@@ -1590,6 +1779,9 @@ function showDynamicEncryptedResult(star, display) {
                                         gameState.fragments.collected.push(fragmentKey);
                                         gameState.fragments.sources[fragmentKey] = true;
                                         log(`FRAGMENT ${fragmentNum} ACQUIRED: ${fragmentLabel}`, 'highlight');
+                                        addPersonalLog('Fragment 1: SRC-7024',
+                                            `The first fragment. Pulled from a signal source that shouldn't exist — no star, no known object, just... a point in space, broadcasting.\n\nThe data has structure. Layers. Like pages of a book written in mathematics we almost understand.\n\nThere's more out there. I can feel it.`
+                                        );
                                     }
                                     gameState.scanResults.set(star.id, { type: 'verified_signal' });
                                     autoSave();
@@ -1617,6 +1809,9 @@ function showDynamicEncryptedResult(star, display) {
                                         gameState.fragments.collected.push(fragmentKey);
                                         gameState.fragments.sources[fragmentKey] = true;
                                         log(`FRAGMENT ${fragmentNum} ACQUIRED: ${fragmentLabel}`, 'highlight');
+                                        addPersonalLog('Fragment 4: Genesis Point',
+                                            `The final fragment. Primordial. The timestamp on this data predates everything — stars, galaxies, the cosmic microwave background itself.\n\nFour fragments. Four pieces of something that was never meant to stay hidden forever.\n\nI think it was meant to be found. By someone patient enough. Curious enough.\n\nI think it was meant for us.`
+                                        );
                                     }
                                     gameState.scanResults.set(star.id, { type: 'verified_signal' });
                                     onFragmentCollected();
@@ -1646,6 +1841,9 @@ function showDynamicEncryptedResult(star, display) {
                                         gameState.fragments.collected.push(fragmentKey);
                                         gameState.fragments.sources[fragmentKey] = true;
                                         log(`FRAGMENT ${fragmentNum} ACQUIRED: ${fragmentLabel}`, 'highlight');
+                                        addPersonalLog('Fragment 2: Nexus Point',
+                                            `A nexus. Something is connecting these signals across distances that should make communication impossible.\n\nThe coordinates don't correspond to any cataloged object. It's extragalactic — or beyond even that.\n\nWhoever built this network didn't just send a message. They built an infrastructure.`
+                                        );
                                     }
                                     gameState.scanResults.set(star.id, { type: 'verified_signal' });
                                     onFragmentCollected();
@@ -1903,6 +2101,13 @@ function initiateContact(star) {
             content: contactText
         });
         showJournalButton();
+
+        // Personal reflections after key contacts
+        if (star.id === ROSS_128_INDEX) {
+            addPersonalLog('First Contact',
+                `They sent us a map. A star chart showing our own solar system, seen from eleven light years away.\n\nThey know where we are. They've known for a long time.\n\nThe signal is eight years old. Whatever sent this — they're still out there. Waiting.\n\nAnd we have no way to answer.`
+            );
+        }
     }
 }
 
@@ -2036,6 +2241,13 @@ function displayContactMessage(messageData, star) {
     function showPostContactActions(star) {
         if (!star) return;
 
+        // Ross 128 — first alien contact: send email + alignment tutorial
+        if (star.id === ROSS_128_INDEX && gameState.decryptionComplete && !gameState.tutorialCompleted) {
+            setTimeout(() => {
+                showRoss128PostContact();
+            }, 2000);
+        }
+
         // 82 Eridani — collaborative decryption data (Fragment 3)
         const ERIDANI_82_INDEX = 26;
         if (star.id === ERIDANI_82_INDEX && !gameState.fragments.sources.eridani82) {
@@ -2043,6 +2255,68 @@ function displayContactMessage(messageData, star) {
                 showEridaniDecryptionOffer();
             }, 2000);
         }
+    }
+
+    function showRoss128PostContact() {
+        const display = document.getElementById('message-display');
+
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'text-align: center; margin-top: 25px;';
+
+        const btn = document.createElement('button');
+        btn.textContent = '[ CONTINUE ANALYSIS ]';
+        btn.className = 'btn';
+        btn.style.cssText = `
+            background: rgba(0, 255, 0, 0.1);
+            border: 2px solid #0f0;
+            color: #0f0;
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            padding: 10px 25px;
+            cursor: pointer;
+            text-shadow: 0 0 8px #0f0;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+        `;
+
+        btn.addEventListener('click', () => {
+            playClick();
+
+            // Send Eleanor Chen post-decryption email
+            const pName = gameState.playerName;
+            setTimeout(() => {
+                addMailMessage(
+                    'Dr. Eleanor Chen - Radio Astronomy',
+                    'RE: Ross 128 — Decryption Results',
+                    `${pName},\n\nI've been staring at the decoded output for the last hour. I don't even know where to begin.\n\nThe signal isn't just a message. Embedded alongside it are fragments of what can only be described as scientific data — mathematical constants, molecular structures, quantum states. Some of it maps to known physics. Some of it... doesn't. Not yet.\n\nBut here's what's keeping me up: the encoding predates anything we thought possible. The timestamp markers in the signal structure suggest an origin point that shouldn't exist. I've triple-checked. The math doesn't lie.\n\nWhoever sent this was thinking in timescales we can barely comprehend.\n\nWe need to keep scanning. If Ross 128 had this, there may be more signals out there — more pieces of whatever puzzle this is. I have a feeling we've only scratched the surface.\n\nStay sharp out there.\n\n- Eleanor`
+                );
+            }, 20000);
+
+            // Launch alignment tutorial if not completed
+            if (!gameState.tutorialCompleted) {
+                log('INITIALIZING ALIGNMENT TRAINING...', 'info');
+                startAlignmentTutorial(
+                    () => {
+                        log('Training complete! Return to starmap to continue scanning.', 'info');
+                        showView('starmap-view');
+                        document.getElementById('analyze-btn').disabled = false;
+                    },
+                    () => {
+                        log('Training skipped. Return to starmap to continue scanning.', 'info');
+                        gameState.tutorialCompleted = true;
+                        showView('starmap-view');
+                        document.getElementById('analyze-btn').disabled = false;
+                    }
+                );
+            } else {
+                showView('starmap-view');
+                log('Return to starmap to continue scanning.', 'info');
+                document.getElementById('analyze-btn').disabled = false;
+            }
+        });
+
+        wrapper.appendChild(btn);
+        display.appendChild(wrapper);
+        display.scrollTop = display.scrollHeight;
     }
 
     function showEridaniDecryptionOffer() {
@@ -2088,6 +2362,9 @@ function displayContactMessage(messageData, star) {
                                     gameState.fragments.collected.push('eridani82');
                                     gameState.fragments.sources.eridani82 = true;
                                     log('FRAGMENT 3 ACQUIRED: 82 Eridani collaborative data', 'highlight');
+                                    addPersonalLog('Fragment 3: 82 Eridani',
+                                        `82 Eridani sees the same patterns we do. Different species, different star, different everything — and yet they recognized the signal too.\n\nWe're not alone in being not alone.\n\nTheir data fits with ours like a key in a lock. Whoever designed this wanted multiple civilizations to find it. To work together. To piece it together.\n\nOne fragment left.`
+                                    );
                                 }
                                 onFragmentCollected();
                                 scheduleGenesisTriangulationEmails();

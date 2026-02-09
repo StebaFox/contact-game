@@ -13,6 +13,7 @@ import { showFinalMessage } from '../narrative/final-message.js';
 import { addMailMessage } from './mailbox.js';
 import { ROSS128_DECRYPT_EMAIL, DAY2_CHEN_SIGNAL_EMAIL, DAY2_BLACKOUT_EMAIL } from '../narrative/emails.js';
 import { addSRC7024 } from './investigation.js';
+import { addPersonalLog } from './journal.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Check Day Completion
@@ -117,6 +118,10 @@ export function advanceDay2Cliffhanger(triggerPhase) {
             // Reboot complete → Phase 4: send blackout email
             gameState.day2CliffhangerPhase = 4;
             autoSave();
+
+            addPersonalLog('System Crash',
+                `The entire array went dark mid-scan. Every dish. Every sensor. Simultaneously.\n\nThat doesn't happen by accident. Electromagnetic interference doesn't knock out hardened military-grade equipment across a distributed network.\n\nSomething triggered the shutdown. Something in the signal.\n\nOr something that didn't want us to finish scanning.`
+            );
 
             // Delay long enough for the loading bar sequence to finish (~4s)
             setTimeout(() => {

@@ -710,10 +710,16 @@ export function updateStarCatalogDisplay() {
             // Hide future day stars completely
             item.style.display = 'none';
         } else if (isPreviousDay && ross128NeedsDecrypt) {
-            // Special: Ross 128 on Day 2 - highlighted for rescan/decryption
+            // Special: Ross 128 on Day 2 - highlighted prominently for rescan/decryption
             item.style.display = 'block';
             item.style.opacity = '1';
             item.style.pointerEvents = 'auto';
+            item.style.border = '1px solid #ff0';
+            item.style.boxShadow = '0 0 12px rgba(255, 255, 0, 0.3), inset 0 0 8px rgba(255, 255, 0, 0.05)';
+            item.style.background = 'rgba(255, 255, 0, 0.05)';
+
+            // Pin to top of catalog
+            item.style.order = '-1';
 
             // Remove old indicators
             const oldIndicator = item.querySelector('.analyzed-indicator');
@@ -724,7 +730,7 @@ export function updateStarCatalogDisplay() {
                 const indicator = document.createElement('div');
                 indicator.className = 'decrypt-indicator';
                 indicator.style.cssText = 'color: #ff0; font-size: 10px; margin-top: 4px; animation: warningPulse 1.5s ease-in-out infinite;';
-                indicator.textContent = '⚠ ENCRYPTED - RESCAN TO DECRYPT';
+                indicator.textContent = '⚠ ENCRYPTED SIGNAL - RESCAN TO DECRYPT';
                 item.appendChild(indicator);
             }
 
@@ -739,6 +745,10 @@ export function updateStarCatalogDisplay() {
             item.style.display = 'block';
             item.style.opacity = '0.5';
             item.style.pointerEvents = 'auto';
+            item.style.border = '';
+            item.style.boxShadow = '';
+            item.style.background = '';
+            item.style.order = '';
 
             // Remove decrypt indicator if present
             const decryptIndicator = item.querySelector('.decrypt-indicator');
@@ -1314,6 +1324,19 @@ function renderSkyChart() {
             ctx.globalAlpha = 0.7 + pulse * 0.3;
             starColor = '#ff0';
             labelColor = '#ff0';
+
+            // Pulsing beacon rings to draw player attention
+            const ringPulse = (Date.now() % 2000) / 2000;
+            for (let r = 0; r < 2; r++) {
+                const phase = (ringPulse + r * 0.5) % 1;
+                const ringRadius = (8 + phase * 22) / sc.scale;
+                const ringAlpha = (1 - phase) * 0.5;
+                ctx.strokeStyle = `rgba(255, 255, 0, ${ringAlpha})`;
+                ctx.lineWidth = 1.5 / sc.scale;
+                ctx.beginPath();
+                ctx.arc(sx, sy, ringRadius, 0, Math.PI * 2);
+                ctx.stroke();
+            }
         } else if (isPreviousDay) {
             ctx.globalAlpha = 0.15;
             starColor = spectralColor;
@@ -1725,6 +1748,19 @@ function renderArrayView() {
             ctx.globalAlpha = 0.7 + pulse * 0.3;
             starColor = '#ff0';
             labelColor = '#ff0';
+
+            // Pulsing beacon rings to draw player attention
+            const ringPulse = (Date.now() % 2000) / 2000; // 0→1 over 2s
+            for (let r = 0; r < 2; r++) {
+                const phase = (ringPulse + r * 0.5) % 1;
+                const ringRadius = 8 + phase * 22;
+                const ringAlpha = (1 - phase) * 0.5;
+                ctx.strokeStyle = `rgba(255, 255, 0, ${ringAlpha})`;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(parallaxX, parallaxY, ringRadius, 0, Math.PI * 2);
+                ctx.stroke();
+            }
         } else if (isPreviousDay) {
             ctx.globalAlpha = 0.15;
             starColor = spectralColor;

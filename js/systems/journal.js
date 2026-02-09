@@ -8,7 +8,7 @@ import { showView, log } from '../ui/rendering.js';
 import { playClick } from './audio.js';
 
 let journalReturnView = 'starmap-view';
-let activeTab = 'contacts';
+let activeTab = 'contact';
 
 // -----------------------------------------------------------------------------
 // Open / Close
@@ -70,7 +70,7 @@ export function renderJournal() {
     if (tabBar) {
         tabBar.innerHTML = '';
         const tabs = [
-            { id: 'contacts', label: 'CONTACTS', count: entries.filter(e => e.type === 'contact').length },
+            { id: 'contact', label: 'CONTACTS', count: entries.filter(e => e.type === 'contact').length },
             { id: 'intel', label: 'KEY INTEL', count: entries.filter(e => e.type === 'intel').length },
             { id: 'discovery', label: 'DISCOVERIES', count: entries.filter(e => e.type === 'discovery').length }
         ];
@@ -93,7 +93,7 @@ export function renderJournal() {
     if (filtered.length === 0) {
         content.innerHTML = `
             <div class="journal-empty">
-                ${activeTab === 'contacts' ? 'No alien contacts recorded yet.' :
+                ${activeTab === 'contact' ? 'No alien contacts recorded yet.' :
                   activeTab === 'intel' ? 'No key intel archived yet.' :
                   'No scan discoveries logged yet.'}
             </div>
@@ -133,4 +133,41 @@ export function updateJournalIndicator() {
 export function showJournalButton() {
     const btn = document.getElementById('journal-btn');
     if (btn) btn.style.display = '';
+}
+
+// -----------------------------------------------------------------------------
+// Personal Log Musings — flavor entries at narrative moments
+// -----------------------------------------------------------------------------
+
+let firstScanMusingAdded = false;
+
+export function addFirstScanMusing(star, resultType, source) {
+    if (firstScanMusingAdded) return;
+    if (gameState.journalEntries.some(e => e.title === 'Personal Log: First Scan')) return;
+    firstScanMusingAdded = true;
+
+    let reflection = '';
+    if (resultType === 'false_positive') {
+        reflection = `First signal processed. ${source || 'Terrestrial interference'}. Not what I was hoping for, but that's the job — sifting through noise to find what shouldn't be there.\n\nKeep looking.`;
+    } else if (resultType === 'natural') {
+        reflection = `First signal processed. Natural phenomenon — beautiful in its own way, but not what we're searching for.\n\nThe universe is noisy. Somewhere in all that noise, there might be a voice.\n\nKeep looking.`;
+    } else if (resultType === 'verified_signal') {
+        reflection = `First signal processed. And it's... not natural. All interference checks negative. My hands are shaking as I write this.\n\nThis could be nothing. A glitch. An artifact.\n\nBut what if it isn't?`;
+    }
+
+    addJournalEntry('intel', {
+        starName: 'Personal Log',
+        title: 'Personal Log: First Scan',
+        content: reflection
+    });
+    showJournalButton();
+}
+
+export function addPersonalLog(title, content) {
+    addJournalEntry('intel', {
+        starName: 'Personal Log',
+        title: `Personal Log: ${title}`,
+        content
+    });
+    showJournalButton();
 }
