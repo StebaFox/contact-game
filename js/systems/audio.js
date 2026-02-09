@@ -3,6 +3,8 @@
 // All sound effects, music, and audio management
 // ═════════════════════════════════════════════════════════════════════════════
 
+import { gameState } from '../core/game-state.js';
+
 // Hash a string star ID to a numeric seed
 function hashStarId(id) {
     let hash = 0;
@@ -21,13 +23,21 @@ let staticNoiseNode = null;
 let staticGainNode = null;
 let musicVolume = 0.5; // 0.0 to 1.0
 let sfxVolume = 0.5;   // 0.0 to 1.0
-let backgroundMusic = null;
-let alienMusic = null;
 let roomTone = null;
 let glassCathedralMusic = null;
 let machineSound = null;
-let currentMusic = null; // Track which music is currently playing
+let currentMusic = null; // Track which audio element is currently playing
 let musicBeforeFinalMessage = null; // Remember what was playing before final message
+
+// Background music playlist system
+let bgTracks = [];       // Day 1-2 tracks
+let trailTracks = [];    // Day 3 tracks
+let bgTrackIndex = 0;    // Current position in active playlist
+let activePlaylist = 'bg'; // 'bg' or 'trail'
+
+// Alien music tracks (cycle between contacts)
+let alienTracks = [];
+let alienTrackIndex = 0;
 
 // Signal ambient sounds
 let naturalPhenomenaNode = null;
@@ -46,20 +56,48 @@ export function initAudio() {
         audioContext.resume();
     }
 
-    // Initialize and play background music
-    if (!backgroundMusic) {
-        backgroundMusic = document.getElementById('background-music');
-        backgroundMusic.volume = musicVolume * 0.3; // Background music at 30% of music volume
-        backgroundMusic.play().catch(err => {
-            console.log('Background music autoplay prevented:', err);
-        });
-        currentMusic = backgroundMusic;
+    // Initialize background music playlists
+    if (bgTracks.length === 0) {
+        for (let i = 0; i < 3; i++) {
+            const el = document.getElementById(`bg-track-${i}`);
+            if (el) {
+                el.volume = 0;
+                el.addEventListener('ended', onBgTrackEnded);
+                bgTracks.push(el);
+            }
+        }
+        for (let i = 0; i < 3; i++) {
+            const el = document.getElementById(`trail-track-${i}`);
+            if (el) {
+                el.volume = 0;
+                el.addEventListener('ended', onBgTrackEnded);
+                trailTracks.push(el);
+            }
+        }
+
+        // Pick playlist based on current day
+        bgTrackIndex = 0;
+        activePlaylist = (gameState.currentDay >= 3) ? 'trail' : 'bg';
+        const playlist = getActivePlaylist();
+        if (playlist.length > 0) {
+            const first = playlist[0];
+            first.volume = musicVolume * 0.3;
+            first.play().catch(err => {
+                console.log('Background music autoplay prevented:', err);
+            });
+            currentMusic = first;
+        }
     }
 
-    // Initialize alien music (but don't play yet)
-    if (!alienMusic) {
-        alienMusic = document.getElementById('alien-music');
-        alienMusic.volume = 0; // Start silent
+    // Initialize alien music tracks (but don't play yet)
+    if (alienTracks.length === 0) {
+        for (let i = 0; i < 2; i++) {
+            const el = document.getElementById(`alien-music-${i}`);
+            if (el) {
+                el.volume = 0;
+                alienTracks.push(el);
+            }
+        }
     }
 
     // Initialize and play room tone
@@ -72,24 +110,83 @@ export function initAudio() {
     }
 }
 
+// Get the currently active playlist
+function getActivePlaylist() {
+    return activePlaylist === 'trail' ? trailTracks : bgTracks;
+}
+
+// When a background track ends, crossfade to the next one
+function onBgTrackEnded() {
+    // Don't advance if this track isn't the current music (e.g. alien music took over)
+    const playlist = getActivePlaylist();
+    if (!playlist.length) return;
+    if (currentMusic !== playlist[bgTrackIndex]) return;
+
+    bgTrackIndex = (bgTrackIndex + 1) % playlist.length;
+    const next = playlist[bgTrackIndex];
+    next.currentTime = 0;
+    next.volume = musicVolume * 0.3;
+    next.play().catch(() => {});
+    currentMusic = next;
+}
+
+// Switch background playlist for Day 3 (call when day advances)
+export function setDay3Music() {
+    if (trailTracks.length === 0 || activePlaylist === 'trail') return;
+
+    const oldTrack = getActivePlaylist()[bgTrackIndex];
+    activePlaylist = 'trail';
+    bgTrackIndex = 0;
+    const newTrack = trailTracks[0];
+    newTrack.currentTime = 0;
+    newTrack.volume = 0;
+    newTrack.play().catch(() => {});
+
+    // Crossfade
+    const fadeSteps = 40;
+    const fadeInterval = 50;
+    let step = 0;
+    const fade = setInterval(() => {
+        step++;
+        const progress = step / fadeSteps;
+        if (oldTrack) oldTrack.volume = musicVolume * 0.3 * (1 - progress);
+        newTrack.volume = musicVolume * 0.3 * progress;
+        if (step >= fadeSteps) {
+            clearInterval(fade);
+            if (oldTrack) { oldTrack.pause(); oldTrack.currentTime = 0; }
+            currentMusic = newTrack;
+        }
+    }, fadeInterval);
+}
+
 // Set music volume
 export function setMusicVolume(volume) {
     musicVolume = Math.max(0, Math.min(1, volume));
     localStorage.setItem('seti-musicVolume', musicVolume);
 
     // Update currently playing music volume
-    if (currentMusic === backgroundMusic && backgroundMusic) {
-        backgroundMusic.volume = musicVolume * 0.3;
-    } else if (currentMusic === alienMusic && alienMusic) {
-        alienMusic.volume = musicVolume * 0.3;
-    } else if (currentMusic === glassCathedralMusic && glassCathedralMusic) {
+    if (currentMusic === glassCathedralMusic && glassCathedralMusic) {
         glassCathedralMusic.volume = musicVolume * 0.4;
+    } else if (currentMusic && isAlienTrack(currentMusic)) {
+        currentMusic.volume = musicVolume * 0.3;
+    } else if (currentMusic) {
+        currentMusic.volume = musicVolume * 0.3;
     }
 
     // Update room tone volume
     if (roomTone) {
         roomTone.volume = musicVolume * 0.35;
     }
+}
+
+// Check if an audio element is one of the alien tracks
+function isAlienTrack(el) {
+    return alienTracks.includes(el);
+}
+
+// Check if an audio element is a background/trail playlist track
+function isBgTrack(el) {
+    return bgTracks.includes(el) || trailTracks.includes(el);
 }
 
 // Set SFX volume
@@ -115,76 +212,82 @@ export function loadVolumeSettings() {
     if (savedSfx !== null) sfxVolume = parseFloat(savedSfx);
 }
 
-// Switch to alien music (crossfade)
+// Switch to alien music (crossfade) — randomly picks a track
 export function switchToAlienMusic() {
-    if (!alienMusic || currentMusic === alienMusic) return;
+    if (alienTracks.length === 0) return;
+    if (currentMusic && isAlienTrack(currentMusic)) return;
 
-    // Start alien music
-    alienMusic.currentTime = 0;
-    alienMusic.play().catch(err => console.log('Alien music play prevented:', err));
+    // Cycle through alien tracks (alternates between contacts)
+    const alienTrack = alienTracks[alienTrackIndex % alienTracks.length];
+    alienTrackIndex++;
+    alienTrack.currentTime = 0;
+    alienTrack.play().catch(err => console.log('Alien music play prevented:', err));
+
+    const oldMusic = currentMusic;
 
     // Crossfade
     const fadeSteps = 30;
-    const fadeInterval = 50; // ms
+    const fadeInterval = 50;
     let step = 0;
 
     const fade = setInterval(() => {
         step++;
         const progress = step / fadeSteps;
 
-        // Fade out background music
-        if (backgroundMusic) {
-            backgroundMusic.volume = musicVolume * 0.3 * (1 - progress);
+        // Fade out whatever was playing
+        if (oldMusic && oldMusic !== alienTrack) {
+            oldMusic.volume = musicVolume * 0.3 * (1 - progress);
         }
 
         // Fade in alien music
-        if (alienMusic) {
-            alienMusic.volume = musicVolume * 0.3 * progress;
-        }
+        alienTrack.volume = musicVolume * 0.3 * progress;
 
         if (step >= fadeSteps) {
             clearInterval(fade);
-            if (backgroundMusic) {
-                backgroundMusic.pause();
+            if (oldMusic && oldMusic !== alienTrack) {
+                oldMusic.pause();
             }
-            currentMusic = alienMusic;
+            currentMusic = alienTrack;
         }
     }, fadeInterval);
 }
 
-// Switch back to background music (crossfade)
+// Switch back to background music (crossfade) — resumes current playlist position
 export function switchToBackgroundMusic() {
-    if (!backgroundMusic || currentMusic === backgroundMusic) return;
+    const playlist = getActivePlaylist();
+    if (playlist.length === 0) return;
 
-    // Start background music
-    backgroundMusic.currentTime = 0;
-    backgroundMusic.play().catch(err => console.log('Background music play prevented:', err));
+    const bgTrack = playlist[bgTrackIndex];
+    if (currentMusic === bgTrack) return;
+
+    // Resume from where we left off (or start fresh if at end)
+    bgTrack.play().catch(err => console.log('Background music play prevented:', err));
+
+    const oldMusic = currentMusic;
 
     // Crossfade
     const fadeSteps = 30;
-    const fadeInterval = 50; // ms
+    const fadeInterval = 50;
     let step = 0;
 
     const fade = setInterval(() => {
         step++;
         const progress = step / fadeSteps;
 
-        // Fade out alien music
-        if (alienMusic) {
-            alienMusic.volume = musicVolume * 0.3 * (1 - progress);
+        // Fade out whatever was playing
+        if (oldMusic && oldMusic !== bgTrack) {
+            oldMusic.volume = musicVolume * 0.3 * (1 - progress);
         }
 
         // Fade in background music
-        if (backgroundMusic) {
-            backgroundMusic.volume = musicVolume * 0.3 * progress;
-        }
+        bgTrack.volume = musicVolume * 0.3 * progress;
 
         if (step >= fadeSteps) {
             clearInterval(fade);
-            if (alienMusic) {
-                alienMusic.pause();
+            if (oldMusic && oldMusic !== bgTrack) {
+                oldMusic.pause();
             }
-            currentMusic = backgroundMusic;
+            currentMusic = bgTrack;
         }
     }, fadeInterval);
 }
@@ -203,6 +306,8 @@ export function switchToGlassCathedral() {
     glassCathedralMusic.volume = 0;
     glassCathedralMusic.play().catch(err => console.log('Glass Cathedral play prevented:', err));
 
+    const oldMusic = currentMusic;
+
     // Crossfade from current music
     const fadeSteps = 60; // Slower crossfade for dramatic effect
     const fadeInterval = 50;
@@ -213,11 +318,8 @@ export function switchToGlassCathedral() {
         const progress = step / fadeSteps;
 
         // Fade out whatever is currently playing
-        if (backgroundMusic && currentMusic === backgroundMusic) {
-            backgroundMusic.volume = musicVolume * 0.3 * (1 - progress);
-        }
-        if (alienMusic && currentMusic === alienMusic) {
-            alienMusic.volume = musicVolume * 0.3 * (1 - progress);
+        if (oldMusic) {
+            oldMusic.volume = musicVolume * 0.3 * (1 - progress);
         }
         // Also fade out room tone for a cleaner transition
         if (roomTone) {
@@ -229,8 +331,7 @@ export function switchToGlassCathedral() {
 
         if (step >= fadeSteps) {
             clearInterval(fade);
-            if (backgroundMusic) backgroundMusic.pause();
-            if (alienMusic) alienMusic.pause();
+            if (oldMusic) oldMusic.pause();
             if (roomTone) roomTone.pause();
             currentMusic = glassCathedralMusic;
         }
@@ -241,7 +342,9 @@ export function switchToGlassCathedral() {
 export function restoreMusicAfterFinalMessage() {
     if (!glassCathedralMusic) return;
 
-    const restoreTo = musicBeforeFinalMessage || backgroundMusic;
+    // Restore to whatever was playing, or fall back to current playlist track
+    const playlist = getActivePlaylist();
+    const restoreTo = musicBeforeFinalMessage || (playlist.length > 0 ? playlist[bgTrackIndex] : null);
 
     if (restoreTo) {
         restoreTo.play().catch(() => {});
@@ -281,14 +384,10 @@ export function restoreMusicAfterFinalMessage() {
 
 // Stop all music and ambient audio immediately (for crash/shutdown)
 export function stopAllMusic() {
-    if (backgroundMusic) {
-        backgroundMusic.pause();
-        backgroundMusic.volume = 0;
-    }
-    if (alienMusic) {
-        alienMusic.pause();
-        alienMusic.volume = 0;
-    }
+    // Stop all playlist tracks
+    [...bgTracks, ...trailTracks, ...alienTracks].forEach(el => {
+        if (el) { el.pause(); el.volume = 0; }
+    });
     if (glassCathedralMusic) {
         glassCathedralMusic.pause();
         glassCathedralMusic.volume = 0;
@@ -302,10 +401,12 @@ export function stopAllMusic() {
 
 // Resume all ambient audio after reboot
 export function resumeAllMusic() {
-    if (backgroundMusic) {
-        backgroundMusic.volume = musicVolume * 0.3;
-        backgroundMusic.play().catch(() => {});
-        currentMusic = backgroundMusic;
+    const playlist = getActivePlaylist();
+    if (playlist.length > 0) {
+        const track = playlist[bgTrackIndex];
+        track.volume = musicVolume * 0.3;
+        track.play().catch(() => {});
+        currentMusic = track;
     }
     if (roomTone) {
         roomTone.volume = musicVolume * 0.35;

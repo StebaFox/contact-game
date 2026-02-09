@@ -10,6 +10,7 @@ import { startTriangulationMinigame } from './triangulation-minigame.js';
 import { startDecryptionMinigame } from './decryption-minigame.js';
 import { autoSave } from '../core/save-system.js';
 import { checkAndShowDayComplete } from './day-report.js';
+import { showFinalMessage } from '../narrative/final-message.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Investigation State
@@ -192,6 +193,7 @@ function updateFragmentCards() {
         const canTriangulate = fragCount >= 3 && !fragments.sources.synthesis && !hasGenesis && hasTriangulationEmail;
         const awaitingGenesisScan = hasGenesis && !fragments.sources.synthesis;
 
+        actionBtn.style.fontSize = '';
         if (canTriangulate) {
             actionBtn.style.display = '';
             actionBtn.textContent = 'TRIANGULATE SIGNAL ORIGIN';
@@ -207,6 +209,15 @@ function updateFragmentCards() {
             actionBtn.onclick = () => {
                 playClick();
                 closeInvestigation();
+            };
+        } else if (gameState.finalPuzzleComplete) {
+            actionBtn.style.display = '';
+            actionBtn.textContent = '[ RE-EXPERIENCE FINAL TRANSMISSION ]';
+            actionBtn.style.opacity = '0.6';
+            actionBtn.style.fontSize = '13px';
+            actionBtn.onclick = () => {
+                playClick();
+                showFinalMessage();
             };
         } else if (fragments.sources.synthesis) {
             actionBtn.style.display = '';

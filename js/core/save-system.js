@@ -34,6 +34,7 @@ export function autoSave() {
 
         // Messages
         discoveredMessages: gameState.discoveredMessages || [],
+        journalEntries: gameState.journalEntries || [],
         mailboxMessages: gameState.mailboxMessages || [],
         unreadMailCount: gameState.unreadMailCount || 0,
 
@@ -116,6 +117,7 @@ export function applySaveData(data) {
 
         // Messages
         gameState.discoveredMessages = data.discoveredMessages || [];
+        gameState.journalEntries = data.journalEntries || [];
         gameState.mailboxMessages = data.mailboxMessages || [];
         gameState.unreadMailCount = data.unreadMailCount || 0;
 
@@ -278,6 +280,7 @@ export function applyDayCode(code) {
     gameState.mailboxMessages = [];
     gameState.unreadMailCount = 0;
     gameState.discoveredMessages = [];
+    gameState.journalEntries = [];
 
     // Apply the code state
     gameState.currentDay = codeData.day;

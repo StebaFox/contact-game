@@ -181,6 +181,8 @@ let messageState = {
     skipped: false,
     warpActive: false,
     warpParticles: [],
+    warpFadeOut: false,
+    warpFadeStart: 0,
     downloadElement: null,
     downloadProgress: 0,
     downloadInterval: null
@@ -202,6 +204,10 @@ export function showFinalMessage(onComplete) {
     messageState.glowPulse = 0;
     messageState.breathingMode = false;
     messageState.skipped = false;
+    messageState.warpActive = false;
+    messageState.warpParticles = [];
+    messageState.warpFadeOut = false;
+    messageState.warpFadeStart = 0;
 
     createMessageOverlay();
     startTesseractAnimation();
@@ -432,10 +438,13 @@ function drawBackgroundCode(ctx, w, h) {
 
 function drawVoidParticles(ctx, w, h, glow) {
     const time = Date.now() * 0.001;
-    for (let i = 0; i < 50; i++) {
+    // Reduce particle count and brightness during emotional climax (warp fade)
+    const count = messageState.warpFadeOut ? 25 : 50;
+    const dimFactor = messageState.warpFadeOut ? 0.4 : 1.0;
+    for (let i = 0; i < count; i++) {
         const x = (Math.sin(time * 0.5 + i * 1.3) * 0.4 + 0.5) * w;
         const y = (Math.cos(time * 0.4 + i * 1.7) * 0.4 + 0.5) * h;
-        const alpha = 0.35 + 0.35 * Math.sin(time * 2 + i);
+        const alpha = (0.35 + 0.35 * Math.sin(time * 2 + i)) * dimFactor;
         ctx.fillStyle = `rgba(0, 255, 0, ${alpha * glow})`;
         ctx.beginPath();
         ctx.arc(x, y, 2.5, 0, Math.PI * 2);
@@ -448,8 +457,20 @@ function updateAndDrawWarpStreams(ctx, w, h) {
     const cy = h / 2;
     const maxDist = Math.max(w, h) * 0.85;
 
-    // Spawn new particles — burst of knowledge flying outward
-    if (Math.random() < 0.35) {
+    // Global fade multiplier: 1.0 normally, fades to 0 over 8 seconds when warpFadeOut
+    let fadeMult = 1.0;
+    if (messageState.warpFadeOut) {
+        const elapsed = (Date.now() - messageState.warpFadeStart) / 1000;
+        fadeMult = Math.max(0, 1 - elapsed / 8);
+        if (fadeMult <= 0) {
+            messageState.warpActive = false;
+            messageState.warpParticles = [];
+            return;
+        }
+    }
+
+    // Spawn new particles — stop spawning during fade
+    if (!messageState.warpFadeOut && Math.random() < 0.35) {
         const angle = Math.random() * Math.PI * 2;
         const contentIdx = Math.floor(Math.random() * WARP_CONTENT.length);
         const color = WARP_COLORS[Math.floor(Math.random() * WARP_COLORS.length)];
@@ -478,7 +499,9 @@ function updateAndDrawWarpStreams(ctx, w, h) {
         if (progress < 0.1) alpha = progress / 0.1;
         else if (progress > 0.75) alpha = (1 - progress) / 0.25;
         else alpha = 1;
-        alpha *= 0.5;
+        alpha *= 0.5 * fadeMult;
+
+        if (alpha <= 0.001) return !messageState.warpFadeOut;
 
         // Size grows with distance
         const fontSize = Math.round(9 + 18 * progress);
@@ -677,6 +700,23 @@ function typeSection(sectionIndex) {
         messageState.warpActive = true;
         messageState.warpParticles = [];
         createEncyclopediaBar();
+    }
+
+    // Fade out warp particles + encyclopedia bar entering Act 9 — let words breathe
+    if (section.id === 'in-our-gift' && !messageState.warpFadeOut) {
+        messageState.warpFadeOut = true;
+        messageState.warpFadeStart = Date.now();
+        // Fade and remove encyclopedia bar
+        if (messageState.downloadElement) {
+            messageState.downloadProgress = 100;
+            const fill = document.getElementById('fm-download-fill');
+            const pct = document.getElementById('fm-download-pct');
+            const cat = document.getElementById('fm-download-category');
+            if (fill) fill.style.width = '100%';
+            if (pct) pct.textContent = '100.0%';
+            if (cat) cat.textContent = 'TRANSFER COMPLETE';
+            removeEncyclopediaBar();
+        }
     }
 
     if (section.type === 'divider') {

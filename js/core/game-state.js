@@ -10,6 +10,7 @@ export const gameState = {
     contactedStars: new Set(),
     currentSignal: null,
     discoveredMessages: [],
+    journalEntries: [],
     selectedStarId: null,
     crosshairAngle: 0,
     signalOffset: 0,

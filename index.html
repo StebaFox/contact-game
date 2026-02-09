@@ -41,6 +41,9 @@
                         <span class="mailbox-icon">[✉]</span> MAILBOX
                         <span class="mail-indicator" id="mail-indicator" style="display: none;">●</span>
                     </button>
+                    <button class="journal-btn" id="journal-btn" style="display: none;">
+                        <span class="journal-icon">[☰]</span> JOURNAL
+                    </button>
                     <button class="investigation-btn" id="investigation-btn" style="display: none;">
                         <span class="investigation-icon">[◈]</span> PROJECT
                         <span class="investigation-indicator" id="investigation-indicator" style="display: none;">●</span>
@@ -353,6 +356,19 @@ DEEP SPACE SIGNAL ANALYSIS SYSTEM  ·  Version 1.3.7
                     <button class="btn" id="mailbox-back-btn">RETURN</button>
                 </div>
 
+                <!-- Journal Section -->
+                <div id="journal-view" class="view">
+                    <h2>═══ RESEARCH JOURNAL ═══</h2>
+                    <div class="journal-header">
+                        <div class="journal-info">FIELD NOTES & ARCHIVED DATA</div>
+                        <div class="journal-tabs" id="journal-tabs"></div>
+                    </div>
+                    <div class="journal-content" id="journal-content">
+                        <!-- Entries rendered by JS -->
+                    </div>
+                    <button class="btn" id="journal-back-btn">RETURN</button>
+                </div>
+
                 <!-- Investigation / Project Lighthouse Section -->
                 <div id="investigation-view" class="view">
                     <div class="investigation-container">
@@ -594,44 +610,64 @@ DEEP SPACE SIGNAL ANALYSIS SYSTEM  ·  Version 1.3.7
         </div>
     </div>
 
-    <!-- Background Music -->
-    <audio id="background-music" loop preload="auto">
-        <source src="Deep in the Quiet Sky.mp3" type="audio/mpeg">
+    <!-- Background Music Playlist (Day 1-2) -->
+    <audio id="bg-track-0" preload="auto">
+        <source src="audio/Deep in the Quiet Sky.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="bg-track-1" preload="auto">
+        <source src="audio/Deep in the Quiet Sky 2.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="bg-track-2" preload="auto">
+        <source src="audio/Deep in the Singing Sky.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Background Music Playlist (Day 3) -->
+    <audio id="trail-track-0" preload="auto">
+        <source src="audio/On the trail.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="trail-track-1" preload="auto">
+        <source src="audio/On the trail 2.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="trail-track-2" preload="auto">
+        <source src="audio/On the trail 3.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Alien Signal Music -->
-    <audio id="alien-music" loop preload="auto">
-        <source src="Blind 2.mp3" type="audio/mpeg">
+    <audio id="alien-music-0" preload="auto">
+        <source src="audio/Blind 2.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="alien-music-1" preload="auto">
+        <source src="audio/Alien Signal 2.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Room Tone / Ambient Sound -->
     <audio id="room-tone" loop preload="auto">
-        <source src="room-tone-with-computer-noise-33598.mp3" type="audio/mpeg">
+        <source src="audio/room-tone-with-computer-noise-33598.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Machine/Alignment Sound -->
     <audio id="machine-sound" preload="auto">
-        <source src="heavy-duty-underground-car-elevator-mechanical-lift-327686.mp3" type="audio/mpeg">
+        <source src="audio/heavy-duty-underground-car-elevator-mechanical-lift-327686.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Metallic Door Shut (power failure) -->
     <audio id="door-shut-sound" preload="auto">
-        <source src="freesound_community-metallic-door-shut-98740.mp3" type="audio/mpeg">
+        <source src="audio/freesound_community-metallic-door-shut-98740.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Power Down SFX -->
     <audio id="power-down-sound" preload="auto">
-        <source src="freesound_community-power-down-45784.mp3" type="audio/mpeg">
+        <source src="audio/freesound_community-power-down-45784.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Computer Boot Up SFX -->
     <audio id="boot-up-sound" preload="auto">
-        <source src="freesound_community-computer-boot-up-86535.mp3" type="audio/mpeg">
+        <source src="audio/freesound_community-computer-boot-up-86535.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Glass Cathedral Music (Final Message) -->
     <audio id="glass-cathedral-music" loop preload="auto">
-        <source src="Glass Cathedral (Remastered).mp3" type="audio/mpeg">
+        <source src="audio/Glass Cathedral (Remastered).mp3" type="audio/mpeg">
     </audio>
 
     <!-- Fade Overlay for End Transition -->

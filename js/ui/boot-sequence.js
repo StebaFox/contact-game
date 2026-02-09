@@ -347,6 +347,12 @@ function resumeGame() {
     showView('starmap-view');
     document.getElementById('mailbox-btn').style.display = 'block';
 
+    // Restore journal button if entries exist
+    if (gameState.journalEntries?.length > 0) {
+        const jBtn = document.getElementById('journal-btn');
+        if (jBtn) jBtn.style.display = '';
+    }
+
     // Restore investigation button if unlocked
     if (gameState.investigationUnlocked) {
         const invBtn = document.getElementById('investigation-btn');
@@ -382,6 +388,10 @@ export function loadDayWithProgress() {
     // Go directly to starmap with loading sequence
     showView('starmap-view');
     document.getElementById('mailbox-btn').style.display = 'block';
+    if (gameState.journalEntries?.length > 0) {
+        const jBtn = document.getElementById('journal-btn');
+        if (jBtn) jBtn.style.display = '';
+    }
 
     // Restore investigation button if unlocked
     if (gameState.investigationUnlocked) {
@@ -476,6 +486,10 @@ function loadDemoMode() {
     // Go directly to starmap
     showView('starmap-view');
     document.getElementById('mailbox-btn').style.display = 'block';
+    if (gameState.journalEntries?.length > 0) {
+        const jBtn = document.getElementById('journal-btn');
+        if (jBtn) jBtn.style.display = '';
+    }
 
     // Initialize starmap with loading bar
     initializeStarmapSequence();

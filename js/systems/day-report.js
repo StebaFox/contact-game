@@ -5,7 +5,7 @@
 
 import { gameState } from '../core/game-state.js';
 import { showView, log } from '../ui/rendering.js';
-import { playClick, playSecurityBeep, playBootUpSound, resumeAllMusic } from './audio.js';
+import { playClick, playSecurityBeep, playBootUpSound, resumeAllMusic, setDay3Music } from './audio.js';
 import { autoSave } from '../core/save-system.js';
 import { getDayProgress, advanceDay, DAY_CONFIG, checkDayComplete } from '../core/day-system.js';
 import { startFinalAlignment } from './alignment-minigame.js';
@@ -231,6 +231,11 @@ function showDayCompletePopup() {
 
     playSecurityBeep('success');
 
+    // Count scanned vs total available
+    const scanned = dayConfig.availableStars.filter(i => gameState.analyzedStars.has(i)).length;
+    const total = dayConfig.availableStars.length;
+    const remaining = total - scanned;
+
     const overlay = document.createElement('div');
     overlay.id = 'day-complete-overlay';
     overlay.style.cssText = `
@@ -247,6 +252,12 @@ function showDayCompletePopup() {
         font-family: 'VT323', monospace;
     `;
 
+    const continueText = remaining > 0
+        ? `<div style="color: #888; font-size: 14px; margin-bottom: 20px;">
+               ${remaining} additional target${remaining > 1 ? 's' : ''} available for optional survey.
+           </div>`
+        : '';
+
     overlay.innerHTML = `
         <div style="
             border: 2px solid #0f0;
@@ -257,29 +268,43 @@ function showDayCompletePopup() {
             box-shadow: 0 0 50px rgba(0, 255, 0, 0.3);
         ">
             <div style="color: #0f0; font-size: 14px; letter-spacing: 3px; margin-bottom: 10px;">
-                SURVEY COMPLETE
+                MINIMUM SURVEY THRESHOLD REACHED
             </div>
             <div style="color: #fff; font-size: 28px; text-shadow: 0 0 15px #0f0; margin-bottom: 20px;">
                 ${dayConfig.title}
             </div>
-            <div style="color: #0ff; font-size: 16px; margin-bottom: 30px;">
-                All assigned targets have been analyzed.<br>
-                Prepare daily report for transmission.
+            <div style="color: #0ff; font-size: 16px; margin-bottom: 15px;">
+                ${scanned} / ${total} assigned targets analyzed.<br>
+                Minimum survey requirement met — daily report authorized.
             </div>
-            <button id="send-day-report-btn" style="
-                background: transparent;
-                border: 2px solid #0f0;
-                color: #0f0;
-                font-family: 'VT323', monospace;
-                font-size: 20px;
-                padding: 15px 40px;
-                cursor: pointer;
-                text-shadow: 0 0 10px #0f0;
-                box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
-                animation: pulse-glow 2s ease-in-out infinite;
-            ">
-                SEND FINAL REPORT
-            </button>
+            ${continueText}
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <button id="send-day-report-btn" style="
+                    background: transparent;
+                    border: 2px solid #0f0;
+                    color: #0f0;
+                    font-family: 'VT323', monospace;
+                    font-size: 20px;
+                    padding: 15px 40px;
+                    cursor: pointer;
+                    text-shadow: 0 0 10px #0f0;
+                    box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+                    animation: pulse-glow 2s ease-in-out infinite;
+                ">
+                    FILE DAY REPORT
+                </button>
+                ${remaining > 0 ? `<button id="continue-scanning-btn" style="
+                    background: transparent;
+                    border: 1px solid #666;
+                    color: #888;
+                    font-family: 'VT323', monospace;
+                    font-size: 16px;
+                    padding: 15px 30px;
+                    cursor: pointer;
+                ">
+                    CONTINUE SCANNING
+                </button>` : ''}
+            </div>
         </div>
     `;
 
@@ -290,6 +315,17 @@ function showDayCompletePopup() {
         overlay.remove();
         showInteractiveClassification();
     });
+
+    const continueBtn = document.getElementById('continue-scanning-btn');
+    if (continueBtn) {
+        continueBtn.addEventListener('click', () => {
+            playClick();
+            overlay.remove();
+            // Let them keep scanning — popup won't reappear (dayReportShown is already set)
+            // But reset it so it can show again when they return to starmap next time
+            gameState.dayReportShown = -1;
+        });
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -851,6 +887,34 @@ function generateDay1Report(natural, falsePos, verified, verifiedStars, choices 
         }
     }
 
+    // Ross 128 classification flavor text
+    let ross128Flavor = '';
+    if (choices && choices.classifications) {
+        const ross128Class = choices.classifications[8]; // Ross 128 is index 8
+        if (ross128Class === 'ANOMALOUS') {
+            ross128Flavor = `
+                <div style="color: #0ff; font-size: 13px; margin-top: 10px; padding: 8px; border-left: 2px solid #0ff;">
+                    Your classification of the Ross 128 signal as ANOMALOUS has been flagged for priority review.
+                    Dr. Chen has requested immediate access to your analysis.
+                </div>
+            `;
+        } else if (ross128Class === 'NATURAL') {
+            ross128Flavor = `
+                <div style="color: #f80; font-size: 13px; margin-top: 10px; padding: 8px; border-left: 2px solid #f80;">
+                    Your classification of Ross 128 as NATURAL has been noted. However, automated spectral
+                    analysis has independently flagged the signal for elevated review. Senior staff have been notified.
+                </div>
+            `;
+        } else if (ross128Class === 'TERRESTRIAL') {
+            ross128Flavor = `
+                <div style="color: #f80; font-size: 13px; margin-top: 10px; padding: 8px; border-left: 2px solid #f80;">
+                    Your TERRESTRIAL classification for Ross 128 has been logged. Note: signal origin confirmed
+                    at 11.01 light-years, ruling out terrestrial interference. Automated reclassification pending.
+                </div>
+            `;
+        }
+    }
+
     // Status text varies based on recommendation choice
     let statusText;
     if (choices && choices.recommendation === 'ELEVATED_ANALYSIS') {
@@ -859,7 +923,7 @@ function generateDay1Report(natural, falsePos, verified, verifiedStars, choices 
                 ⚠ ELEVATED ANALYSIS RECOMMENDED ⚠<br>
                 <span style="font-size: 14px; color: #0ff;">
                     Operator recommends priority investigation of anomalous signals.<br>
-                    Request submitted for enhanced clearance protocols.
+                    Elevated analysis protocols authorized. Additional computing resources allocated.
                 </span>
             </div>
         `;
@@ -868,8 +932,8 @@ function generateDay1Report(natural, falsePos, verified, verifiedStars, choices 
             <div style="color: #ff0; font-size: 16px; margin-top: 15px; padding: 10px; border: 1px solid #ff0; background: rgba(255, 255, 0, 0.1);">
                 ⚠ SYSTEM OVERRIDE: ELEVATED ANALYSIS REQUIRED ⚠<br>
                 <span style="font-size: 14px; color: #0ff;">
-                    Anomalous signal detected. Standard protocols insufficient.<br>
-                    Automatic escalation initiated.
+                    Standard protocols maintained per operator recommendation. Note: senior staff have
+                    independently escalated the Ross 128 anomaly. Automatic escalation initiated.
                 </span>
             </div>
         `;
@@ -890,7 +954,7 @@ function generateDay1Report(natural, falsePos, verified, verifiedStars, choices 
             <table style="width: 100%; color: #0ff; font-size: 14px; border-collapse: collapse;">
                 <tr style="border-bottom: 1px solid #033;">
                     <td style="padding: 8px 0;">Stars Analyzed:</td>
-                    <td style="text-align: right;">${natural + falsePos + verified} / 10</td>
+                    <td style="text-align: right;">${natural + falsePos + verified}</td>
                 </tr>
                 <tr style="border-bottom: 1px solid #033;">
                     <td style="padding: 8px 0;">Natural Phenomena:</td>
@@ -907,6 +971,7 @@ function generateDay1Report(natural, falsePos, verified, verifiedStars, choices 
             </table>
 
             ${classificationSection}
+            ${ross128Flavor}
 
             <div style="color: #0f0; font-size: 16px; margin: 20px 0 10px 0;">
                 VERIFIED EXTRASOLAR SIGNALS
@@ -964,10 +1029,10 @@ function generateDay2Report(natural, falsePos, verified, verifiedStars, choices 
     const priorityLevel = choices?.src7024Priority || 'HIGH';
     const priorityColor = priorityLevel === 'CRITICAL' ? '#ff0' : priorityLevel === 'HIGH' ? '#0ff' : '#0a0';
     const priorityNote = priorityLevel === 'CRITICAL'
-        ? '<br><span style="color: #ff0; font-size: 12px;">OPERATOR ASSESSMENT: CRITICAL — Aligns with automated threat analysis.</span>'
+        ? '<br><span style="color: #ff0; font-size: 12px;">OPERATOR ASSESSMENT: CRITICAL — IMMEDIATE action authorized. All array resources redirected.</span>'
         : priorityLevel === 'HIGH'
-        ? '<br><span style="color: #0ff; font-size: 12px;">OPERATOR ASSESSMENT: HIGH PRIORITY</span>'
-        : '';
+        ? '<br><span style="color: #0ff; font-size: 12px;">OPERATOR ASSESSMENT: HIGH PRIORITY — Priority review scheduled for next cycle.</span>'
+        : '<br><span style="color: #0a0; font-size: 12px;">OPERATOR ASSESSMENT: STANDARD — Queued for standard review. Note: automated systems recommend escalation.</span>';
 
     // Mission assessment from operator
     const assessment = choices?.missionAssessment || 'SIGNIFICANT_DISCOVERY';
@@ -995,7 +1060,7 @@ function generateDay2Report(natural, falsePos, verified, verifiedStars, choices 
             <table style="width: 100%; color: #0ff; font-size: 14px; border-collapse: collapse;">
                 <tr style="border-bottom: 1px solid #033;">
                     <td style="padding: 8px 0;">Stars Analyzed:</td>
-                    <td style="text-align: right;">${natural + falsePos + verified} / 10</td>
+                    <td style="text-align: right;">${natural + falsePos + verified}</td>
                 </tr>
                 <tr style="border-bottom: 1px solid #033;">
                     <td style="padding: 8px 0;">Natural Phenomena:</td>
@@ -1079,7 +1144,7 @@ function generateDay3Report(natural, falsePos, verified, verifiedStars, choices 
             <table style="width: 100%; color: #0ff; font-size: 14px; border-collapse: collapse;">
                 <tr style="border-bottom: 1px solid #033;">
                     <td style="padding: 8px 0;">Stars Analyzed:</td>
-                    <td style="text-align: right;">${natural + falsePos + verified} / 8</td>
+                    <td style="text-align: right;">${natural + falsePos + verified}</td>
                 </tr>
                 <tr style="border-bottom: 1px solid #033;">
                     <td style="padding: 8px 0;">Natural Phenomena:</td>
@@ -1129,7 +1194,11 @@ function generateDay3Report(natural, falsePos, verified, verifiedStars, choices 
                 </div>
             </div>
         `,
-        footer: 'The origin point awaits. Initiate final sequence.',
+        footer: classification === 'COSMIC_REVELATION'
+            ? 'Classification: TOP SECRET // COSMIC. The origin point awaits.'
+            : classification === 'FIRST_CONTACT'
+            ? 'Report forwarded to First Contact Committee. Initiate final sequence.'
+            : 'Report submitted to the International Astronomical Union. Initiate final sequence.',
         buttonText: 'BEGIN FINAL SEQUENCE'
     };
 }
@@ -1321,6 +1390,11 @@ function showDayTransition() {
                     const body = ROSS128_DECRYPT_EMAIL.body.replace(/{PLAYER_NAME}/g, gameState.playerName);
                     addMailMessage(ROSS128_DECRYPT_EMAIL.from, ROSS128_DECRYPT_EMAIL.subject, body);
                 }, 5000);
+            }
+
+            // Switch to Day 3 "On the trail" music
+            if (gameState.currentDay === 3) {
+                setDay3Music();
             }
 
             // Send SRC-7024 priority email on Day 3 start

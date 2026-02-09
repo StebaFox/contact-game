@@ -1107,13 +1107,30 @@ function enableConfirmButton() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Audio
+// Audio (singleton AudioContext, matching pattern from pattern-minigame.js)
 // ─────────────────────────────────────────────────────────────────────────────
+
+let alignmentAudioCtx = null;
+
+function getAlignmentAudioCtx() {
+    if (!alignmentAudioCtx || alignmentAudioCtx.state === 'closed') {
+        alignmentAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (alignmentAudioCtx.state === 'suspended') alignmentAudioCtx.resume();
+    return alignmentAudioCtx;
+}
+
+function closeAlignmentAudio() {
+    if (alignmentAudioCtx && alignmentAudioCtx.state !== 'closed') {
+        alignmentAudioCtx.close();
+    }
+    alignmentAudioCtx = null;
+}
 
 function playFragmentPickup() {
     try {
         const vol = getSfxVolume();
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = getAlignmentAudioCtx();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
 
@@ -1133,7 +1150,7 @@ function playFragmentPickup() {
 function playAlignmentSuccess() {
     try {
         const vol = getSfxVolume();
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = getAlignmentAudioCtx();
 
         [600, 800, 1000].forEach((freq, i) => {
             const osc = ctx.createOscillator();
@@ -1156,7 +1173,7 @@ function playAlignmentSuccess() {
 function playAlignmentError() {
     try {
         const vol = getSfxVolume();
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = getAlignmentAudioCtx();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
 
@@ -1320,6 +1337,9 @@ function completeAlignment(success) {
     if (alignmentState.animationId) {
         cancelAnimationFrame(alignmentState.animationId);
     }
+
+    // Clean up audio context
+    closeAlignmentAudio();
 
     // Remove overlay
     const overlay = document.getElementById('alignment-overlay');

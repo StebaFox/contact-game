@@ -15,23 +15,25 @@ export const DAY_CONFIG = {
         title: 'DAY 1: ROUTINE SURVEY',
         subtitle: 'Systematic cataloging of assigned targets',
         availableStars: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        starsRequired: 10,
+        starsRequired: 7,
+        criticalStars: [8], // Ross 128 must be scanned
         objectives: [
-            'Complete survey of 10 assigned star systems',
+            'Survey assigned star systems (7 minimum)',
             'Document all detected signals',
             'Flag any anomalous readings'
         ],
         bootMessages: [
             'CLEARANCE LEVEL: 4 (STANDARD)',
             'SURVEY MODE: ACTIVE',
-            'ASSIGNED TARGETS: 10'
+            'ASSIGNED TARGETS: 10 (7 MINIMUM)'
         ]
     },
     2: {
         title: 'DAY 2: VERIFICATION PROTOCOLS',
         subtitle: 'Signal verification and deep analysis',
         availableStars: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
-        starsRequired: 10,
+        starsRequired: 7,
+        criticalStars: [],
         prerequisites: ['day1Complete'],
         objectives: [
             'Re-analyze anomalous signal from Day 1',
@@ -49,7 +51,8 @@ export const DAY_CONFIG = {
         title: 'DAY 3: COSMIC TRIANGULATION',
         subtitle: 'Locate the source of the ancient signal',
         availableStars: [20, 21, 22, 23, 24, 25, 26, 27, 28],
-        starsRequired: 9,
+        starsRequired: 7,
+        criticalStars: [],
         prerequisites: ['day2Complete', 'decryptionComplete'],
         objectives: [
             'Survey remaining star systems',
@@ -135,7 +138,19 @@ export function getDayProgress() {
 
 export function checkDayComplete() {
     const progress = getDayProgress();
-    return progress.complete;
+    if (!progress.complete) return false;
+
+    // Also require critical stars to be analyzed
+    const dayConfig = DAY_CONFIG[gameState.currentDay];
+    if (dayConfig?.criticalStars?.length > 0) {
+        for (const starIndex of dayConfig.criticalStars) {
+            if (!gameState.analyzedStars.has(starIndex)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 export function canAdvanceDay() {

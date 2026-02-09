@@ -2509,6 +2509,9 @@ export function setupNavigationButtons() {
         showView('starmap-view');
         log('Returned to stellar catalog');
 
+        // Check if day is complete
+        checkAndShowDayComplete();
+
         // Check if all stars have been analyzed
         checkForEndState();
     });

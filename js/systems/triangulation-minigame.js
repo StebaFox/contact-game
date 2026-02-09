@@ -996,6 +996,9 @@ function completeTriangulation(success) {
         cancelAnimationFrame(triState.animationId);
     }
 
+    // Clean up audio context
+    closeTriAudio();
+
     // Remove overlay
     const overlay = document.getElementById('triangulation-overlay');
     if (overlay) overlay.remove();
@@ -1017,13 +1020,30 @@ function completeTriangulation(success) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Audio
+// Audio (singleton AudioContext)
 // ─────────────────────────────────────────────────────────────────────────────
+
+let triAudioCtx = null;
+
+function getTriAudioCtx() {
+    if (!triAudioCtx || triAudioCtx.state === 'closed') {
+        triAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (triAudioCtx.state === 'suspended') triAudioCtx.resume();
+    return triAudioCtx;
+}
+
+function closeTriAudio() {
+    if (triAudioCtx && triAudioCtx.state !== 'closed') {
+        triAudioCtx.close();
+    }
+    triAudioCtx = null;
+}
 
 function playSuccessSound() {
     try {
         const vol = getSfxVolume();
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = getTriAudioCtx();
 
         [400, 600, 800, 1000, 1200].forEach((freq, i) => {
             const osc = ctx.createOscillator();

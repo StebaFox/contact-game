@@ -7,6 +7,7 @@ import { gameState } from '../core/game-state.js';
 import { showView, log } from '../ui/rendering.js';
 import { playClick, playEmailNotification } from '../systems/audio.js';
 import { DAY1_EMAILS, DAY2_EMAILS, DAY3_EMAILS, FIRST_CONTACT_EMAIL } from '../narrative/emails.js';
+import { addJournalEntry } from './journal.js';
 
 // Open the mailbox view (toggles if already open)
 export function openMailbox() {
@@ -134,6 +135,20 @@ export function addMailMessage(from, subject, body, preview = null) {
     gameState.mailboxMessages.push(message);
     gameState.unreadMailCount++;
     updateMailIndicator();
+
+    // Tag plot-critical emails as intel journal entries
+    const intelKeywords = [
+        'Anomaly', 'Deep Space', 'Decrypt', 'System Failure', 'Blackout',
+        'SRC-7024', 'Priority', 'Pattern Emerging', 'First Contact',
+        'Fragment', 'Genesis', 'Triangulat'
+    ];
+    if (intelKeywords.some(kw => subject.includes(kw))) {
+        addJournalEntry('intel', {
+            starName: from,
+            title: subject,
+            content: body
+        });
+    }
 
     // If mailbox is currently open, refresh it so the new message appears
     const activeView = document.querySelector('.view.active');

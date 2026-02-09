@@ -17,6 +17,7 @@ export function showView(viewId) {
 export function clearCanvas(canvasId) {
     const canvas = document.getElementById(canvasId);
     const ctx = canvas.getContext('2d');
+    ctx.globalAlpha = 1.0;
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 }

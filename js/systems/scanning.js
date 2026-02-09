@@ -17,6 +17,7 @@ import { checkAndShowDayComplete } from './day-report.js';
 import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
 import { unlockInvestigation, onFragmentCollected } from './investigation.js';
 import { updateStarCatalogDisplay } from '../ui/starmap.js';
+import { addJournalEntry, showJournalButton } from './journal.js';
 
 // Ross 128 star index - requires decryption
 const ROSS_128_INDEX = 8;
@@ -104,7 +105,9 @@ export function initiateScan() {
 
         startSignalAnimation();
         log('Archived scan data loaded');
-        document.getElementById('analyze-btn').disabled = false;
+        // Only enable analyze if signal hasn't been fully analyzed yet
+        const alreadyAnalyzed = cachedSignal.analyzed || gameState.scanResults.has(star.id);
+        document.getElementById('analyze-btn').disabled = alreadyAnalyzed;
         // Keep scan button disabled and mark as complete
         const scanBtn = document.getElementById('scan-btn');
         scanBtn.disabled = true;
@@ -123,11 +126,13 @@ export function initiateScan() {
     // Clear previous spectrogram/waveform data to prevent persistence from prior scans
     const waveCanvas = document.getElementById('waveform-canvas');
     const waveCtx = waveCanvas.getContext('2d');
+    waveCtx.globalAlpha = 1.0;
     waveCtx.fillStyle = '#000';
     waveCtx.fillRect(0, 0, waveCanvas.width, waveCanvas.height);
 
     const specCanvas = document.getElementById('spectrogram-canvas');
     const specCtx = specCanvas.getContext('2d');
+    specCtx.globalAlpha = 1.0;
     specCtx.fillStyle = '#000';
     specCtx.fillRect(0, 0, specCanvas.width, specCanvas.height);
 
@@ -994,13 +999,31 @@ export function startSignalAnimation() {
     animateSignals();
 }
 
-// Stop signal animation
+// Stop signal animation and clear canvases to prevent carryover
 export function stopSignalAnimation() {
     if (gameState.signalAnimationFrameId) {
         cancelAnimationFrame(gameState.signalAnimationFrameId);
         gameState.signalAnimationFrameId = null;
     }
     gameState.noiseFrameCounter = 0;
+    gameState.currentSignal = null;
+
+    // Clear canvases so old spectrogram doesn't bleed into next star
+    // Reset globalAlpha first in case it was left at a partial value
+    const waveCanvas = document.getElementById('waveform-canvas');
+    if (waveCanvas) {
+        const ctx = waveCanvas.getContext('2d');
+        ctx.globalAlpha = 1.0;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, waveCanvas.width, waveCanvas.height);
+    }
+    const specCanvas = document.getElementById('spectrogram-canvas');
+    if (specCanvas) {
+        const ctx = specCanvas.getContext('2d');
+        ctx.globalAlpha = 1.0;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, specCanvas.width, specCanvas.height);
+    }
 }
 
 // Analyze signal
@@ -1164,6 +1187,14 @@ function showFalsePositiveResult(star, cause, display) {
         source: cause.source
     });
 
+    // Log discovery
+    addJournalEntry('discovery', {
+        starName: star.name,
+        title: `False Positive: ${star.name}`,
+        content: `Signal identified as terrestrial interference.\nSource: ${cause.source}`
+    });
+    showJournalButton();
+
     // Auto-save after scan result
     autoSave();
 
@@ -1186,9 +1217,6 @@ function showFalsePositiveResult(star, cause, display) {
 
     display.appendChild(resultDiv);
 
-    switchToBackgroundMusic();
-    stopAlienSignalSound();
-
     setTimeout(() => {
         const returnBtn = document.createElement('button');
         returnBtn.textContent = 'RETURN TO ARRAY';
@@ -1196,12 +1224,12 @@ function showFalsePositiveResult(star, cause, display) {
         returnBtn.style.cssText = 'margin-top: 15px; background: rgba(0, 255, 0, 0.1); border: 2px solid #0f0; color: #0f0;';
         returnBtn.addEventListener('click', () => {
             playClick();
+            switchToBackgroundMusic();
+            stopAlienSignalSound();
             document.getElementById('contact-protocol-box').style.display = 'none';
             document.getElementById('analyze-btn').disabled = false;
             showView('starmap-view');
             log(`False positive from ${star.name} - Source: ${cause.source}`);
-            // Check if day is complete after false positive
-            checkAndShowDayComplete();
         });
         display.appendChild(returnBtn);
     }, 1000);
@@ -1224,6 +1252,14 @@ function showVerifiedSignalResult(star, display) {
     gameState.scanResults.set(star.id, {
         type: 'verified_signal'
     });
+
+    // Log discovery
+    addJournalEntry('discovery', {
+        starName: star.name,
+        title: `Verified Signal: ${star.name}`,
+        content: `Non-natural signal confirmed at ${star.distance}.\nAll terrestrial interference checks negative.\nIntelligent origin probable.`
+    });
+    showJournalButton();
 
     // Auto-save after scan result
     autoSave();
@@ -1284,8 +1320,6 @@ function showVerifiedSignalResult(star, display) {
             question.style.cssText = 'color: #f00; text-shadow: 0 0 5px #f00; font-size: 16px;';
             log('Contact protocol aborted by operator');
             document.getElementById('analyze-btn').disabled = false;
-            // Check if day is complete
-            checkAndShowDayComplete();
         });
 
         buttonContainer.appendChild(yesBtn);
@@ -1348,7 +1382,6 @@ function showEncryptedSignalResult(star, display) {
                 document.getElementById('analyze-btn').disabled = false;
                 showView('starmap-view');
                 log(`Encrypted signal from ${star.name} archived - Sigma clearance required`);
-                checkAndShowDayComplete();
 
                 // Send follow-up email about the encrypted signal discovery
                 const name = gameState.playerName;
@@ -1723,7 +1756,6 @@ function scheduleSrc7024PostAlignmentEmails() {
         // Unlock investigation page after this email arrives
         unlockInvestigation();
         onFragmentCollected();
-        checkAndShowDayComplete();
     }, 28000);
 }
 
@@ -1854,6 +1886,24 @@ function initiateContact(star) {
 
     const messageData = ALIEN_CONTACTS.find(m => m.starIndex === star.id);
     displayContactMessage(messageData, star);
+
+    // Archive contact in journal
+    if (messageData) {
+        let contactText = '';
+        if (messageData.hasImage) {
+            contactText = [...(messageData.beforeImage || []), '[IMAGE DATA]', ...(messageData.afterImage || [])].join('\n');
+        } else if (messageData.messages) {
+            contactText = messageData.messages.join('\n');
+        } else if (Array.isArray(messageData)) {
+            contactText = messageData.join('\n');
+        }
+        addJournalEntry('contact', {
+            starName: star.name,
+            title: `Contact: ${star.name}`,
+            content: contactText
+        });
+        showJournalButton();
+    }
 }
 
 // No-op: fragments are now awarded through decryption minigames, not contacts directly

@@ -7,6 +7,7 @@ import { gameState } from '../core/game-state.js';
 import { log, typeAnalysisText } from '../ui/rendering.js';
 import { playClick, playLockAchieved, playStaticBurst, switchToAlienMusic, startAlienSignalSound, startNaturalPhenomenaSound } from './audio.js';
 import { checkAndShowDayComplete } from './day-report.js';
+import { addJournalEntry } from './journal.js';
 
 // External function references (set by main.js)
 let stopSignalAnimationFn = null;
@@ -619,6 +620,14 @@ function handleCapture(region) {
 
         log(`Pattern isolated! (${patternState.captures.length}/3)`, 'highlight');
 
+        // Show loading indicator, then generate next frame
+        setTimeout(() => {
+            if (patternState.active && patternState.captures.length < 3) {
+                document.getElementById('pattern-status').innerHTML =
+                    '<span style="color:#0ff;">ACQUIRING NEW SIGNAL FRAME...</span>';
+            }
+        }, 400);
+
         setTimeout(() => {
             if (patternState.active && patternState.captures.length < 3) {
                 generateFrame();
@@ -631,7 +640,7 @@ function handleCapture(region) {
                     }
                 }, 1500);
             }
-        }, 1200);
+        }, 800);
     } else {
         document.getElementById('pattern-status').innerHTML =
             '<span style="color:#0f0; text-shadow:0 0 10px #0f0;">✓ REPEATING PATTERN CONFIRMED</span>';
@@ -681,8 +690,9 @@ function handleMiss() {
 
 function animate() {
     if (!patternState.active) return;
+    // If canvas is hidden (e.g. player opened mailbox/journal), keep loop alive but skip drawing
     if (!patternState.canvas || !patternState.canvas.offsetParent) {
-        patternState.active = false;
+        patternState.animationId = requestAnimationFrame(animate);
         return;
     }
 
@@ -962,6 +972,13 @@ function completePatternGame(star) {
             source: phenomenon.source
         });
 
+        // Log discovery
+        addJournalEntry('discovery', {
+            starName: star.name,
+            title: `Natural: ${phenomenon.type}`,
+            content: `Source: ${phenomenon.source}\n${phenomenon.details.join('\n')}`
+        });
+
         const lines = [
             'ANALYSIS COMPLETE',
             '════════════════════════════',
@@ -974,8 +991,7 @@ function completePatternGame(star) {
         ];
 
         typeAnalysisText(lines, () => {
-            document.getElementById('analyze-btn').disabled = false;
-            checkAndShowDayComplete();
+            // Analyze button stays disabled — analysis is complete for this star
         });
     }
 }

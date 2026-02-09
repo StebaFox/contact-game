@@ -58,6 +58,7 @@ import {
     loadVolumeSettings
 } from './systems/audio.js';
 import { openMailbox, closeMailbox, checkForNewMail } from './systems/mailbox.js';
+import { openJournal, closeJournal } from './systems/journal.js';
 import {
     initDishArray,
     handleKeypadPress,
@@ -240,6 +241,17 @@ function setupEventListeners() {
     document.getElementById('mailbox-back-btn').addEventListener('click', () => {
         playClick();
         closeMailbox();
+    });
+
+    // Journal buttons
+    document.getElementById('journal-btn')?.addEventListener('click', () => {
+        playClick();
+        openJournal();
+    });
+
+    document.getElementById('journal-back-btn')?.addEventListener('click', () => {
+        playClick();
+        closeJournal();
     });
 
     // Investigation / Project Lighthouse button

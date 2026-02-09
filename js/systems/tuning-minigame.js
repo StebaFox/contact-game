@@ -7,6 +7,8 @@ import { gameState } from '../core/game-state.js';
 import { log } from '../ui/rendering.js';
 import { initAudio, playLockAchieved, startTuningTone, stopTuningTone, startStaticHiss, stopStaticHiss, updateStaticHissVolume } from './audio.js';
 import { renderMiniDishArray, calculateSignalBoost, canTuneWeakSignal } from './dish-array.js';
+import { addMailMessage } from './mailbox.js';
+import { addJournalEntry, showJournalButton } from './journal.js';
 
 // External function references (set by main.js)
 let generateSignalFn = null;
@@ -44,6 +46,15 @@ export function startTuningMinigame(star) {
     // Reset drift state
     driftState = { freqOffset: 0, gainOffset: 0, freqVelocity: 0, gainVelocity: 0, driftTimer: 0 };
 
+    // Clear spectrogram canvas to prevent any carryover from previous star
+    const specCanvas = document.getElementById('spectrogram-canvas');
+    if (specCanvas) {
+        const ctx = specCanvas.getContext('2d');
+        ctx.globalAlpha = 1.0;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, specCanvas.width, specCanvas.height);
+    }
+
     // Show tuning interface
     document.getElementById('tuning-game').style.display = 'block';
 
@@ -62,6 +73,65 @@ export function startTuningMinigame(star) {
     document.getElementById('frequency-value').textContent = gameState.currentFrequency.toString();
     document.getElementById('gain-value').textContent = gameState.currentGain.toString();
 
+    // Show auto-tune button if player has tuned 3+ stars (not for weak signals)
+    let existingAutoBtn = document.getElementById('auto-tune-btn');
+    if (existingAutoBtn) existingAutoBtn.remove();
+
+    if (gameState.analyzedStars.size >= 3 && star.signalStrength !== 'weak') {
+        const isFirstTime = gameState.analyzedStars.size === 3;
+        const autoBtn = document.createElement('button');
+        autoBtn.id = 'auto-tune-btn';
+        autoBtn.textContent = '[ AUTO-TUNE ]';
+        autoBtn.className = 'auto-tune-btn';
+        autoBtn.title = 'Automatically tune to signal';
+        autoBtn.addEventListener('click', () => {
+            autoBtn.disabled = true;
+            autoBtn.style.opacity = '0.4';
+            autoTune();
+        });
+        const tuningGame = document.getElementById('tuning-game');
+        if (tuningGame) {
+            tuningGame.style.position = 'relative';
+            tuningGame.appendChild(autoBtn);
+        }
+
+        // Notify player when auto-tune first becomes available
+        if (isFirstTime) {
+            // Brief attention-grabbing pulse on the button
+            autoBtn.style.animation = 'autotune-intro 0.6s ease-out 3';
+            if (!document.getElementById('autotune-intro-style')) {
+                const style = document.createElement('style');
+                style.id = 'autotune-intro-style';
+                style.textContent = `
+                    @keyframes autotune-intro {
+                        0% { box-shadow: 0 0 5px rgba(0,255,0,0.3); }
+                        50% { box-shadow: 0 0 20px rgba(0,255,0,0.8); transform: scale(1.05); }
+                        100% { box-shadow: 0 0 5px rgba(0,255,0,0.3); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+            // Send email about auto-tune (delayed so it doesn't interrupt active tuning)
+            const name = gameState.playerName;
+            setTimeout(() => {
+                addMailMessage(
+                    'SETI Array Operations',
+                    'System Upgrade: Auto-Tune Calibration Complete',
+                    `${name},\n\nGood news — after three successful signal acquisitions, the array has accumulated enough calibration data to enable automatic tuning.\n\nYou'll see an [AUTO-TUNE] button on future scans. It uses your previous lock patterns to sweep the sliders automatically. Should save you some time on the routine targets.\n\nNote: Auto-tune is disabled for weak signals. Those still need manual finesse and dish alignment — the system can't reliably compensate for signal drift on its own.\n\nKeep up the good work out there.\n\n— Array Operations`
+                );
+            }, 10000);
+
+            // Journal entry
+            addJournalEntry('discovery', {
+                starName: 'SYSTEM',
+                title: 'Auto-Tune Calibration Complete',
+                content: 'After 3 successful signal acquisitions, the array has enough calibration data to enable automatic tuning. [AUTO-TUNE] button now available on standard-strength signals.'
+            });
+            showJournalButton();
+        }
+    }
+
     // Start tuning feedback loop
     tuningFeedbackLoop();
 
@@ -74,6 +144,126 @@ export function startTuningMinigame(star) {
     if (star.signalStrength === 'weak') {
         log(`WEAK SIGNAL - Array alignment boosting signal`, 'warning');
     }
+
+    // Show tutorial tooltip on very first scan
+    if (gameState.analyzedStars.size === 0 && !document.getElementById('tuning-tooltip')) {
+        showTuningTooltip();
+    }
+}
+
+// First-scan tutorial tooltip
+function showTuningTooltip() {
+    const tooltip = document.createElement('div');
+    tooltip.id = 'tuning-tooltip';
+    tooltip.innerHTML = `
+        <div style="margin-bottom: 6px; color: #0f0; font-weight: bold;">SIGNAL TUNING</div>
+        Adjust <span style="color: #0ff;">FREQUENCY</span> and <span style="color: #0ff;">GAIN</span> sliders until the signal locks.<br>
+        Watch the waveform — <span style="color: #0f0;">green</span> means you're close.
+    `;
+    tooltip.style.cssText = `
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.92);
+        border: 1px solid #0f0;
+        color: #aaa;
+        padding: 10px 16px;
+        font-family: "VT323", monospace;
+        font-size: 14px;
+        line-height: 1.4;
+        z-index: 100;
+        max-width: 320px;
+        text-align: center;
+        pointer-events: auto;
+        cursor: pointer;
+        animation: tooltip-pulse 2s ease-in-out infinite;
+    `;
+
+    // Add pulse animation if not already present
+    if (!document.getElementById('tuning-tooltip-style')) {
+        const style = document.createElement('style');
+        style.id = 'tuning-tooltip-style';
+        style.textContent = `
+            @keyframes tooltip-pulse {
+                0%, 100% { border-color: #0f0; box-shadow: 0 0 5px rgba(0,255,0,0.3); }
+                50% { border-color: #0a0; box-shadow: 0 0 15px rgba(0,255,0,0.5); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    const tuningGame = document.getElementById('tuning-game');
+    if (tuningGame) {
+        tuningGame.style.position = 'relative';
+        tuningGame.appendChild(tooltip);
+    }
+
+    // Dismiss on click
+    tooltip.addEventListener('click', () => tooltip.remove());
+
+    // Dismiss on slider interaction
+    const dismissOnSlider = () => {
+        if (tooltip.parentNode) tooltip.remove();
+        document.getElementById('frequency-slider')?.removeEventListener('input', dismissOnSlider);
+        document.getElementById('gain-slider')?.removeEventListener('input', dismissOnSlider);
+    };
+    document.getElementById('frequency-slider')?.addEventListener('input', dismissOnSlider);
+    document.getElementById('gain-slider')?.addEventListener('input', dismissOnSlider);
+
+    // Auto-dismiss after 8 seconds
+    setTimeout(() => {
+        if (tooltip.parentNode) {
+            tooltip.style.transition = 'opacity 0.5s';
+            tooltip.style.opacity = '0';
+            setTimeout(() => tooltip.remove(), 500);
+        }
+    }, 8000);
+}
+
+// Auto-tune: animate sliders toward target over ~2.5 seconds
+function autoTune() {
+    const freqSlider = document.getElementById('frequency-slider');
+    const gainSlider = document.getElementById('gain-slider');
+    const startFreq = gameState.currentFrequency;
+    const startGain = gameState.currentGain;
+    const targetFreq = gameState.targetFrequency;
+    const targetGain = gameState.targetGain;
+    const duration = 2500; // ms
+    const startTime = Date.now();
+
+    // Dismiss tooltip if present
+    const tooltip = document.getElementById('tuning-tooltip');
+    if (tooltip) tooltip.remove();
+
+    function animateStep() {
+        if (!gameState.tuningActive) return;
+
+        const elapsed = Date.now() - startTime;
+        const t = Math.min(1, elapsed / duration);
+        // Ease-in-out curve
+        const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+        const freq = Math.round(startFreq + (targetFreq - startFreq) * ease);
+        const gain = Math.round(startGain + (targetGain - startGain) * ease);
+
+        gameState.currentFrequency = freq;
+        gameState.currentGain = gain;
+        if (freqSlider) freqSlider.value = freq;
+        if (gainSlider) gainSlider.value = gain;
+
+        const freqVal = document.getElementById('frequency-value');
+        const gainVal = document.getElementById('gain-value');
+        if (freqVal) freqVal.textContent = freq.toString();
+        if (gainVal) gainVal.textContent = gain.toString();
+
+        if (t < 1) {
+            requestAnimationFrame(animateStep);
+        }
+        // The tuningFeedbackLoop handles lock detection naturally
+    }
+
+    requestAnimationFrame(animateStep);
 }
 
 // Main tuning feedback loop
