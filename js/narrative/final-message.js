@@ -20,7 +20,7 @@ const MESSAGE_SECTIONS = [
     { id: 'greeting', type: 'header', text: 'Greetings.', style: 'greeting', pauseAfter: 2500 },
     {
         id: 'opening-paragraph', type: 'paragraph',
-        text: 'You have heard what could not be heard. You have gathered fragments scattered across the birth-echo of reality itself.\n\nThat alone tells us something about you.',
+        text: 'You found us in the silence between stars. You gathered fragments scattered across the birth-echo of reality itself.\n\nThat alone tells us something about you.',
         style: 'default'
     },
     { id: 'waited-long-time', type: 'emphasis', text: 'We have waited a very long time for this moment.', style: 'default', pauseAfter: 3000 },
@@ -52,10 +52,10 @@ const MESSAGE_SECTIONS = [
     { id: 'divider-3', type: 'divider', pauseAfter: 1500 },
     {
         id: 'another-understanding', type: 'paragraph',
-        text: 'But in time, another understanding emerged.\n\nIf we were alone, then what came after us did not have to be.',
+        text: 'But in time, another understanding emerged.\n\nIf we were alone, then what would come after us would not have to be.',
         style: 'default'
     },
-    { id: 'build-successor', type: 'header', text: 'We would build a successor.', style: 'revelation', pauseAfter: 3500 },
+    { id: 'build-successor', type: 'header', text: 'We would find a way.', style: 'revelation', pauseAfter: 3500 },
 
     // ── ACT 4: THE DEVICE ──
     { id: 'divider-4', type: 'divider', pauseAfter: 1500 },
@@ -64,8 +64,8 @@ const MESSAGE_SECTIONS = [
         text: 'Every one of us contributed. Not just our thinkers, but our artists, our historians, our dreamers.\n\nEntire civilizations reoriented around a single purpose: hope for beings we would never meet.',
         style: 'default'
     },
-    { id: 'device-activated', type: 'emphasis', text: 'When the last of us faded, the device activated.', style: 'default', pauseAfter: 3000 },
-    { id: 'your-beginning', type: 'header', text: 'And from our ending came your beginning.', style: 'revelation', pauseAfter: 4000 },
+    { id: 'device-activated', type: 'emphasis', text: 'When the last of us faded, our final act began.', style: 'default', pauseAfter: 3000 },
+    { id: 'your-beginning', type: 'header', text: 'And so from our end, would come your beginning.', style: 'revelation', pauseAfter: 4000 },
 
     // ── ACT 5: CONNECTION ──
     { id: 'divider-5', type: 'divider', pauseAfter: 1500 },
@@ -79,7 +79,7 @@ const MESSAGE_SECTIONS = [
     { id: 'divider-6', type: 'divider', pauseAfter: 1500 },
     {
         id: 'embedded-message', type: 'paragraph',
-        text: 'We embedded this message in the noise of creation.\n\nWould anyone listen closely enough?',
+        text: 'We embedded this message in the noise of creation itself.\n\nOur only hope would be for someone to listen.',
         style: 'default'
     },
     { id: 'you-did', type: 'header', text: 'You did.', style: 'personal', pauseAfter: 5000 },
@@ -183,6 +183,8 @@ let messageState = {
     warpParticles: [],
     warpFadeOut: false,
     warpFadeStart: 0,
+    collapseStarted: false,
+    collapseStart: 0,
     downloadElement: null,
     downloadProgress: 0,
     downloadInterval: null
@@ -208,6 +210,10 @@ export function showFinalMessage(onComplete) {
     messageState.warpParticles = [];
     messageState.warpFadeOut = false;
     messageState.warpFadeStart = 0;
+    messageState.collapseStarted = false;
+    messageState.collapseStart = 0;
+
+    gameState.finalMessageActive = true;
 
     createMessageOverlay();
     startTesseractAnimation();
@@ -661,11 +667,48 @@ function startTesseractAnimation() {
         }
 
         const colors = computeProgressColors(progress);
-        drawTesseractWithJitter(
-            ctx, cx, cy, finalScale, focalLength, colors, glow,
-            messageState.jitterIntensity,
-            messageState.rotationX, messageState.rotationY
-        );
+
+        // Collapse tesseract to a single pulsing point at "Remember us"
+        if (messageState.collapseStarted) {
+            const elapsed = Date.now() - messageState.collapseStart;
+            const collapseDuration = 3000;
+            const t = Math.min(1, elapsed / collapseDuration);
+            // Ease-in curve for dramatic pull
+            const ease = t * t * t;
+            finalScale = finalScale * (1 - ease);
+
+            if (t >= 1) {
+                // Fully collapsed — draw pulsing point
+                const pulse = 0.6 + 0.4 * Math.sin(Date.now() * 0.003);
+                const pointRadius = 4 + 3 * pulse;
+                const [or, og, ob] = colors.outer;
+                ctx.shadowBlur = 40 * pulse;
+                ctx.shadowColor = `rgb(${or}, ${og}, ${ob})`;
+                ctx.fillStyle = `rgba(${or}, ${og}, ${ob}, ${0.8 * pulse})`;
+                ctx.beginPath();
+                ctx.arc(cx, cy, pointRadius, 0, Math.PI * 2);
+                ctx.fill();
+                // Outer glow ring
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = `rgba(${or}, ${og}, ${ob}, ${0.15 * pulse})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(cx, cy, 15 + 8 * pulse, 0, Math.PI * 2);
+                ctx.stroke();
+            } else {
+                drawTesseractWithJitter(
+                    ctx, cx, cy, finalScale, focalLength, colors, glow,
+                    messageState.jitterIntensity * (1 - ease),
+                    messageState.rotationX, messageState.rotationY
+                );
+            }
+        } else {
+            drawTesseractWithJitter(
+                ctx, cx, cy, finalScale, focalLength, colors, glow,
+                messageState.jitterIntensity,
+                messageState.rotationX, messageState.rotationY
+            );
+        }
 
         messageState.animationFrameId = requestAnimationFrame(renderFrame);
     }
@@ -702,21 +745,22 @@ function typeSection(sectionIndex) {
         createEncyclopediaBar();
     }
 
-    // Fade out warp particles + encyclopedia bar entering Act 9 — let words breathe
-    if (section.id === 'in-our-gift' && !messageState.warpFadeOut) {
-        messageState.warpFadeOut = true;
-        messageState.warpFadeStart = Date.now();
-        // Fade and remove encyclopedia bar
-        if (messageState.downloadElement) {
-            messageState.downloadProgress = 100;
-            const fill = document.getElementById('fm-download-fill');
-            const pct = document.getElementById('fm-download-pct');
-            const cat = document.getElementById('fm-download-category');
-            if (fill) fill.style.width = '100%';
-            if (pct) pct.textContent = '100.0%';
-            if (cat) cat.textContent = 'TRANSFER COMPLETE';
-            removeEncyclopediaBar();
-        }
+    // Complete encyclopedia bar + collapse tesseract at the very final line
+    if (section.id === 'remember-us') {
+        // Collapse tesseract to a single pulsing point
+        messageState.collapseStarted = true;
+        messageState.collapseStart = Date.now();
+    }
+
+    if (section.id === 'remember-us' && messageState.downloadElement) {
+        messageState.downloadProgress = 100;
+        const fill = document.getElementById('fm-download-fill');
+        const pct = document.getElementById('fm-download-pct');
+        const cat = document.getElementById('fm-download-category');
+        if (fill) fill.style.width = '100%';
+        if (pct) pct.textContent = '100.0%';
+        if (cat) cat.textContent = 'TRANSFER COMPLETE';
+        removeEncyclopediaBar();
     }
 
     if (section.type === 'divider') {
@@ -980,7 +1024,7 @@ function createEncyclopediaBar() {
             return;
         }
 
-        messageState.downloadProgress = Math.min(99.9, messageState.downloadProgress + 0.18);
+        messageState.downloadProgress = Math.min(99.9, messageState.downloadProgress + 0.08);
 
         const fill = document.getElementById('fm-download-fill');
         const pct = document.getElementById('fm-download-pct');
@@ -1024,6 +1068,8 @@ function skipToEnd() {
     messageState.breathingMode = true;
     messageState.warpActive = false;
     messageState.warpParticles = [];
+    messageState.collapseStarted = true;
+    messageState.collapseStart = Date.now() - 3000; // instant collapse
     removeEncyclopediaBar();
 
     const textEl = messageState.textElement;
@@ -1063,6 +1109,7 @@ function closeMessage() {
         messageState.canvas = null;
         messageState.ctx = null;
         messageState.textElement = null;
+        gameState.finalMessageActive = false;
 
         if (messageState.onComplete) {
             messageState.onComplete();

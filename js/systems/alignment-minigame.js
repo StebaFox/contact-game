@@ -89,7 +89,7 @@ const FRAGMENT_PATTERNS = {
         color: '#ff0',
         encrypted: '8D5A C0F7 1E92',
         message: 'US NOT',
-        alienChars: ['Ω', '∵', '⎔', '⚡'],
+        alienChars: ['Ω', '∵', '⎔', '⌬'],
         borderPattern: '╠═╬═╣',
         pulseColor: '#ffff00'
     },
@@ -128,7 +128,7 @@ const SIGNAL_SUB_FRAGMENTS = {
     ],
     nexusPoint: [
         { symbol: 'Ω∵', glyph: '█▓', color: '#ff0', encrypted: '8D5A', message: 'Ω∵⎔',
-          alienChars: ['Ω', '∵', '⎔', '⚡'], borderPattern: '┌─┐', pulseColor: '#ffff00' },
+          alienChars: ['Ω', '∵', '⎔', '⌬'], borderPattern: '┌─┐', pulseColor: '#ffff00' },
         { symbol: 'Λ∞', glyph: '▓█', color: '#ff0', encrypted: 'C0F7', message: 'Λ∞ℏ',
           alienChars: ['Λ', '∞', 'ℏ', '⊕'], borderPattern: '├─┤', pulseColor: '#ffff00' },
         { symbol: '◆⟐', glyph: '█░', color: '#ff0', encrypted: '1E92', message: '◆⟐✧',
@@ -155,9 +155,9 @@ const SIGNAL_SUB_FRAGMENTS = {
           alienChars: ['⬡', '⊛', 'Ψ', '∆'], borderPattern: '┣━┫', pulseColor: '#ff00ff' },
         { symbol: '⬡Ψ', glyph: '░█', color: '#f0f', encrypted: 'F3CA', message: '⬡Ψ◊',
           alienChars: ['◊', '✧', 'Ω', '⎔'], borderPattern: '┗━┛', pulseColor: '#ff00ff' },
-        { symbol: '◊Ω', glyph: '█░', color: '#f0f', encrypted: 'A1F7', message: '◊Ω⚡',
-          alienChars: ['⚡', 'Λ', '∴', '☉'], borderPattern: '╋━╋', pulseColor: '#ff00ff' },
-        { symbol: '⚡∴', glyph: '▓░', color: '#f0f', encrypted: 'B4E3', message: '⚡∴⟐',
+        { symbol: '◊Ω', glyph: '█░', color: '#f0f', encrypted: 'A1F7', message: '◊Ω⌬',
+          alienChars: ['⌬', 'Λ', '∴', '☉'], borderPattern: '╋━╋', pulseColor: '#ff00ff' },
+        { symbol: '⌬∴', glyph: '▓░', color: '#f0f', encrypted: 'B4E3', message: '⌬∴⟐',
           alienChars: ['⟐', '◆', '⊜', '⬣'], borderPattern: '┠━┨', pulseColor: '#ff00ff' },
         { symbol: '◆⊜', glyph: '░▓', color: '#f0f', encrypted: 'C8D5', message: '◆⊜✦',
           alienChars: ['✦', '⊙', '⬟', '∞'], borderPattern: '┯━┷', pulseColor: '#ff00ff' }
@@ -316,7 +316,7 @@ function createAlignmentUI(isTutorial) {
                 font-size: 13px;
                 text-align: center;
             ">
-                <span style="color: #ff0;">⚡ STUDY</span> corner symbols on fragments | <span style="color: #ff0;">MATCH</span> them to slot hints | <span style="color: #ff0;">DRAG</span> to align${alignmentState.rotationEnabled ? ' | <span style="color: #f0f;">RIGHT-CLICK</span> to rotate' : ''}
+                <span style="color: #ff0;">[>] STUDY</span> corner symbols on fragments | <span style="color: #ff0;">MATCH</span> them to slot hints | <span style="color: #ff0;">DRAG</span> to align${alignmentState.rotationEnabled ? ' | <span style="color: #f0f;">RIGHT-CLICK</span> to rotate' : ''}
             </div>
 
             <!-- Canvas Container -->

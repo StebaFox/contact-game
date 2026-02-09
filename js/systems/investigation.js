@@ -463,11 +463,7 @@ function showTransmissionBridge(onComplete) {
         { text: 'SIGNAL COHERENCE: 100%', color: '#0ff', delay: 1500 },
         { text: 'TEMPORAL ORIGIN: T < 0 (PRE-COSMIC)', color: '#0ff', delay: 2000 },
         { text: '', color: '#0f0', delay: 1000 },
-        { text: 'MESSAGE CLASS: UNKNOWN', color: '#ff0', delay: 2000 },
-        { text: '', color: '#0f0', delay: 1500 },
-        { text: 'MESSAGE CLASS: ...FIRST CONTACT', color: '#ff0', delay: 2000 },
-        { text: '', color: '#0f0', delay: 1500 },
-        { text: 'MESSAGE CLASS: ...ORIGIN CONTACT', color: '#f0f', delay: 2500 },
+        { text: 'MESSAGE CLASS: ORIGIN CONTACT', color: '#f0f', delay: 2500 },
         { text: '', color: '#0f0', delay: 2000 },
         { text: 'RECEIVING TRANSMISSION...', color: '#fff', delay: 3000 },
     ];

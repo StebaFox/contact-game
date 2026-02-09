@@ -182,6 +182,9 @@ export function checkForNewMail() {
     // Don't send mail until initialization is complete (player has entered their name)
     if (!gameState.playerName) return;
 
+    // Don't send mail during the final message sequence
+    if (gameState.finalMessageActive) return;
+
     // Check if enough time has passed since last mail
     const timeSinceLastMail = Date.now() - gameState.lastMailTime;
     const minInterval = 300000; // 5 minutes minimum between messages

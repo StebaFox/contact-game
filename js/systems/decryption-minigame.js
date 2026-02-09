@@ -327,7 +327,7 @@ function createDecryptionUI() {
                 font-size: 13px;
                 text-align: center;
             ">
-                <span style="color: #ff0;">⚡ CLICK</span> highlighted patterns to extract signal data
+                <span style="color: #ff0;">[>] CLICK</span> highlighted patterns to extract signal data
             </div>
 
             <!-- Canvas Container -->
@@ -1043,7 +1043,7 @@ function updateUI() {
     if (decryptionState.lockWindow) {
         const remaining = decryptionState.windowDuration - (Date.now() - decryptionState.windowStart);
         const seconds = Math.ceil(remaining / 1000);
-        statusText.textContent = `⚡ DECRYPTION READY - LOCK NOW! (${seconds}s)`;
+        statusText.textContent = `[!] DECRYPTION READY - LOCK NOW! (${seconds}s)`;
         statusText.style.color = '#0f0';
         coherenceValue.style.color = '#0f0';
         coherenceValue.style.textShadow = '0 0 20px #0f0';

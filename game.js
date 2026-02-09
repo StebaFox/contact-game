@@ -4924,7 +4924,7 @@ function renderDishArray() {
         powerLabel.setAttribute('fill', dish.isPowered ? '#0ff' : '#666');
         powerLabel.setAttribute('font-size', '10');
         powerLabel.setAttribute('text-anchor', 'middle');
-        powerLabel.textContent = `${dish.powerCost}⚡`;
+        powerLabel.textContent = `${dish.powerCost}W`;
 
         // Interference indicator (X mark)
         if (dish.hasInterference) {
