@@ -17,8 +17,9 @@ export function openMailbox() {
         return;
     }
 
-    // Save current view to return to it later
-    gameState.previousView = currentView;
+    // Save current view to return to — never save another overlay as return target
+    const overlays = ['journal-view', 'mailbox-view'];
+    gameState.previousView = overlays.includes(currentView) ? 'starmap-view' : currentView;
 
     showView('mailbox-view');
     updateMailboxDisplay();
@@ -150,10 +151,16 @@ export function addMailMessage(from, subject, body, preview = null) {
         });
     }
 
-    // If mailbox is currently open, refresh it so the new message appears
+    // If mailbox is currently open, refresh it — but preserve expanded email
     const activeView = document.querySelector('.view.active');
     if (activeView && activeView.id === 'mailbox-view') {
+        const expandedItem = document.querySelector('.mail-item.expanded');
+        const expandedIndex = expandedItem ? expandedItem.dataset.index : null;
         updateMailboxDisplay();
+        if (expandedIndex !== null) {
+            const restored = document.querySelector(`.mail-item[data-index="${expandedIndex}"]`);
+            if (restored) restored.classList.add('expanded');
+        }
     }
 
     log(`New message received from ${from}`, 'highlight');

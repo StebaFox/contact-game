@@ -30,8 +30,11 @@ export function checkAndShowDayComplete() {
         return false;
     }
 
-    // Don't show again if already shown for this day
+    // Already shown the popup for this day — just ensure nav button is visible
     if (gameState.dayReportShown === gameState.currentDay) {
+        if (!gameState.daysCompleted.includes(gameState.currentDay)) {
+            showDayReportButton();
+        }
         return false;
     }
 
@@ -51,6 +54,24 @@ export function checkAndShowDayComplete() {
     }
 
     return true;
+}
+
+// Show the "End of Day Report" nav button so the player can file when ready
+export function showDayReportButton() {
+    const btn = document.getElementById('day-report-btn');
+    if (btn) btn.style.display = '';
+}
+
+// Hide the "End of Day Report" nav button
+export function hideDayReportButton() {
+    const btn = document.getElementById('day-report-btn');
+    if (btn) btn.style.display = 'none';
+}
+
+// Called when player clicks the nav button — open the classification flow
+export function openDayReport() {
+    hideDayReportButton();
+    showInteractiveClassification();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -97,6 +118,11 @@ export function advanceDay2Cliffhanger(triggerPhase) {
                 playSecurityBeep('success');
                 log('NEW TARGET ADDED TO STARMAP: SRC-7024', 'highlight');
                 log('Select SRC-7024 on the starmap to begin scanning.', 'info');
+
+                addPersonalLog('SRC-7024',
+                    `Dr. Chen flagged a signal source that isn't in any known catalog. Military, civilian, deep space network — nothing. Zero matches.\n\nShe's calling it SRC-7024. Coordinates don't correspond to any charted star, pulsar, or known emitter. It's just... there. Broadcasting from a point in space that should be empty.\n\nI've been doing this long enough to know that "unknown source" usually means "we haven't checked the right database yet." But Chen has checked them all. Twice.\n\nI need to scan it.`
+                );
+
                 autoSave();
             }, 500);
             break;
@@ -131,6 +157,10 @@ export function advanceDay2Cliffhanger(triggerPhase) {
                     .replace(/{TIME}/g, time);
                 addMailMessage(DAY2_BLACKOUT_EMAIL.from, DAY2_BLACKOUT_EMAIL.subject, body);
                 log('EMERGENCY ALERT: New priority message received.', 'warning');
+
+                addPersonalLog('The Blackout',
+                    `The western seaboard just went dark. The entire power grid — three states — blacked out at the exact moment our array locked onto SRC-7024.\n\nOperations is calling it a coincidence. A "correlated infrastructure event." That's what they have to call it, because the alternative is that a signal from deep space knocked out the power grid of a continent.\n\nI keep thinking about the energy required to do that. We pointed a radio telescope at empty space, and empty space pushed back hard enough to shut down everything for hundreds of miles.\n\nWhatever SRC-7024 is, it knows we're listening. And it responded.`
+                );
             }, 7000);
             break;
 
@@ -326,9 +356,8 @@ function showDayCompletePopup() {
         continueBtn.addEventListener('click', () => {
             playClick();
             overlay.remove();
-            // Let them keep scanning — popup won't reappear (dayReportShown is already set)
-            // But reset it so it can show again when they return to starmap next time
-            gameState.dayReportShown = -1;
+            // Show the "End of Day Report" nav button so player can file when ready
+            showDayReportButton();
         });
     }
 }

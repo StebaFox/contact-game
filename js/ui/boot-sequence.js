@@ -23,6 +23,15 @@ import {
 import { getCurrentDayConfig, getDayBootMessages, DAY_CONFIG } from '../core/day-system.js';
 import { updateStarCatalogDisplay } from './starmap.js';
 
+// Show all nav bar buttons (called once when entering the game)
+function showNavButtons() {
+    const ids = ['starmap-btn', 'mailbox-btn', 'journal-btn'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = '';
+    });
+}
+
 // External function references (set by main.js to avoid circular deps)
 let renderStarMapFn = null;
 let playSecurityBeepFn = null;
@@ -345,13 +354,7 @@ function resumeGame() {
 
     // Skip boot sequence, go directly to starmap
     showView('starmap-view');
-    document.getElementById('mailbox-btn').style.display = 'block';
-
-    // Restore journal button if entries exist
-    if (gameState.journalEntries?.length > 0) {
-        const jBtn = document.getElementById('journal-btn');
-        if (jBtn) jBtn.style.display = '';
-    }
+    showNavButtons();
 
     // Restore investigation button if unlocked
     if (gameState.investigationUnlocked) {
@@ -387,11 +390,7 @@ export function loadDayWithProgress() {
 
     // Go directly to starmap with loading sequence
     showView('starmap-view');
-    document.getElementById('mailbox-btn').style.display = 'block';
-    if (gameState.journalEntries?.length > 0) {
-        const jBtn = document.getElementById('journal-btn');
-        if (jBtn) jBtn.style.display = '';
-    }
+    showNavButtons();
 
     // Restore investigation button if unlocked
     if (gameState.investigationUnlocked) {
@@ -485,11 +484,7 @@ function loadDemoMode() {
 
     // Go directly to starmap
     showView('starmap-view');
-    document.getElementById('mailbox-btn').style.display = 'block';
-    if (gameState.journalEntries?.length > 0) {
-        const jBtn = document.getElementById('journal-btn');
-        if (jBtn) jBtn.style.display = '';
-    }
+    showNavButtons();
 
     // Initialize starmap with loading bar
     initializeStarmapSequence();
@@ -784,8 +779,8 @@ export function setupBootSequence() {
     document.getElementById('proceed-btn').addEventListener('click', () => {
         playClick();
         showView('starmap-view');
-        // Show mailbox button now that user has entered the system
-        document.getElementById('mailbox-btn').style.display = 'block';
+        // Show nav buttons now that user has entered the system
+        showNavButtons();
 
         // Run starmap initialization sequence
         initializeStarmapSequence();

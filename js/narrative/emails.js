@@ -40,7 +40,7 @@ Sector 7 Administration`
     {
         from: 'Dr. Eleanor Chen - Radio Astronomy',
         subject: 'Interference Patterns',
-        body: `{PLAYER_NAME},
+        body: `Dr. {PLAYER_NAME},
 
 I've been reviewing some of the frequency data from your array. There are some unusual interference patterns that don't match known sources.
 
@@ -67,7 +67,7 @@ Please plan signal acquisition accordingly.
     {
         from: 'Dr. James Whitmore - SETI Director',
         subject: 'Keep Up The Work',
-        body: `{PLAYER_NAME},
+        body: `Dr. {PLAYER_NAME},
 
 I know the isolation of deep space monitoring can be challenging. Remember, every signal analyzed, every frequency scanned, brings us closer to answering humanity's greatest question.
 
@@ -94,7 +94,7 @@ P.S. — Has anyone else noticed the terminal displays flickering near the coffe
     {
         from: 'Tom Nguyen - Night Shift',
         subject: 'Something weird in Sector 12',
-        body: `Hey {PLAYER_NAME},
+        body: `Hey Dr. {PLAYER_NAME},
 
 Probably nothing, but I flagged a pattern during my shift last night. Sector 12 background noise has this 47-second repeating structure. Too regular for natural, too weak for any cataloged source.
 
@@ -107,7 +107,7 @@ Just thought you should know in case you see it in your data too.
     {
         from: 'Dr. Sarah Okonkwo - Astrobiology',
         subject: 'Habitable Zone Analysis',
-        body: `{PLAYER_NAME},
+        body: `Dr. {PLAYER_NAME},
 
 I've compiled atmospheric data for several targets in your monitoring zone. Three of them show promising biosignature potential.
 
@@ -152,7 +152,7 @@ Note: Anomalous data patterns flagged in sectors 7-12. Manual review recommended
     {
         from: 'Tom Nguyen - Night Shift',
         subject: 'RE: Something weird in Sector 12',
-        body: `{PLAYER_NAME},
+        body: `Dr. {PLAYER_NAME},
 
 Okay, remember that 47-second pattern I mentioned? It's gone. Completely. Vanished from the background noise overnight — right around the time you found that Ross 128 signal.
 
@@ -211,7 +211,7 @@ This is a precautionary measure. There is no cause for alarm.
     {
         from: 'Dr. Marcus Webb - Xenolinguistics',
         subject: 'I can\'t sleep',
-        body: `{PLAYER_NAME},
+        body: `Dr. {PLAYER_NAME},
 
 It's 4 AM and I can't sleep. I keep running the encoding analysis in my head.
 
@@ -226,7 +226,7 @@ I know how that sounds. I know. But look at the data and tell me I'm wrong.
     {
         from: 'Tom Nguyen - Night Shift',
         subject: 'This is my last shift',
-        body: `{PLAYER_NAME},
+        body: `Dr. {PLAYER_NAME},
 
 They're rotating out all non-Level-6 staff starting tomorrow. I'm being reassigned to the Mojave relay station.
 

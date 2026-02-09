@@ -59,6 +59,7 @@ import {
 } from './systems/audio.js';
 import { openMailbox, closeMailbox, checkForNewMail } from './systems/mailbox.js';
 import { openJournal, closeJournal } from './systems/journal.js';
+import { openDayReport } from './systems/day-report.js';
 import {
     initDishArray,
     handleKeypadPress,
@@ -232,6 +233,13 @@ function setupEventListeners() {
         toggleLayoutMode();
     });
 
+    // Starmap (Array) button — quick nav back to starmap from anywhere
+    document.getElementById('starmap-btn')?.addEventListener('click', () => {
+        playClick();
+        showView('starmap-view');
+        log('Returning to array...');
+    });
+
     // Mailbox buttons
     document.getElementById('mailbox-btn').addEventListener('click', () => {
         playClick();
@@ -268,6 +276,15 @@ function setupEventListeners() {
         investigationBackBtn.addEventListener('click', () => {
             playClick();
             closeInvestigation();
+        });
+    }
+
+    // End of Day Report button
+    const dayReportBtn = document.getElementById('day-report-btn');
+    if (dayReportBtn) {
+        dayReportBtn.addEventListener('click', () => {
+            playClick();
+            openDayReport();
         });
     }
 

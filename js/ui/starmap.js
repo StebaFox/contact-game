@@ -46,6 +46,21 @@ function getSelectedStar() {
     return null;
 }
 
+// Deselect current star (click empty space on canvas)
+function deselectStar() {
+    if (gameState.selectedStarId === null) return;
+    gameState.selectedStarId = null;
+    gameState.showScanConfirm = false;
+    gameState.currentSignal = null;
+    document.querySelectorAll('.star-item').forEach(item => item.classList.remove('selected'));
+    document.getElementById('star-details').innerHTML = '<div class="detail-label">SELECT A TARGET</div>';
+    clearStarVisualization();
+    const scanBtn = document.getElementById('scan-btn');
+    if (scanBtn) { scanBtn.disabled = false; scanBtn.textContent = 'INITIATE SCAN'; }
+    const starmapScanBtn = document.getElementById('starmap-array-scan-btn');
+    if (starmapScanBtn) starmapScanBtn.style.display = 'none';
+}
+
 // Get pixel position for a star (handles dynamic stars with fractional coords)
 function getStarPixelXY(star, canvasWidth, canvasHeight) {
     if (star.isDynamic) {
@@ -754,6 +769,16 @@ export function updateStarCatalogDisplay() {
             const decryptIndicator = item.querySelector('.decrypt-indicator');
             if (decryptIndicator) decryptIndicator.remove();
 
+            // Restore CSS classes for previous-day stars
+            const isContacted = gameState.contactedStars.has(starId);
+            if (isContacted) {
+                item.classList.add('contact');
+                item.classList.remove('analyzed');
+            } else {
+                item.classList.add('analyzed');
+                item.classList.remove('contact');
+            }
+
             // Add "ANALYZED" indicator if not present
             if (!item.querySelector('.analyzed-indicator')) {
                 const indicator = document.createElement('div');
@@ -767,8 +792,12 @@ export function updateStarCatalogDisplay() {
             const statusEl = item.querySelector('.star-status');
             if (statusEl && !statusEl.dataset.status) {
                 statusEl.dataset.status = 'analyzed';
-                statusEl.textContent = '● COMPLETE';
-                statusEl.style.color = '#ff0';
+                if (isContacted) {
+                    statusEl.textContent = '★';
+                } else {
+                    statusEl.textContent = '● COMPLETE';
+                    statusEl.style.color = '#ff0';
+                }
             }
         } else {
             // Current day stars - show normally
@@ -780,12 +809,25 @@ export function updateStarCatalogDisplay() {
             const oldIndicator = item.querySelector('.analyzed-indicator');
             if (oldIndicator) oldIndicator.remove();
 
+            // Restore CSS classes for analyzed/contacted stars
+            const isContacted = gameState.contactedStars.has(starId);
+            if (isContacted) {
+                item.classList.add('contact');
+                item.classList.remove('analyzed');
+            } else if (isAnalyzed) {
+                item.classList.add('analyzed');
+                item.classList.remove('contact');
+            }
+
             // Update status based on analyzed state
             const statusEl = item.querySelector('.star-status');
             if (statusEl && isAnalyzed && !statusEl.dataset.status) {
                 statusEl.dataset.status = 'analyzed';
-                statusEl.textContent = '● COMPLETE';
-                statusEl.style.color = '#ff0';
+                if (isContacted) {
+                    statusEl.textContent = '★';
+                } else {
+                    statusEl.textContent = '✓';
+                }
             }
         }
     });
@@ -1344,6 +1386,21 @@ function renderSkyChart() {
         } else if (isContacted) {
             starColor = '#f0f';
             labelColor = '#f0f';
+        } else if (isAnalyzed) {
+            const scanResult = gameState.scanResults.get(star.id);
+            if (scanResult?.type === 'false_positive') {
+                starColor = '#f00';
+                labelColor = '#f00';
+            } else if (scanResult?.type === 'natural') {
+                starColor = '#0ff';
+                labelColor = '#0ff';
+            } else if (scanResult?.type === 'verified_signal') {
+                starColor = '#f0f';
+                labelColor = '#f0f';
+            } else {
+                starColor = '#ff0';
+                labelColor = '#ff0';
+            }
         } else {
             starColor = spectralColor;
             labelColor = spectralColor;
@@ -1769,8 +1826,21 @@ function renderArrayView() {
             starColor = '#f0f';
             labelColor = '#f0f';
         } else if (isAnalyzed) {
-            starColor = spectralColor;
-            labelColor = spectralColor;
+            // Color based on scan result type
+            const scanResult = gameState.scanResults.get(star.id);
+            if (scanResult?.type === 'false_positive') {
+                starColor = '#f00';
+                labelColor = '#f00';
+            } else if (scanResult?.type === 'natural') {
+                starColor = '#0ff';
+                labelColor = '#0ff';
+            } else if (scanResult?.type === 'verified_signal') {
+                starColor = '#f0f';
+                labelColor = '#f0f';
+            } else {
+                starColor = '#ff0';
+                labelColor = '#ff0';
+            }
         } else {
             starColor = spectralColor;
             labelColor = spectralColor;
@@ -2320,13 +2390,16 @@ export function setupStarMapCanvas() {
                     selectStar(closestStar.id);
                 } else {
                     // Check if click is on a label (world coords)
+                    let clickedLabel = false;
                     for (const lb of cachedSkyLabelBounds) {
                         if (wx >= lb.x1 && wx <= lb.x2 && wy >= lb.y1 && wy <= lb.y2) {
                             gameState.selectedStarId = lb.starId;
                             selectStar(lb.starId);
+                            clickedLabel = true;
                             break;
                         }
                     }
+                    if (!clickedLabel) deselectStar();
                 }
             }
             return;
@@ -2395,13 +2468,16 @@ export function setupStarMapCanvas() {
                 selectStar(closestStar.id);
             } else {
                 // Check if click is on a label (screen coords)
+                let clickedLabel = false;
                 for (const lb of cachedArrayLabelBounds) {
                     if (x >= lb.x1 && x <= lb.x2 && y >= lb.y1 && y <= lb.y2) {
                         gameState.selectedStarId = lb.starId;
                         selectStar(lb.starId);
+                        clickedLabel = true;
                         break;
                     }
                 }
+                if (!clickedLabel) deselectStar();
             }
         }
     });

@@ -260,6 +260,25 @@ body {
     box-shadow: 0 0 6px #0f0;
 }
 
+/* Starmap (Array) Button */
+.starmap-btn {
+    background: rgba(255, 255, 0, 0.08);
+    border: 2px solid #aa0;
+    color: #ff0;
+    padding: 5px 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-shadow: 0 0 5px #aa0;
+    position: relative;
+}
+
+.starmap-btn:hover {
+    background: rgba(255, 255, 0, 0.15);
+    box-shadow: 0 0 10px #ff0;
+}
+
 .mailbox-btn {
     background: rgba(0, 255, 255, 0.1);
     border: 2px solid #0ff;
@@ -351,6 +370,30 @@ body {
     font-size: 20px;
     animation: mailBlink 1s infinite;
     margin-left: 5px;
+}
+
+.day-report-btn {
+    background: rgba(0, 255, 0, 0.1);
+    border: 2px solid #0f0;
+    color: #0f0;
+    padding: 5px 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-shadow: 0 0 5px #0f0;
+    position: relative;
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.day-report-btn:hover {
+    background: rgba(0, 255, 0, 0.2);
+    box-shadow: 0 0 10px #0f0;
+}
+
+.day-report-icon {
+    font-size: 16px;
+    margin-right: 5px;
 }
 
 /* Investigation Page */
@@ -1892,9 +1935,9 @@ canvas.active {
     background: rgba(0, 255, 0, 0.05);
     border: 1px solid #030;
     color: #060;
-    padding: 5px 14px;
+    padding: 6px 16px;
     font-family: 'VT323', monospace;
-    font-size: 14px;
+    font-size: 17px;
     cursor: pointer;
     transition: all 0.2s;
 }
@@ -1920,7 +1963,7 @@ canvas.active {
 .journal-empty {
     text-align: center;
     color: #555;
-    font-size: 16px;
+    font-size: 18px;
     padding: 40px;
 }
 
@@ -1944,26 +1987,26 @@ canvas.active {
 
 .journal-entry-star {
     color: #0ff;
-    font-size: 14px;
+    font-size: 17px;
     font-weight: bold;
 }
 
 .journal-entry-day {
     color: #555;
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .journal-entry-title {
     color: #0f0;
-    font-size: 15px;
-    margin-bottom: 6px;
+    font-size: 20px;
+    margin-bottom: 8px;
 }
 
 .journal-entry-content {
     color: #0a0;
-    font-size: 13px;
-    line-height: 1.5;
-    opacity: 0.8;
+    font-size: 17px;
+    line-height: 1.7;
+    opacity: 0.85;
     white-space: pre-wrap;
 }
 

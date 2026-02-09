@@ -8,6 +8,7 @@ import { log, typeAnalysisText } from '../ui/rendering.js';
 import { playClick, playLockAchieved, playStaticBurst, switchToAlienMusic, startAlienSignalSound, startNaturalPhenomenaSound } from './audio.js';
 import { checkAndShowDayComplete } from './day-report.js';
 import { addJournalEntry, showJournalButton, addFirstScanMusing } from './journal.js';
+import { addMailMessage } from './mailbox.js';
 
 // External function references (set by main.js)
 let stopSignalAnimationFn = null;
@@ -226,6 +227,155 @@ export function startPatternRecognitionGame(star) {
 
     document.getElementById('pattern-status').textContent = 'CYCLE FILTERS TO ISOLATE THE SIGNAL PATTERN';
     log('Signal pattern analysis initiated — cycle through filters to find the signal', 'info');
+
+    // Show auto-analyze button on Day 2+ (player has already done this many times)
+    showAutoAnalyzeButton(star);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// AUTO-ANALYZE
+// ═════════════════════════════════════════════════════════════════════════════
+
+let autoAnalyzeNotified = false;
+
+function showAutoAnalyzeButton(star) {
+    // Remove any previous button
+    let existing = document.getElementById('auto-analyze-btn');
+    if (existing) existing.remove();
+
+    // Only available on Day 2+ (player has already done pattern recognition many times on Day 1)
+    if (gameState.currentDay < 2 && !gameState.demoMode) return;
+
+    const isFirstTime = !autoAnalyzeNotified && !gameState.journalEntries?.some(
+        e => e.title === 'Auto-Analyze Calibration Complete'
+    );
+
+    const btn = document.createElement('button');
+    btn.id = 'auto-analyze-btn';
+    btn.textContent = '[ AUTO-ANALYZE ]';
+    btn.style.cssText = `
+        position: absolute; top: 8px; right: 8px; z-index: 10;
+        background: rgba(0, 255, 0, 0.08); border: 1px solid #0a0;
+        color: #0f0; font-family: 'VT323', monospace; font-size: 14px;
+        padding: 4px 12px; cursor: pointer;
+        text-shadow: 0 0 5px rgba(0,255,0,0.3);
+        transition: all 0.3s;
+    `;
+    btn.addEventListener('mouseenter', () => {
+        btn.style.background = 'rgba(0, 255, 0, 0.15)';
+        btn.style.boxShadow = '0 0 8px rgba(0,255,0,0.4)';
+    });
+    btn.addEventListener('mouseleave', () => {
+        btn.style.background = 'rgba(0, 255, 0, 0.08)';
+        btn.style.boxShadow = 'none';
+    });
+    btn.addEventListener('click', () => {
+        btn.disabled = true;
+        btn.style.opacity = '0.4';
+        autoAnalyze();
+    });
+
+    const patternGame = document.getElementById('pattern-game');
+    if (patternGame) {
+        patternGame.style.position = 'relative';
+        patternGame.appendChild(btn);
+    }
+
+    // First-time notification
+    if (isFirstTime) {
+        autoAnalyzeNotified = true;
+
+        // Pulse animation
+        btn.style.animation = 'autotune-intro 0.6s ease-out 3';
+        if (!document.getElementById('autotune-intro-style')) {
+            const style = document.createElement('style');
+            style.id = 'autotune-intro-style';
+            style.textContent = `
+                @keyframes autotune-intro {
+                    0% { box-shadow: 0 0 5px rgba(0,255,0,0.3); }
+                    50% { box-shadow: 0 0 20px rgba(0,255,0,0.8); transform: scale(1.05); }
+                    100% { box-shadow: 0 0 5px rgba(0,255,0,0.3); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Email notification
+        const name = gameState.playerName;
+        setTimeout(() => {
+            addMailMessage(
+                'Dr. Eleanor Chen - Radio Astronomy',
+                'System Upgrade: Pattern Recognition Algorithm',
+                `Dr. ${name},\n\nAfter processing the volume of signal data from your Day 1 survey, our pattern recognition system has built a robust baseline model.\n\nThe algorithm can now automatically cycle filters and isolate repeating patterns without manual intervention. You'll see an [AUTO-ANALYZE] button during future signal analysis.\n\nIt's essentially doing what you were doing by hand — just faster. Your manual work trained the model. Nice job.\n\nNote: The system still needs you for the hard calls. Verification, classification, contact protocols — that's all you.\n\n- Eleanor`
+            );
+        }, 10000);
+
+        // Journal entry
+        addJournalEntry('discovery', {
+            starName: 'SYSTEM',
+            title: 'Auto-Analyze Calibration Complete',
+            content: 'After Day 1 survey data, the pattern recognition algorithm has been trained on enough samples to automate filter cycling and pattern isolation. [AUTO-ANALYZE] button now available.'
+        });
+        showJournalButton();
+    }
+}
+
+function autoAnalyze() {
+    if (!patternState.active || patternState.captures.length >= 3) return;
+
+    const statusEl = document.getElementById('pattern-status');
+    const filterBtn = document.getElementById('pattern-filter-btn');
+
+    // Disable manual filter button during auto
+    if (filterBtn) filterBtn.disabled = true;
+
+    // Step through: cycle to correct filter, then auto-capture each region
+    function nextStep() {
+        if (!patternState.active) return;
+
+        if (patternState.captures.length >= 3) return; // Done
+
+        // Read current correct filter (changes after each generateFrame)
+        const correctIdx = patternState.correctFilter;
+
+        // Phase 1: Cycle to correct filter
+        if (patternState.currentFilter !== correctIdx) {
+            cycleFilter();
+            const filterName = FILTER_NAMES[patternState.currentFilter] || `FILTER ${patternState.currentFilter}`;
+            statusEl.innerHTML = `<span style="color:#0ff;">AUTO-ANALYZE: Scanning ${filterName}...</span>`;
+            setTimeout(nextStep, 350);
+            return;
+        }
+
+        // Phase 2: On correct filter — select the pattern region
+        statusEl.innerHTML = '<span style="color:#0f0;">AUTO-ANALYZE: Pattern detected — isolating...</span>';
+
+        setTimeout(() => {
+            if (!patternState.active || patternState.captures.length >= 3) return;
+
+            // Find uncaptured region
+            const region = patternState.patternRegions[patternState.captures.length];
+            if (!region) {
+                // Fallback: use first region
+                const fallback = patternState.patternRegions[0];
+                if (fallback) handleCapture(fallback);
+            } else {
+                handleCapture(region);
+            }
+
+            // If more captures needed, wait for new frame then continue
+            if (patternState.captures.length < 3) {
+                setTimeout(() => {
+                    if (!patternState.active) return;
+                    // Reset filter index for new frame (generateFrame randomizes correct filter)
+                    nextStep();
+                }, 1200);
+            }
+        }, 500);
+    }
+
+    statusEl.innerHTML = '<span style="color:#0ff;">AUTO-ANALYZE: Initializing filter sweep...</span>';
+    setTimeout(nextStep, 600);
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -972,11 +1122,19 @@ function completePatternGame(star) {
             source: phenomenon.source
         });
 
-        // Log discovery
+        // Log discovery with personal musing
+        const natMusings = [
+            "Not what we're looking for, but the cosmos has its own kind of music.",
+            "Nature doesn't need intelligence to be extraordinary.",
+            "Beautiful in its own way. The universe is spectacular even when no one's sending messages.",
+            "Another natural wonder. The universe is full of surprises — just not the ones I'm looking for today.",
+            "Cataloged. Sometimes I wonder if we're so focused on finding voices that we forget to listen to the song."
+        ];
+        const natIdx = (gameState.journalEntries || []).filter(e => e.title?.startsWith('Natural:')).length;
         addJournalEntry('discovery', {
             starName: star.name,
             title: `Natural: ${phenomenon.type}`,
-            content: `Source: ${phenomenon.source}\n${phenomenon.details.join('\n')}`
+            content: `Source: ${phenomenon.source}\n${phenomenon.details.join('\n')}\n\n— ${natMusings[natIdx % natMusings.length]}`
         });
         showJournalButton();
         addFirstScanMusing(star, 'natural');

@@ -21,7 +21,9 @@ export function openJournal() {
         return;
     }
 
-    journalReturnView = currentView || 'starmap-view';
+    // Never save mailbox/journal as return target — always fall back to starmap
+    const overlays = ['journal-view', 'mailbox-view'];
+    journalReturnView = overlays.includes(currentView) ? 'starmap-view' : (currentView || 'starmap-view');
     showView('journal-view');
     renderJournal();
     log('Accessing research journal...');

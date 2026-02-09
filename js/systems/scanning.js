@@ -44,7 +44,7 @@ function checkPreRoss128Unease() {
             addMailMessage(
                 'Dr. Eleanor Chen - Radio Astronomy',
                 'Background Pattern — Probably Nothing',
-                `${name},\n\nThis might be nothing, but there's a low-level pattern in the cosmic microwave background data from your sector. It's below our standard detection threshold, but it's structured. Almost like a carrier wave.\n\nI can't isolate the source. It's not coming from any single star — it's more like it's embedded in the background itself.\n\nKeep scanning. If you notice anything unusual in the Ross 128 region, flag it immediately.\n\n- Eleanor`
+                `Dr. ${name},\n\nThis might be nothing, but there's a low-level pattern in the cosmic microwave background data from your sector. It's below our standard detection threshold, but it's structured. Almost like a carrier wave.\n\nI can't isolate the source. It's not coming from any single star — it's more like it's embedded in the background itself.\n\nKeep scanning. If you notice anything unusual in the Ross 128 region, flag it immediately.\n\n- Eleanor`
             );
         }, 10000);
     }
@@ -1191,11 +1191,19 @@ function showFalsePositiveResult(star, cause, display) {
         source: cause.source
     });
 
-    // Log discovery
+    // Log discovery with personal musing
+    const fpMusings = [
+        "Another ghost in the machine. But ruling things out is half the job.",
+        "Someone's satellite, someone's radar. The sky is cluttered with our own noise.",
+        "Ruled out. Every false alarm sharpens the filter for when it matters.",
+        "Terrestrial interference. The universe doesn't make this easy.",
+        "Not this one. But somewhere out there, in all this noise..."
+    ];
+    const fpIdx = (gameState.journalEntries || []).filter(e => e.title?.startsWith('False Positive')).length;
     addJournalEntry('discovery', {
         starName: star.name,
         title: `False Positive: ${star.name}`,
-        content: `Signal identified as terrestrial interference.\nSource: ${cause.source}`
+        content: `Signal identified as terrestrial interference.\nSource: ${cause.source}\n\n— ${fpMusings[fpIdx % fpMusings.length]}`
     });
     showJournalButton();
 
@@ -1237,6 +1245,7 @@ function showFalsePositiveResult(star, cause, display) {
             document.getElementById('analyze-btn').disabled = false;
             showView('starmap-view');
             log(`False positive from ${star.name} - Source: ${cause.source}`);
+            checkAndShowDayComplete();
         });
         display.appendChild(returnBtn);
     }, 1000);
@@ -1260,11 +1269,17 @@ function showVerifiedSignalResult(star, display) {
         type: 'verified_signal'
     });
 
-    // Log discovery
+    // Log discovery with personal musing
+    const vsMusings = [
+        "This is real. All interference checks negative. Something out there is... talking.",
+        "My training says stay objective. My hands won't stop shaking.",
+        "Confirmed non-natural. The implications are... I can't even write it yet."
+    ];
+    const vsIdx = (gameState.journalEntries || []).filter(e => e.title?.startsWith('Verified Signal')).length;
     addJournalEntry('discovery', {
         starName: star.name,
         title: `Verified Signal: ${star.name}`,
-        content: `Non-natural signal confirmed at ${star.distance}.\nAll terrestrial interference checks negative.\nIntelligent origin probable.`
+        content: `Non-natural signal confirmed at ${star.distance}.\nAll terrestrial interference checks negative.\nIntelligent origin probable.\n\n— ${vsMusings[vsIdx % vsMusings.length]}`
     });
     showJournalButton();
 
@@ -1404,7 +1419,7 @@ function showEncryptedSignalResult(star, display) {
                     addMailMessage(
                         'Dr. Eleanor Chen - Radio Astronomy',
                         `RE: ${star.name} — Encrypted Signal`,
-                        `${name},\n\nI just saw the alert come through — an encrypted signal from ${star.name}? That's not something you see every day. Or ever, frankly.\n\nThe encoding structure doesn't match anything in our terrestrial database. No known satellite, no military comm protocol, nothing. I ran it through three different pattern libraries and got zero hits.\n\nWhatever this is, it's not noise. Something put that structure there deliberately.\n\nThe bad news is we can't touch it without Sigma clearance — the quantum decryption system is locked behind that. I'd recommend flagging it in your daily report. If Oversight sees what I'm seeing, they'll have to approve the upgrade.\n\nThis could be the one, ${name}. Don't let it slip through the cracks.\n\n- Eleanor`
+                        `Dr. ${name},\n\nI just saw the alert come through — an encrypted signal from ${star.name}? That's not something you see every day. Or ever, frankly.\n\nThe encoding structure doesn't match anything in our terrestrial database. No known satellite, no military comm protocol, nothing. I ran it through three different pattern libraries and got zero hits.\n\nWhatever this is, it's not noise. Something put that structure there deliberately.\n\nThe bad news is we can't touch it without Sigma clearance — the quantum decryption system is locked behind that. I'd recommend flagging it in your daily report. If Oversight sees what I'm seeing, they'll have to approve the upgrade.\n\nThis could be the one, Dr. ${name}. Don't let it slip through the cracks.\n\n- Eleanor`
                     );
                 }, 15000);
             });
@@ -1911,7 +1926,7 @@ function scheduleTriangulationEmails() {
         addMailMessage(
             'Dr. Eleanor Chen - Radio Astronomy',
             'Triangulation Vectors in SRC-7024 Data',
-            `${name},\n\nCross-referencing the SRC-7024 fragment with pulsar timing arrays — these look like triangulation vectors. Three reference points, all pointing to a single location in deep space.\n\nI've flagged the triangulation option on your investigation page. This is big.\n\n- Eleanor`
+            `Dr. ${name},\n\nCross-referencing the SRC-7024 fragment with pulsar timing arrays — these look like triangulation vectors. Three reference points, all pointing to a single location in deep space.\n\nI've flagged the triangulation option on your investigation page. This is big.\n\n- Eleanor`
         );
     }, 30000);
 
@@ -1940,7 +1955,7 @@ function scheduleSrc7024PostAlignmentEmails() {
         addMailMessage(
             'Dr. Eleanor Chen - Radio Astronomy',
             'Triangulation Vectors in SRC-7024 Data',
-            `${name},\n\nI pulled an all-nighter verifying Marcus's analysis. Triple-checked against every pulsar database we have access to. The vectors are real.\n\nThree reference points, all converging on a single location in deep space. Nothing in our catalogs matches these coordinates.\n\nThis is big. Really big.\n\n- Eleanor`
+            `Dr. ${name},\n\nI pulled an all-nighter verifying Marcus's analysis. Triple-checked against every pulsar database we have access to. The vectors are real.\n\nThree reference points, all converging on a single location in deep space. Nothing in our catalogs matches these coordinates.\n\nThis is big. Really big.\n\n- Eleanor`
         );
     }, 18000);
 
@@ -1965,7 +1980,7 @@ function schedulePreBigBangEmails() {
         addMailMessage(
             'Dr. Sarah Okonkwo - Astrobiology',
             'NEXUS POINT Data — I need to tell someone',
-            `${name},\n\nI need to tell someone because I can't tell my team without causing a panic.\n\nThe physical constants in the NEXUS POINT fragment don't match our universe. They describe different initial conditions — as if someone is documenting the parameters of a DIFFERENT cosmos. And the temporal markers predate the Big Bang by billions of years.\n\nThat sentence should be meaningless. It should be gibberish. But the math is clean.\n\nI'm terrified.\n\nTwo fragments down. The message is still incomplete. Keep scanning — any star could be carrying another piece.\n\n- Sarah`
+            `Dr. ${name},\n\nI need to tell someone because I can't tell my team without causing a panic.\n\nThe physical constants in the NEXUS POINT fragment don't match our universe. They describe different initial conditions — as if someone is documenting the parameters of a DIFFERENT cosmos. And the temporal markers predate the Big Bang by billions of years.\n\nThat sentence should be meaningless. It should be gibberish. But the math is clean.\n\nI'm terrified.\n\nTwo fragments down. The message is still incomplete. Keep scanning — any star could be carrying another piece.\n\n- Sarah`
         );
     }, 20000);
 
@@ -1973,7 +1988,7 @@ function schedulePreBigBangEmails() {
         addMailMessage(
             'Dr. Eleanor Chen - Radio Astronomy',
             'RE: NEXUS POINT — A different perspective',
-            `${name},\n\nSarah just told me. I know she's scared. I'm not.\n\nI'm awed.\n\nThink about it — if they wanted to hurt us, they wouldn't have scattered the message across multiple stars for collaborative decryption. They wouldn't have embedded coordinates we could follow. This feels like... a gift.\n\nSomeone wanted to be found. Someone wanted us to understand.\n\nLet's keep going.\n\n- Eleanor`
+            `Dr. ${name},\n\nSarah just told me. I know she's scared. I'm not.\n\nI'm awed.\n\nThink about it — if they wanted to hurt us, they wouldn't have scattered the message across multiple stars for collaborative decryption. They wouldn't have embedded coordinates we could follow. This feels like... a gift.\n\nSomeone wanted to be found. Someone wanted us to understand.\n\nLet's keep going.\n\n- Eleanor`
         );
     }, 40000);
 
@@ -2020,7 +2035,7 @@ function scheduleGenesisTriangulationEmails() {
         addMailMessage(
             'Dr. James Whitmore - SETI Director',
             'Before we go further',
-            `${name},\n\nBefore Eleanor sends you the triangulation data — I need a moment.\n\nI started this program thirty years ago. Fought the funding cuts. Every year, the same question from the oversight committee: "Why are we still listening?" I never had a good answer. Just faith.\n\nNow I'm looking at three fragments of a message from before the Big Bang, and I'm crying at my desk like a child.\n\nThank you. For everything.\n\n- James`
+            `Dr. ${name},\n\nBefore Eleanor sends you the triangulation data — I need a moment.\n\nI started this program thirty years ago. Fought the funding cuts. Every year, the same question from the oversight committee: "Why are we still listening?" I never had a good answer. Just faith.\n\nNow I'm looking at three fragments of a message from before the Big Bang, and I'm crying at my desk like a child.\n\nThank you. For everything.\n\n- James`
         );
     }, 5000);
 
@@ -2028,7 +2043,7 @@ function scheduleGenesisTriangulationEmails() {
         addMailMessage(
             'Dr. Eleanor Chen - Radio Astronomy',
             'All Three Fragments — Pattern Emerging',
-            `${name},\n\nWith all three fragments decoded, I ran a cross-correlation analysis. The data from SRC-7024, NEXUS POINT, and 82 Eridani aren't just pieces of a message — they contain a SECOND set of triangulation vectors.\n\nThese vectors don't point to any known object. They converge on a position that predates our earliest sky surveys.\n\nCheck PROJECT LIGHTHOUSE. We need to triangulate this immediately.\n\n- Eleanor`
+            `Dr. ${name},\n\nWith all three fragments decoded, I ran a cross-correlation analysis. The data from SRC-7024, NEXUS POINT, and 82 Eridani aren't just pieces of a message — they contain a SECOND set of triangulation vectors.\n\nThese vectors don't point to any known object. They converge on a position that predates our earliest sky surveys.\n\nCheck PROJECT LIGHTHOUSE. We need to triangulate this immediately.\n\n- Eleanor`
         );
     }, 15000);
 
@@ -2049,7 +2064,7 @@ function schedulePostGenesisEmails() {
         addMailMessage(
             'Dr. James Whitmore - SETI Director',
             'It\'s just us now',
-            `${name},\n\nI've cleared the building. It's just us now — the original team. Chen, Webb, Okonkwo, and you.\n\nAll four fragments are decoded. The complete message is reconstructable.\n\nOpen PROJECT LIGHTHOUSE when you're ready. Take your time.\n\nWe've been waiting 13.8 billion years. A few more minutes won't matter.\n\n- James`
+            `Dr. ${name},\n\nI've cleared the building. It's just us now — the original team. Chen, Webb, Okonkwo, and you.\n\nAll four fragments are decoded. The complete message is reconstructable.\n\nOpen PROJECT LIGHTHOUSE when you're ready. Take your time.\n\nWe've been waiting 13.8 billion years. A few more minutes won't matter.\n\n- James`
         );
     }, 5000);
 }
@@ -2085,7 +2100,7 @@ function initiateContact(star) {
     const messageData = ALIEN_CONTACTS.find(m => m.starIndex === star.id);
     displayContactMessage(messageData, star);
 
-    // Archive contact in journal
+    // Archive contact in journal with personal musing
     if (messageData) {
         let contactText = '';
         if (messageData.hasImage) {
@@ -2095,6 +2110,25 @@ function initiateContact(star) {
         } else if (Array.isArray(messageData)) {
             contactText = messageData.join('\n');
         }
+
+        // Contact-specific personal musings
+        const contactMusings = {
+            8:  "They sent us a map. A star chart showing our own solar system, seen from eleven light years away. They know where we are. They've known for a long time.",
+            10: "They heard Voyager. Our golden record, our music, our greeting — and they've been listening ever since. They mentioned 'the old signal.' What old signal?",
+            11: "An automated eulogy, broadcasting for 847,293 cycles. They decoded their piece before the end. Even their dying act was an attempt to connect.",
+            12: "Three pulses. The simplest question in any language: 'Is anyone there?' And we can hear them... but we can't answer. The signal is eight years old. They're still waiting.",
+            16: "An invitation. They showed us their world — blue and green, like ours — and they want us to visit. This isn't first contact. This is a welcome.",
+            13: "They showed us their face. Across the void of space, the first thing they chose to share was who they are. Isn't that the most human thing imaginable?",
+            28: "They received our 1974 Arecibo message and sent it back — modified, expanded. They're not just listening. They're in dialogue with us across decades.",
+            21: "'The network awaits new members.' A network of civilizations, all connected by something they call 'the first signal.' And they think we're almost ready.",
+            26: "Seventeen generations they've watched us. They've seen our worst and our best. And still they think we're worth connecting with. 'No single civilization can read it alone.' It requires cooperation.",
+            25: "A megastructure. Broadcasting for millions of years. Built specifically for civilizations reaching our level of technology to find. We didn't discover them — they arranged to be discovered."
+        };
+        const musing = contactMusings[star.id];
+        if (musing) {
+            contactText += `\n\n— ${musing}`;
+        }
+
         addJournalEntry('contact', {
             starName: star.name,
             title: `Contact: ${star.name}`,
