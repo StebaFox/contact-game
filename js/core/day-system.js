@@ -12,15 +12,15 @@ import { autoSave } from './save-system.js';
 
 export const DAY_CONFIG = {
     1: {
-        title: 'DAY 1: ROUTINE SURVEY',
-        subtitle: 'Systematic cataloging of assigned targets',
+        title: 'DAY 1: FIRST SHIFT',
+        subtitle: 'Prove this program deserves to exist',
         availableStars: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
         starsRequired: 7,
         criticalStars: [8], // Ross 128 must be scanned
         objectives: [
             'Survey assigned star systems (7 minimum)',
-            'Document all detected signals',
-            'Flag any anomalous readings'
+            'Catalog all signals — the oversight committee needs data',
+            'Flag anything unusual — your career may depend on it'
         ],
         bootMessages: [
             'CLEARANCE LEVEL: 4 (STANDARD)',

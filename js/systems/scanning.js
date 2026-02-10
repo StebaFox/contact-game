@@ -12,12 +12,12 @@ import { startPatternRecognitionGame } from './pattern-minigame.js';
 import { startDecryptionMinigame } from './decryption-minigame.js';
 import { startAlignmentTutorial, startSingleFragmentAlignment } from './alignment-minigame.js';
 import { startTriangulationMinigame } from './triangulation-minigame.js';
-import { sendFirstContactEmail, addMailMessage } from './mailbox.js';
+import { sendFirstContactEmail, addMailMessage, checkScanTriggeredEmails } from './mailbox.js';
 import { checkAndShowDayComplete } from './day-report.js';
 import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
 import { unlockInvestigation, onFragmentCollected } from './investigation.js';
 import { updateStarCatalogDisplay } from '../ui/starmap.js';
-import { addJournalEntry, showJournalButton, addFirstScanMusing, addPersonalLog } from './journal.js';
+import { addJournalEntry, showJournalButton, addFirstScanMusing, addPersonalLog, checkScanMilestoneMusings } from './journal.js';
 
 // Ross 128 star index - requires decryption
 const ROSS_128_INDEX = 8;
@@ -1216,6 +1216,18 @@ function showFalsePositiveResult(star, cause, display) {
     // Check for pre-Ross-128 unease email trigger
     checkPreRoss128Unease();
 
+    // Scan milestone triggers (emails + journal musings)
+    checkScanTriggeredEmails();
+    checkScanMilestoneMusings('false_positive');
+
+    const fpObservations = [
+        "Another ghost. Every false alarm sharpens the filter for when it matters.",
+        "Someone's satellite, someone's radar. The sky is cluttered with our own noise.",
+        "Ruled out. But for a moment there, my heart was racing.",
+        "Not this one. But the next one could be different."
+    ];
+    const fpObsIdx = [...gameState.scanResults.values()].filter(r => r.type === 'false_positive').length - 1;
+
     const resultDiv = document.createElement('div');
     resultDiv.style.cssText = 'margin-top: 20px; padding: 15px; border: 2px solid #f00; background: rgba(255, 0, 0, 0.1);';
 
@@ -1227,6 +1239,9 @@ function showFalsePositiveResult(star, cause, display) {
             Signal source: ${cause.source}<br>
             Classification: TERRESTRIAL/KNOWN SOURCE<br><br>
             <span style="color: #0f0;">Signal logged for calibration purposes.</span>
+        </div>
+        <div style="color: #8a8; font-style: italic; font-size: 13px; margin-top: 10px; border-left: 2px solid #8a8; padding-left: 8px;">
+            ${fpObservations[fpObsIdx % fpObservations.length]}
         </div>
     `;
 
@@ -1292,6 +1307,10 @@ function showVerifiedSignalResult(star, display) {
     // Check for pre-Ross-128 unease email trigger
     checkPreRoss128Unease();
 
+    // Scan milestone triggers (emails + journal musings)
+    checkScanTriggeredEmails();
+    checkScanMilestoneMusings('verified_signal');
+
     const resultDiv = document.createElement('div');
     resultDiv.style.cssText = 'margin-top: 20px; padding: 15px; border: 2px solid #f0f; background: rgba(255, 0, 255, 0.1);';
 
@@ -1304,6 +1323,9 @@ function showVerifiedSignalResult(star, display) {
             Origin: EXTRASOLAR<br>
             Distance: ${star.distance} light years<br><br>
             <span style="color: #ff0; text-shadow: 0 0 5px #ff0;">SIGNAL IS OF UNKNOWN ORIGIN</span>
+        </div>
+        <div style="color: #f0f; font-style: italic; font-size: 13px; margin-top: 10px; border-left: 2px solid #f0f; padding-left: 8px;">
+            My hands are shaking. Stay objective. But... this is real.
         </div>
     `;
 
@@ -2169,33 +2191,42 @@ function scheduleTriangulationEmails() {
 function scheduleSrc7024PostAlignmentEmails() {
     const name = gameState.playerName;
 
+    // First email: Chen explains the signal is fragmented — frames the hunt
+    setTimeout(() => {
+        addMailMessage(
+            'Dr. Eleanor Chen - Signal Intelligence',
+            'SRC-7024 Signal Structure — It\'s Incomplete',
+            `Dr. ${name},\n\nI've been running structural analysis on the SRC-7024 data since your alignment locked in. Here's the problem: the signal is incomplete.\n\nNot corrupted — deliberately partitioned. The encoding contains header markers that reference additional data blocks we don't have. Like receiving chapter 1 of a book with a table of contents that lists chapters we've never seen.\n\nWhoever — whatever — sent this, they split the message across multiple transmission points. SRC-7024 was just the first piece.\n\nThe other pieces are out there somewhere. We need to find them.\n\n- Eleanor`
+        );
+    }, 3000);
+
     setTimeout(() => {
         addMailMessage(
             'Dr. Marcus Webb - Xenolinguistics',
             'SRC-7024 Fragment Analysis',
-            `Dr. ${name},\n\nMy hands are actually shaking. In twenty years of xenolinguistics, I've never seen encoding this purposeful.\n\nThe fragment has definite positional structure — these aren't random symbols. The mathematical sequences embed what appear to be spatial coordinates. Triangulation vectors, maybe.\n\nWhatever sent this signal wanted us to find something specific.\n\n- Marcus`
+            `Dr. ${name},\n\nMy hands are actually shaking. In twenty years of xenolinguistics, I've never seen encoding this purposeful.\n\nEleanor's right — this is only a fragment. But even this piece has definite positional structure. The mathematical sequences embed what appear to be spatial coordinates. Triangulation vectors pointing us to the next piece, maybe.\n\nWhatever sent this signal wanted us to follow the trail.\n\n- Marcus`
         );
-    }, 8000);
+    }, 12000);
 
     setTimeout(() => {
         addMailMessage(
-            'Dr. Eleanor Chen - Radio Astronomy',
+            'Dr. Eleanor Chen - Signal Intelligence',
             'Triangulation Vectors in SRC-7024 Data',
-            `Dr. ${name},\n\nI pulled an all-nighter verifying Marcus's analysis. Triple-checked against every pulsar database we have access to. The vectors are real.\n\nThree reference points, all converging on a single location in deep space. Nothing in our catalogs matches these coordinates.\n\nThis is big. Really big.\n\n- Eleanor`
+            `Dr. ${name},\n\nI've been cross-referencing Marcus's coordinate analysis against every pulsar database we have. The vectors are real.\n\nThree reference points, all converging on a single location in deep space. Nothing in our catalogs matches these coordinates. If this fragment is pointing us to the next piece of the message...\n\nWe need to follow the trail.\n\n- Eleanor`
         );
-    }, 18000);
+    }, 22000);
 
     setTimeout(() => {
         addMailMessage(
             'Dr. James Whitmore - SETI Director',
             '[URGENT] PROJECT LIGHTHOUSE — Investigation Page Activated',
-            `Dr. ${name},\n\nDr. Chen and Dr. Webb both confirm: the SRC-7024 data contains triangulation vectors pointing to an unknown location in deep space.\n\nI've authorized the creation of a dedicated investigation workspace — PROJECT LIGHTHOUSE. You'll find it in your navigation panel.\n\nIf these coordinates are real... I don't want to speculate yet. But we need to triangulate NOW.\n\n- James Whitmore\n  SETI Program Director`
+            `Dr. ${name},\n\nChen and Webb both confirm: the SRC-7024 fragment contains triangulation vectors pointing to an unknown location in deep space. If the rest of the message is out there, this is how we find it.\n\nI've authorized the creation of a dedicated investigation workspace — PROJECT LIGHTHOUSE. You'll find it in your navigation panel.\n\nThis is a treasure hunt, ${name}. And we just found the first clue.\n\n- James Whitmore\n  SETI Program Director`
         );
 
         // Unlock investigation page after this email arrives
         unlockInvestigation();
         onFragmentCollected();
-    }, 28000);
+    }, 32000);
 }
 
 // Schedule scientist emails about pre-Big Bang constants (after Fragment 2)

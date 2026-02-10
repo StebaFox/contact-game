@@ -4,20 +4,21 @@
 // ═════════════════════════════════════════════════════════════════════════════
 
 export const WELCOME_EMAIL = {
-    from: 'SETI PROGRAM DIRECTOR',
-    subject: 'Welcome to Sector 7',
-    body: `Welcome to the Deep Space Monitoring Array, Sector 7.
+    from: 'Dr. James Whitmore - SETI Director',
+    subject: 'Your First Shift — Read Before You Start',
+    body: `Dr. {PLAYER_NAME},
 
-Your mission is to analyze signals from distant star systems and identify potential signs of extraterrestrial intelligence.
+I pulled some strings to get you assigned here. Your thesis on signal anomaly detection was the best work I've read in a decade, and this program needs people who still believe the work matters.
 
-Remember: We are looking for patterns, anomalies, anything that suggests purposeful transmission.
+I won't sugarcoat it: Congress is reviewing our funding next quarter. Thirty years of listening, and what we have to show for it is a drawer full of pulsars and false positives and a cafeteria that can't afford real coffee. The oversight committee wants "tangible results" or they shut us down.
 
-The future of humanity's search for contact rests in your capable hands.
+Your job today is straightforward. Survey the ten star systems in your assignment, tune the receivers, analyze what you find. Most of it will be noise. Some of it will be beautiful noise. Catalog everything.
 
-Good luck.
+But between you and me — keep your eyes open. Hell, your ears too! I didn't bring you out here to catalog pulsars or point at the secret spy satellites no one knows are up there. Something in this sector has been nagging at me for months. I can't point to it. Just a feeling.
 
-- SETI Program Director
-Project Oversight`
+Good luck, Dr. {PLAYER_NAME}. Make it count.
+
+- James`
 };
 
 // Day-aware random email pools
@@ -66,12 +67,16 @@ Please plan signal acquisition accordingly.
     },
     {
         from: 'Dr. James Whitmore - SETI Director',
-        subject: 'Keep Up The Work',
+        subject: 'After Hours',
         body: `Dr. {PLAYER_NAME},
 
-I know the isolation of deep space monitoring can be challenging. Remember, every signal analyzed, every frequency scanned, brings us closer to answering humanity's greatest question.
+Still here. Can't sleep. Watching the signal logs scroll by on the secondary monitor while I write grant proposals that probably won't get funded.
 
-Your work matters. Even if we don't find anything today, your dedication is noted and appreciated.
+I don't tell the team this, but some nights I wonder if we're just listening to an empty room. Thirty years is a long time to wait for someone to say hello.
+
+Then I remind myself that every signal we rule out makes the next one that much more significant. The absence of evidence is not the evidence of absence. Someone said that. Probably me...
+
+Keep scanning. I'll keep writing grants.
 
 - James`
     },
@@ -98,7 +103,7 @@ P.S. — Has anyone else noticed the terminal displays flickering near the coffe
 
 Probably nothing, but I flagged a pattern during my shift last night. Sector 12 background noise has this 47-second repeating structure. Too regular for natural, too weak for any cataloged source.
 
-I ran it through the standard filters and it passed right through — which means it's not any known interference pattern. Like I said, probably nothing. Solar wind refraction or something.
+I ran it through the standard filters and it passed right through, which means it's not any known interference pattern. Like I said, probably nothing. Solar wind refraction or something.
 
 Just thought you should know in case you see it in your data too.
 
@@ -111,11 +116,42 @@ Just thought you should know in case you see it in your data too.
 
 I've compiled atmospheric data for several targets in your monitoring zone. Three of them show promising biosignature potential.
 
-I know SETI focuses on technological signatures, but sometimes life announces itself in simpler ways first. Keep an eye on the oxygen-rich candidates.
+I know SETI focuses on technological signatures, but sometimes life announces itself in simpler ways first. Keep an eye on the oxygen-rich candidates. As my favorite character would say, "Life... Uh... Uh... Finds a way!" ;)
 
 Attached: Spectral analysis summary (encrypted)
 
 - Sarah`
+    },
+    {
+        from: 'David Pearson - Congressional Liaison Office',
+        subject: 'Quarterly Review Briefing Materials',
+        body: `Dr. {PLAYER_NAME},
+
+Friendly heads-up — I've been asked to prepare briefing materials for the Senate Subcommittee on Science. They want a summary of "program deliverables" from Sector 7 for the past fiscal year.
+
+I've looked at the data. Between us, it's thin. A lot of cataloged natural phenomena, a few false positives, nothing that makes a compelling case for continued appropriations.
+
+If you find ANYTHING today that even hints at anomalous activity, flag it. I can work with anomalous. I cannot work with "more pulsars."
+
+I'm on your side here. But I need you to give me something.
+
+- David Pearson
+  Congressional Liaison, SETI Program`
+    },
+    {
+        from: 'Dr. Rachel Torres - Former Sector 4',
+        subject: 'Cleaning Out My Desk',
+        body: `{PLAYER_NAME},
+
+They closed Sector 4 last month. Budget review didn't go our way. Six years of listening and they pulled the plug because we couldn't point to a single signal that wasn't a pulsar or a satellite bounce.
+
+I heard you got assigned to Sector 7. Whitmore's territory. He's been fighting for that sector since before either of us were in grad school.
+
+Do me a favor. Find something. Not for the program — for all of us who spent years staring at noise and still believed there was a voice in it.
+
+I'm teaching undergrad physics at Arizona State now. It's fine. It's fine.
+
+- Rach`
     }
 ];
 
@@ -215,9 +251,11 @@ This is a precautionary measure. There is no cause for alarm.
 
 It's 4 AM and I can't sleep. I keep running the encoding analysis in my head.
 
-This is going to sound unscientific, but the signal structure feels... personal. Like it was designed for us specifically. Not just for a civilization at our technological level — for us. For this moment.
+This is going to sound unscientific, but the signal structure feels... inevitable. Like it was designed not for us specifically, but for any civilization that reached a certain point. Any species that developed information theory, quantum mechanics, mathematical constants — they would be able to read this.
 
-The mathematical constants it uses as reference frames are ones we only formalized in the last century. The compression algorithm maps to information theory we published in the 1960s. It's as if someone was watching us develop the tools we'd need to read their message, and then sent it.
+The mathematical constants it uses as reference frames are ones we only formalized in the last century. The compression algorithm maps to information theory we published in the 1960s. It's not that someone was watching us. It's that the message was written for whoever got there first.
+
+As if someone knew what tools any intelligent species would eventually build, and encoded the message to wait for them.
 
 I know how that sounds. I know. But look at the data and tell me I'm wrong.
 

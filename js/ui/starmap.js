@@ -831,6 +831,58 @@ export function updateStarCatalogDisplay() {
             }
         }
     });
+
+    // First-star recommendation (Day 1, no scans yet)
+    if (gameState.currentDay === 1 && gameState.analyzedStars.size === 0 &&
+        !gameState.demoMode) {
+        const firstStar = document.querySelector('.star-item[data-star-id="0"]');
+        if (firstStar && !firstStar.querySelector('.recommend-label')) {
+            const label = document.createElement('div');
+            label.className = 'recommend-label';
+            label.textContent = '\u25C6 RECOMMENDED FIRST TARGET';
+            label.style.cssText = 'color: #0ff; font-size: 10px; margin-top: 2px;';
+            firstStar.appendChild(label);
+        }
+        if (firstStar) firstStar.classList.add('star-recommended');
+    } else {
+        // Remove recommendation after first scan
+        starItems.forEach(item => {
+            const label = item.querySelector('.recommend-label');
+            if (label) label.remove();
+            item.classList.remove('star-recommended');
+        });
+    }
+
+    // Update dynamic instruction text
+    updateStarmapInstruction();
+}
+
+// Update starmap instruction text based on Day 1 progress
+export function updateStarmapInstruction() {
+    const instruction = document.querySelector('#starmap-view .instruction');
+    if (!instruction) return;
+
+    if (gameState.demoMode || gameState.currentDay === 0 || gameState.currentDay > 1) {
+        instruction.textContent = 'SELECT TARGET FOR SIGNAL ANALYSIS';
+        return;
+    }
+
+    const day1Stars = DAY_CONFIG[1].availableStars;
+    const scanCount = [...gameState.analyzedStars].filter(id => day1Stars.includes(id)).length;
+    const required = DAY_CONFIG[1].starsRequired;
+    const ross128Scanned = gameState.analyzedStars.has(8);
+
+    if (scanCount === 0) {
+        instruction.textContent = 'SELECT YOUR FIRST TARGET \u2014 10 STARS ASSIGNED, 7 MINIMUM REQUIRED';
+    } else if (scanCount < 4) {
+        instruction.textContent = `CONTINUE SURVEY \u2014 ${scanCount} OF ${required} TARGETS ANALYZED`;
+    } else if (!ross128Scanned && scanCount < required) {
+        instruction.textContent = 'ROSS 128 REGION FLAGGED FOR ATTENTION \u2014 CHECK MAILBOX';
+    } else if (scanCount < required) {
+        instruction.textContent = `CONTINUE SURVEY \u2014 ${scanCount} OF ${required} TARGETS ANALYZED`;
+    } else {
+        instruction.textContent = 'DAY OBJECTIVES MET \u2014 FILE YOUR REPORT';
+    }
 }
 
 // Draw star visualization

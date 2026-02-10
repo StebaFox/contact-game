@@ -1,0 +1,1905 @@
+================================================================================
+SIGNAL — COMPLETE NARRATIVE TEXT
+================================================================================
+
+All player-facing story text in the game, organized by when it appears.
+Edit freely, then hand back to implement changes.
+
+Lines marked [FILE: ...] show where to find the text in code.
+Lines marked [CONTEXT: ...] explain when the text appears.
+
+
+================================================================================
+MAIN MENU
+================================================================================
+
+DEEP SPACE SIGNAL ANALYSIS SYSTEM  ·  Version 1.3.7
+
+CLASSIFIED RESEARCH STATION
+SECTOR 7 - DEEP SPACE MONITORING ARRAY
+AUTHORIZED PERSONNEL ONLY
+
+(c) 2026 Stephen Reponen
+
+[FILE: index.html ~line 80-90]
+
+
+================================================================================
+CREDITS SCREEN
+================================================================================
+[CONTEXT: Accessed from CREDITS button on main menu]
+
+A GAME BY
+STEPHEN REPONEN
+
+THANK YOU
+Henrik Wetterstrand
+Elina Adams
+
+[FILE: js/narrative/final-message.js — showCreditsScreen()]
+
+
+================================================================================
+BOOT SEQUENCE — NEW GAME
+================================================================================
+[CONTEXT: Plays when starting a new game]
+
+SETI DEEP SPACE MONITORING SYSTEM v1.3.7
+Copyright (c) 1995 Advanced Signal Intelligence Division
+
+POST: Initializing core systems...
+[OK] 64MB ECC DRAM ... PASSED
+[OK] DSP signal correlator arrays online
+[OK] CLASSIFIED co-processor subsystem ready
+
+Loading orbital receiver array...
+[OK] TDRSS satellite uplink established
+[OK] Deep space antenna array synchronized
+[OK] Signal processing modules loaded
+
+Running security protocols...
+[SECURITY] Retinal scan required
+[SECURITY] Scanning retina...
+[SECURITY] Clearance level: CLASSIFIED
+[SECURITY] Authorization: PENDING
+
+Verifying personnel credentials...
+
+>>> Player enters name <<<
+
+[SECURITY] Identity confirmed: Dr. {NAME}
+[SECURITY] Clearance approved: LEVEL 4
+[SECURITY] Access granted
+
+Welcome, Dr. {NAME}
+Finalizing system startup...
+
+[OK] Stellar database loaded (15,847 catalogued objects)
+[OK] Signal analysis routines ready
+[OK] Pattern recognition filter banks initialized
+[OK] Contact protocol systems active
+
+All systems operational
+Standing by for target acquisition...
+
+INITIALIZATION COMPLETE
+
+[FILE: js/narrative/boot-messages.js]
+
+
+================================================================================
+DAY BOOT MESSAGES (shown during day transitions)
+================================================================================
+
+--- Day 1 ---
+CLEARANCE LEVEL: 4 (STANDARD)
+SURVEY MODE: ACTIVE
+ASSIGNED TARGETS: 10 (7 MINIMUM)
+
+--- Day 2 ---
+PROTOCOL SIGMA ACTIVE
+CLEARANCE LEVEL: 5 (ELEVATED)
+ADVANCED ANALYSIS SYSTEMS: ONLINE
+QUANTUM PROCESSOR: INITIALIZED
+
+--- Day 3 ---
+OMEGA PROTOCOL ACTIVE
+CLEARANCE LEVEL: 6 (MAXIMUM)
+TRIANGULATION ARRAY: OPERATIONAL
+ALL SYSTEMS: MAXIMUM PRIORITY
+OBJECTIVE: LOCATE CMB SIGNAL SOURCE
+
+[FILE: js/core/day-system.js — DAY_CONFIG]
+
+
+================================================================================
+DAY TITLES & SUBTITLES
+================================================================================
+
+DAY 1: FIRST SHIFT — Prove this program deserves to exist
+DAY 2: VERIFICATION PROTOCOLS — Signal verification and deep analysis
+DAY 3: COSMIC TRIANGULATION — Locate the source of the ancient signal
+
+[FILE: js/core/day-system.js — DAY_CONFIG]
+
+
+================================================================================
+DAY OBJECTIVES (shown in boot sequence)
+================================================================================
+
+--- Day 1 ---
+- Survey assigned star systems (7 minimum)
+- Catalog all signals — the oversight committee needs data
+- Flag anything unusual — your career may depend on it
+
+--- Day 2 ---
+- Re-analyze anomalous signal from Day 1
+- Verify signal authenticity
+- Continue survey with enhanced protocols
+
+--- Day 3 ---
+- Survey remaining star systems
+- Collect triangulation data from contacts
+- Locate signal origin point
+
+[FILE: js/core/day-system.js — DAY_CONFIG]
+
+
+================================================================================
+EMAILS — WELCOME
+================================================================================
+
+FROM: Dr. James Whitmore - SETI Director
+SUBJECT: Your First Shift — Read Before You Start
+---
+Dr. {PLAYER_NAME},
+
+I pulled some strings to get you assigned here. Your thesis on signal anomaly detection was the best work I've read in a decade, and this program needs people who still believe the work matters.
+
+I won't sugarcoat it: Congress is reviewing our funding next quarter. Thirty years of listening, and what we have to show for it is a drawer full of pulsars and false positives and a cafeteria that can't afford real coffee. The oversight committee wants "tangible results" or they shut us down.
+
+Your job today is straightforward. Survey the ten star systems in your assignment, tune the receivers, analyze what you find. Most of it will be noise. Some of it will be beautiful noise. Catalog everything.
+
+But between you and me — keep your eyes open. Hell, your ears too! I didn't bring you out here to catalog pulsars or point at the secret spy satellites no one knows are up there. Something in this sector has been nagging at me for months. I can't point to it. Just a feeling.
+
+Good luck, Dr. {PLAYER_NAME}. Make it count.
+
+- James
+
+[FILE: js/narrative/emails.js — WELCOME_EMAIL]
+
+
+================================================================================
+EMAILS — DAY 1 RANDOM POOL
+================================================================================
+[CONTEXT: Random emails that arrive during Day 1 scanning]
+
+--- Email 1 ---
+FROM: PROJECT OVERSIGHT - CLASSIFIED
+SUBJECT: RE: Budget Concerns
+---
+Dr. {PLAYER_NAME},
+
+We've reviewed your latest requisition requests. While we understand the need for continued deep space monitoring, budgetary constraints require justification.
+
+Please provide evidence of signal anomalies or potential contact scenarios to support continued funding.
+
+- Oversight Committee
+Sector 7 Administration
+
+--- Email 2 ---
+FROM: Dr. Eleanor Chen - Radio Astronomy
+SUBJECT: Interference Patterns
+---
+Dr. {PLAYER_NAME},
+
+I've been reviewing some of the frequency data from your array. There are some unusual interference patterns that don't match known sources.
+
+Have you ruled out terrestrial interference? Some of these signatures are... peculiar.
+
+Let me know if you need a second opinion.
+
+- Eleanor
+
+--- Email 3 ---
+FROM: SYSTEM ADMINISTRATOR
+SUBJECT: Array Maintenance Schedule
+---
+NOTICE TO ALL PERSONNEL:
+
+Scheduled maintenance on Deep Space Array components will occur:
+DATE: Next week
+DURATION: 4-6 hours
+AFFECTED SYSTEMS: Receivers 3, 7, 12
+
+Please plan signal acquisition accordingly.
+
+- Technical Services
+
+--- Email 4 ---
+FROM: Dr. James Whitmore - SETI Director
+SUBJECT: After Hours
+---
+Dr. {PLAYER_NAME},
+
+Still here. Can't sleep. Watching the signal logs scroll by on the secondary monitor while I write grant proposals that probably won't get funded.
+
+I don't tell the team this, but some nights I wonder if we're just listening to an empty room. Thirty years is a long time to wait for someone to say hello.
+
+Then I remind myself that every signal we rule out makes the next one that much more significant. The absence of evidence is not the evidence of absence. Someone said that. Probably me...
+
+Keep scanning. I'll keep writing grants.
+
+- James
+
+--- Email 5 ---
+FROM: Cafeteria Services
+SUBJECT: Menu Update
+---
+WEEKLY MENU NOTICE:
+
+Due to supply chain delays, the following items are temporarily unavailable:
+- Fresh fruit
+- Coffee (decaf only available)
+- Anything that tastes good
+
+We apologize for any inconvenience. Freeze-dried alternatives are available.
+
+P.S. — Has anyone else noticed the terminal displays flickering near the coffee machine? Maintenance says it's nothing but it's been going on all week.
+
+- Sector 7 Food Services
+
+--- Email 6 ---
+FROM: Tom Nguyen - Night Shift
+SUBJECT: Something weird in Sector 12
+---
+Hey Dr. {PLAYER_NAME},
+
+Probably nothing, but I flagged a pattern during my shift last night. Sector 12 background noise has this 47-second repeating structure. Too regular for natural, too weak for any cataloged source.
+
+I ran it through the standard filters and it passed right through, which means it's not any known interference pattern. Like I said, probably nothing. Solar wind refraction or something.
+
+Just thought you should know in case you see it in your data too.
+
+- Tom
+
+--- Email 7 ---
+FROM: Dr. Sarah Okonkwo - Astrobiology
+SUBJECT: Habitable Zone Analysis
+---
+Dr. {PLAYER_NAME},
+
+I've compiled atmospheric data for several targets in your monitoring zone. Three of them show promising biosignature potential.
+
+I know SETI focuses on technological signatures, but sometimes life announces itself in simpler ways first. Keep an eye on the oxygen-rich candidates. As my favorite character would say, "Life... Uh... Uh... Finds a way!" ;)
+
+Attached: Spectral analysis summary (encrypted)
+
+- Sarah
+
+--- Email 8 ---
+FROM: David Pearson - Congressional Liaison Office
+SUBJECT: Quarterly Review Briefing Materials
+---
+Dr. {PLAYER_NAME},
+
+Friendly heads-up — I've been asked to prepare briefing materials for the Senate Subcommittee on Science. They want a summary of "program deliverables" from Sector 7 for the past fiscal year.
+
+I've looked at the data. Between us, it's thin. A lot of cataloged natural phenomena, a few false positives, nothing that makes a compelling case for continued appropriations.
+
+If you find ANYTHING today that even hints at anomalous activity, flag it. I can work with anomalous. I cannot work with "more pulsars."
+
+I'm on your side here. But I need you to give me something.
+
+- David Pearson
+  Congressional Liaison, SETI Program
+
+--- Email 9 ---
+FROM: Dr. Rachel Torres - Former Sector 4
+SUBJECT: Cleaning Out My Desk
+---
+{PLAYER_NAME},
+
+They closed Sector 4 last month. Budget review didn't go our way. Six years of listening and they pulled the plug because we couldn't point to a single signal that wasn't a pulsar or a satellite bounce.
+
+I heard you got assigned to Sector 7. Whitmore's territory. He's been fighting for that sector since before either of us were in grad school.
+
+Do me a favor. Find something. Not for the program — for all of us who spent years staring at noise and still believed there was a voice in it.
+
+I'm teaching undergrad physics at Arizona State now. It's fine. It's fine.
+
+- Rach
+
+[CONTEXT: Emails 1, 8, 9, and 6 are force-delivered at scan milestones 1, 2, 4, and 5 respectively.
+Remaining emails still arrive randomly for flavor.]
+
+[FILE: js/narrative/emails.js — DAY1_EMAILS]
+[FILE: js/systems/mailbox.js — checkScanTriggeredEmails()]
+
+
+================================================================================
+EMAILS — DAY 1 SPECIAL: POWER FAILURE
+================================================================================
+[CONTEXT: Sent after first dish power failure during scanning]
+
+FROM: FACILITIES MANAGEMENT
+SUBJECT: RE: RE: RE: Array Power Circuit Issues
+---
+Dr. {PLAYER_NAME},
+
+I know the circuit breakers have been tripping on the dish array. Trust me, we're aware.
+
+Long story short: Congress cut our maintenance budget by 40% this fiscal year. The power distribution units on dishes 1-6 are original equipment from 1977. Yes, NINETEEN SEVENTY-SEVEN. They were "temporary replacements" for the temporary replacements.
+
+Our electrician, Dave, says he's been holding Dish 4 together with zip ties and "positive thinking." His words, not mine.
+
+We've submitted an emergency procurement request for new breaker panels. Estimated approval time: 8-14 months. In the meantime, when a circuit trips, you'll need to manually reroute power through the backup grid.
+
+Sorry about this. If it helps, the vending machine in B-wing is also running on the same circuit. So if your dishes go down, at least you know someone's getting a free soda.
+
+- Rick Vasquez
+Facilities & Infrastructure
+Sector 7
+
+[FILE: js/narrative/emails.js — POWER_FAILURE_EMAIL]
+
+
+================================================================================
+EMAILS — DAY 1 SPECIAL: ROSS 128 ENCRYPTED SIGNAL
+================================================================================
+[CONTEXT: Sent after finding the encrypted Ross 128 signal on Day 1]
+
+FROM: SECURITY CLEARANCE - LEVEL 5
+SUBJECT: [CLASSIFIED] Signal Confirmation Required
+---
+[ENCRYPTED COMMUNICATION]
+
+Dr. {PLAYER_NAME},
+
+Your clearance has been elevated for this communication.
+
+We've detected coordinated signal patterns across multiple listening posts. Your sector is of particular interest.
+
+The signal you have identified matches parameters we have been monitoring for decades. This is not a drill.
+
+Report all findings immediately. Do not discuss outside secure channels. Do not contact external agencies.
+
+Protocol Sigma is now in effect.
+
+Stand by for further instructions.
+
+[END TRANSMISSION]
+
+[FILE: js/narrative/emails.js — FIRST_CONTACT_EMAIL]
+
+
+================================================================================
+EMAILS — DAY 1 SPECIAL: CHEN POST-ROSS-128 FOLLOW-UP
+================================================================================
+[CONTEXT: Sent ~15 seconds after returning from Ross 128 encrypted signal]
+
+FROM: Dr. Eleanor Chen - Radio Astronomy
+SUBJECT: RE: Ross 128 — Encrypted Signal
+---
+Dr. {PLAYER_NAME},
+
+I just saw the alert come through — an encrypted signal from Ross 128? That's not something you see every day. Or ever, frankly.
+
+The encoding structure doesn't match anything in our terrestrial database. No known satellite, no military comm protocol, nothing. I ran it through three different pattern libraries and got zero hits.
+
+Whatever this is, it's not noise. Something put that structure there deliberately.
+
+The bad news is we can't touch it without Sigma clearance — the quantum decryption system is locked behind that. I'd recommend flagging it in your daily report. If Oversight sees what I'm seeing, they'll have to approve the upgrade.
+
+This could be the one, Dr. {PLAYER_NAME}. Don't let it slip through the cracks.
+
+- Eleanor
+
+[FILE: js/systems/scanning.js ~line 1419]
+
+
+================================================================================
+EMAILS — DAY 2 RANDOM POOL
+================================================================================
+[CONTEXT: Random emails that arrive during Day 2 scanning]
+
+--- Email 1 ---
+FROM: Dr. Marcus Webb - Xenolinguistics
+SUBJECT: Pattern Analysis Request
+---
+Dr. {PLAYER_NAME},
+
+I've been developing new algorithms for detecting linguistic patterns in signal noise. Would you be willing to share some of your raw data feeds?
+
+Even natural phenomena sometimes hide surprising structures. My team believes we may have found something in archived data from your sector.
+
+Let me know if you're interested in collaborating.
+
+- Marcus
+
+--- Email 2 ---
+FROM: AUTOMATED BACKUP SYSTEM
+SUBJECT: Data Archive Complete
+---
+[AUTOMATED MESSAGE]
+
+Daily backup completed successfully.
+
+Files archived: 2,847
+Total size: 847 MB
+Integrity check: PASSED
+
+Note: Anomalous data patterns flagged in sectors 7-12. Manual review recommended.
+
+- Backup System v3.2.1
+
+--- Email 3 ---
+FROM: Tom Nguyen - Night Shift
+SUBJECT: RE: Something weird in Sector 12
+---
+Dr. {PLAYER_NAME},
+
+Okay, remember that 47-second pattern I mentioned? It's gone. Completely. Vanished from the background noise overnight — right around the time you found that Ross 128 signal.
+
+Coincidence? Yeah. Probably. But the timing is weird, right?
+
+Also — did you hear what happened? Half the building is talking about your signal. Dr. Chen was in the break room at 3 AM with printouts taped to the wall.
+
+- Tom
+
+--- Email 4 ---
+FROM: SYSTEM ADMINISTRATOR
+SUBJECT: Array Calibration Anomaly — Advisory
+---
+NOTICE TO SECTOR 7 PERSONNEL:
+
+Automated diagnostics have detected a calibration drift across dishes 4, 7, and 11. All three receivers are gradually shifting toward the same coordinates without operator input.
+
+Engineering has been notified. Please do not attempt manual override at this time.
+
+This is likely a firmware issue from the last update cycle.
+
+- Technical Services
+
+--- Email 5 ---
+FROM: PERSONNEL DEPARTMENT
+SUBJECT: Mandatory Training Reminder
+---
+Dr. {PLAYER_NAME},
+
+This is a reminder that your annual "First Contact Protocol" certification expires in 30 days.
+
+Please complete the online refresher course before expiration. Failure to comply may result in restricted array access.
+
+Note: Given recent... developments... this training is more relevant than ever.
+
+- HR Division
+
+[FILE: js/narrative/emails.js — DAY2_EMAILS]
+
+
+================================================================================
+EMAILS — DAY 2 START: ROSS 128 DECRYPTION
+================================================================================
+[CONTEXT: Sent at start of Day 2]
+
+FROM: Dr. James Whitmore - SETI Director
+SUBJECT: [URGENT] Quantum Processor Online - Ross 128 Signal
+---
+Dr. {PLAYER_NAME},
+
+Your clearance elevation has been processed. With Level 5 access, you now have authorization to activate the quantum decryption system.
+
+That encrypted signal you found yesterday from Ross 128 - we need you to go back and decrypt it. This is TOP PRIORITY.
+
+Whatever is in that signal, Washington wants answers. Re-scan Ross 128 and initiate the decryption sequence.
+
+Don't keep us waiting.
+
+- James Whitmore
+  SETI Program Director
+
+[FILE: js/narrative/emails.js — ROSS128_DECRYPT_EMAIL]
+
+
+================================================================================
+EMAILS — DAY 2 CLIFFHANGER: CHEN DEEP SPACE ANOMALY
+================================================================================
+[CONTEXT: Arrives during Day 2 cliffhanger sequence, triggers SRC-7024]
+
+FROM: Dr. Sarah Chen - Signal Intelligence
+SUBJECT: URGENT: Deep Space Anomaly Detected
+---
+Dr. {PLAYER_NAME},
+
+The overnight co-processor flagged something extraordinary during batch analysis of today's survey data.
+
+A coherent signal source at coordinates that do NOT match any entry in our stellar catalog. I have cross-referenced with every known database — military, civilian, deep space network — and returned zero matches.
+
+This signal is coming from somewhere we have never looked before.
+
+I have designated it SRC-7024 and I am pushing it to your starmap now. You need to scan it immediately.
+
+I have been in this field for twenty-three years. I have never seen anything like this.
+
+- Dr. Sarah Chen
+  Signal Intelligence Division
+
+[FILE: js/narrative/emails.js — DAY2_CHEN_SIGNAL_EMAIL]
+
+
+================================================================================
+EMAILS — DAY 2 CLIFFHANGER: WESTERN SEABOARD BLACKOUT
+================================================================================
+[CONTEXT: Arrives after SRC-7024 crash sequence]
+
+FROM: EMERGENCY ALERT - SETI OPERATIONS
+SUBJECT: [CRITICAL] System Failure — Western Grid Event
+---
+[AUTOMATED PRIORITY ALERT]
+
+Dr. {PLAYER_NAME},
+
+At approximately {TIME} UTC, the deep space monitoring array experienced a catastrophic system failure coinciding with widespread power disruptions across the western seaboard.
+
+AFFECTED SYSTEMS:
+- Array dishes 1-12: OFFLINE (recovering)
+- Signal processing core: REBOOTED
+- Data integrity: UNDER REVIEW
+
+CONCURRENT EVENT:
+Reports are coming in from multiple observatories. The entire western seaboard power grid experienced a momentary blackout at the exact moment our array locked onto SRC-7024.
+
+Coincidence or not, SRC-7024 is now classified MAXIMUM PRIORITY. Whatever that signal source is, it responded to our scan with enough electromagnetic energy to knock out infrastructure across three states.
+
+Further analysis will resume tomorrow with all resources dedicated to SRC-7024.
+
+Report your findings and stand down for the night.
+
+- SETI Emergency Operations
+
+[FILE: js/narrative/emails.js — DAY2_BLACKOUT_EMAIL]
+
+
+================================================================================
+EMAILS — DAY 3 RANDOM POOL
+================================================================================
+[CONTEXT: Random emails that arrive during Day 3 scanning]
+
+--- Email 1 ---
+FROM: SETI OPERATIONS - SECURITY
+SUBJECT: Building Access Restriction — Effective Immediately
+---
+[PRIORITY NOTICE]
+
+By order of the Program Director, effective immediately:
+
+- Building access is restricted to Level 6 clearance and above
+- All non-essential personnel have been reassigned
+- External communications are being routed through secure channels only
+- Media inquiries are to be directed to the Public Affairs office — do NOT respond directly
+
+This is a precautionary measure. There is no cause for alarm.
+
+- SETI Security Operations
+
+--- Email 2 ---
+FROM: Dr. Marcus Webb - Xenolinguistics
+SUBJECT: I can't sleep
+---
+Dr. {PLAYER_NAME},
+
+It's 4 AM and I can't sleep. I keep running the encoding analysis in my head.
+
+This is going to sound unscientific, but the signal structure feels... inevitable. Like it was designed not for us specifically, but for any civilization that reached a certain point. Any species that developed information theory, quantum mechanics, mathematical constants — they would be able to read this.
+
+The mathematical constants it uses as reference frames are ones we only formalized in the last century. The compression algorithm maps to information theory we published in the 1960s. It's not that someone was watching us. It's that the message was written for whoever got there first.
+
+As if someone knew what tools any intelligent species would eventually build, and encoded the message to wait for them.
+
+I know how that sounds. I know. But look at the data and tell me I'm wrong.
+
+- Marcus
+
+--- Email 3 ---
+FROM: Tom Nguyen - Night Shift
+SUBJECT: This is my last shift
+---
+Dr. {PLAYER_NAME},
+
+They're rotating out all non-Level-6 staff starting tomorrow. I'm being reassigned to the Mojave relay station.
+
+I just want you to know — whatever you're working on in there, I believe in it. I've been doing night shifts at radio telescopes for twelve years and I've never seen the senior staff act like this. Dr. Whitmore was pacing the hall at midnight. Dr. Chen hasn't left the building in two days.
+
+Something big is happening. I can feel it.
+
+Good luck in there.
+
+- Tom
+
+[FILE: js/narrative/emails.js — DAY3_EMAILS]
+
+
+================================================================================
+EMAILS — DAY 3 START
+================================================================================
+[CONTEXT: Sent at the beginning of Day 3]
+
+FROM: Dr. James Whitmore - SETI Director
+SUBJECT: [PRIORITY] SRC-7024 — Top Target Today
+---
+Dr. {PLAYER_NAME},
+
+SRC-7024 is your top priority today. That uncharted signal source that appeared at the end of yesterday's survey — we need answers.
+
+Scan it first. Whatever it is, it's not in any catalog we have access to. Dr. Chen has been monitoring it overnight and reports the signal is getting stronger.
+
+The entire team is watching. Don't keep us waiting.
+
+- James Whitmore
+  SETI Program Director
+
+[FILE: js/systems/day-report.js ~line 1511]
+
+
+================================================================================
+EMAILS — BREADCRUMB: AFTER FRAGMENT 1 (SRC-7024)
+================================================================================
+[CONTEXT: Staggered emails after collecting Fragment 1 from SRC-7024]
+
+--- Email 1 (3s delay) — FRAMES THE FRAGMENT HUNT ---
+FROM: Dr. Eleanor Chen - Signal Intelligence
+SUBJECT: SRC-7024 Signal Structure — It's Incomplete
+---
+Dr. {PLAYER_NAME},
+
+I've been running structural analysis on the SRC-7024 data since your alignment locked in. Here's the problem: the signal is incomplete.
+
+Not corrupted — deliberately partitioned. The encoding contains header markers that reference additional data blocks we don't have. Like receiving chapter 1 of a book with a table of contents that lists chapters we've never seen.
+
+Whoever — whatever — sent this, they split the message across multiple transmission points. SRC-7024 was just the first piece.
+
+The other pieces are out there somewhere. We need to find them.
+
+- Eleanor
+
+--- Email 2 (12s delay) ---
+FROM: Dr. Marcus Webb - Xenolinguistics
+SUBJECT: SRC-7024 Fragment Analysis
+---
+Dr. {PLAYER_NAME},
+
+My hands are actually shaking. In twenty years of xenolinguistics, I've never seen encoding this purposeful.
+
+Eleanor's right — this is only a fragment. But even this piece has definite positional structure. The mathematical sequences embed what appear to be spatial coordinates. Triangulation vectors pointing us to the next piece, maybe.
+
+Whatever sent this signal wanted us to follow the trail.
+
+- Marcus
+
+--- Email 3 (22s delay) ---
+FROM: Dr. Eleanor Chen - Signal Intelligence
+SUBJECT: Triangulation Vectors in SRC-7024 Data
+---
+Dr. {PLAYER_NAME},
+
+I've been cross-referencing Marcus's coordinate analysis against every pulsar database we have. The vectors are real.
+
+Three reference points, all converging on a single location in deep space. Nothing in our catalogs matches these coordinates. If this fragment is pointing us to the next piece of the message...
+
+We need to follow the trail.
+
+- Eleanor
+
+--- Email 4 (32s delay) ---
+FROM: Dr. James Whitmore - SETI Director
+SUBJECT: [URGENT] PROJECT LIGHTHOUSE — Investigation Page Activated
+---
+Dr. {PLAYER_NAME},
+
+Chen and Webb both confirm: the SRC-7024 fragment contains triangulation vectors pointing to an unknown location in deep space. If the rest of the message is out there, this is how we find it.
+
+I've authorized the creation of a dedicated investigation workspace — PROJECT LIGHTHOUSE. You'll find it in your navigation panel.
+
+This is a treasure hunt, {PLAYER_NAME}. And we just found the first clue.
+
+- James Whitmore
+  SETI Program Director
+
+[FILE: js/systems/scanning.js — scheduleSrc7024PostAlignmentEmails()]
+
+
+================================================================================
+EMAILS — BREADCRUMB: AFTER FRAGMENT 2 (NEXUS POINT)
+================================================================================
+[CONTEXT: Staggered emails after collecting Fragment 2]
+
+--- Email 1 (20s delay) ---
+FROM: Dr. Sarah Okonkwo - Astrobiology
+SUBJECT: NEXUS POINT Data — I need to tell someone
+---
+Dr. {PLAYER_NAME},
+
+I need to tell someone because I can't tell my team without causing a panic.
+
+The physical constants in the NEXUS POINT fragment don't match our universe. They describe different initial conditions — as if someone is documenting the parameters of a DIFFERENT cosmos. And the temporal markers predate the Big Bang by billions of years.
+
+That sentence should be meaningless. It should be gibberish. But the math is clean.
+
+I'm terrified.
+
+Two fragments down. The message is still incomplete. Keep scanning — any star could be carrying another piece.
+
+- Sarah
+
+--- Email 2 (40s delay) ---
+FROM: Dr. Eleanor Chen - Radio Astronomy
+SUBJECT: RE: NEXUS POINT — A different perspective
+---
+Dr. {PLAYER_NAME},
+
+Sarah just told me. I know she's scared. I'm not.
+
+I'm awed.
+
+Think about it — if they wanted to hurt us, they wouldn't have scattered the message across multiple stars for collaborative decryption. They wouldn't have embedded coordinates we could follow. This feels like... a gift.
+
+Someone wanted to be found. Someone wanted us to understand.
+
+Let's keep going.
+
+- Eleanor
+
+[FILE: js/systems/scanning.js — schedulePreBigBangEmails()]
+
+
+================================================================================
+EMAILS — BREADCRUMB: 82 ERIDANI HINT (if needed)
+================================================================================
+[CONTEXT: Sent if player has scanned 5+ Day 3 stars but hasn't contacted 82 Eridani]
+
+FROM: Dr. Marcus Webb - Xenolinguistics
+SUBJECT: RE: NEXUS POINT Analysis — "Before Time"
+---
+Dr. {PLAYER_NAME},
+
+Dr. Okonkwo is right. The temporal markers in Fragment 2 point to events before the Big Bang. I keep coming back to the 82 Eridani signal — that civilization mentioned "what came before."
+
+We need their data. If they've decoded another piece of this message, combining it with ours might reveal the full picture.
+
+Have you established contact with 82 Eridani yet?
+
+- Marcus
+
+[FILE: js/systems/scanning.js — scheduleEridaniHintIfNeeded()]
+
+
+================================================================================
+EMAILS — BREADCRUMB: AFTER FRAGMENT 3 (GENESIS TRIANGULATION)
+================================================================================
+[CONTEXT: Staggered emails after collecting Fragment 3 from 82 Eridani]
+
+--- Email 1 (5s delay) ---
+FROM: Dr. James Whitmore - SETI Director
+SUBJECT: Before we go further
+---
+Dr. {PLAYER_NAME},
+
+Before Eleanor sends you the triangulation data — I need a moment.
+
+I started this program thirty years ago. Fought the funding cuts. Every year, the same question from the oversight committee: "Why are we still listening?" I never had a good answer. Just faith.
+
+Now I'm looking at three fragments of a message from before the Big Bang, and I'm crying at my desk like a child.
+
+Thank you. For everything.
+
+- James
+
+--- Email 2 (15s delay) ---
+FROM: Dr. Eleanor Chen - Radio Astronomy
+SUBJECT: All Three Fragments — Pattern Emerging
+---
+Dr. {PLAYER_NAME},
+
+With all three fragments decoded, I ran a cross-correlation analysis. The data from SRC-7024, NEXUS POINT, and 82 Eridani aren't just pieces of a message — they contain a SECOND set of triangulation vectors.
+
+These vectors don't point to any known object. They converge on a position that predates our earliest sky surveys.
+
+Check PROJECT LIGHTHOUSE. We need to triangulate this immediately.
+
+- Eleanor
+
+--- Email 3 (30s delay) ---
+FROM: Dr. Marcus Webb - Xenolinguistics
+SUBJECT: RE: Fragment Cross-Analysis — "The Origin Point"
+---
+Dr. {PLAYER_NAME},
+
+Eleanor is right. These three fragments, when combined, contain precise triangulation data pointing to what the encoding describes as a "genesis coordinate."
+
+Whatever created these signals is directing us to the source — the very origin of the message.
+
+Use the investigation page to run the triangulation. I believe this is the final piece.
+
+- Marcus
+
+[FILE: js/systems/scanning.js — scheduleGenesisTriangulationEmails()]
+
+
+================================================================================
+EMAILS — AFTER FRAGMENT 4 (GENESIS POINT)
+================================================================================
+[CONTEXT: Sent 5s after collecting the final fragment]
+
+FROM: Dr. James Whitmore - SETI Director
+SUBJECT: It's just us now
+---
+Dr. {PLAYER_NAME},
+
+I've cleared the building. It's just us now — the original team. Chen, Webb, Okonkwo, and you.
+
+All four fragments are decoded. The complete message is reconstructable.
+
+Open PROJECT LIGHTHOUSE when you're ready. Take your time.
+
+We've been waiting 13.8 billion years. A few more minutes won't matter.
+
+- James
+
+[FILE: js/systems/scanning.js — schedulePostGenesisEmails()]
+
+
+================================================================================
+EMAILS — POST-ROSS-128 DECRYPTION (CHEN)
+================================================================================
+[CONTEXT: Sent ~20s after Ross 128 contact protocol on Day 2]
+
+FROM: Dr. Eleanor Chen - Radio Astronomy
+SUBJECT: RE: Ross 128 — Decryption Results
+---
+{PLAYER_NAME},
+
+I've been staring at the decoded output for the last hour. I don't even know where to begin.
+
+The signal isn't just a message. Embedded alongside it are fragments of what can only be described as scientific data — mathematical constants, molecular structures, quantum states. Some of it maps to known physics. Some of it... doesn't. Not yet.
+
+But here's what's keeping me up: the encoding predates anything we thought possible. The timestamp markers in the signal structure suggest an origin point that shouldn't exist. I've triple-checked. The math doesn't lie.
+
+Whoever sent this was thinking in timescales we can barely comprehend.
+
+We need to keep scanning. If Ross 128 had this, there may be more signals out there — more pieces of whatever puzzle this is. I have a feeling we've only scratched the surface.
+
+Stay sharp out there.
+
+- Eleanor
+
+[FILE: js/systems/scanning.js ~line 2547]
+
+
+================================================================================
+EMAILS — POST-FINAL-MESSAGE: WHITMORE
+================================================================================
+[CONTEXT: Sent 8s after returning from the final cosmic message]
+
+FROM: Dr. James Whitmore - SETI Director
+SUBJECT: What Comes Next
+---
+Dr. {PLAYER_NAME},
+
+I've been staring at the data for hours. I don't think any of us have slept.
+
+The full contents of the transmission are still being cataloged — mathematical frameworks, physical constants, compressed visual data, entire knowledge structures we don't even have classifications for yet. The Encyclopedia alone will take decades to fully decode.
+
+But the message itself... I keep coming back to it. They were alone for ten billion years. They built an entire universe so that no one else would have to experience that silence.
+
+I've spent my entire career searching for proof that we're not alone. I never imagined the answer would be this.
+
+Everything changes now. Everything.
+
+I've already been on the phone with Geneva, Washington, and Beijing. The world will know soon. And when they ask who found it — who actually listened — I'll make sure they know your name.
+
+Thank you, {PLAYER_NAME}. For all of it.
+
+- James
+
+[FILE: js/narrative/final-message.js — returnToStarmap()]
+
+
+================================================================================
+ALIEN CONTACTS — ROSS 128 (Star Index 8)
+================================================================================
+[CONTEXT: Day 2 — Contact protocol after Ross 128 decryption]
+
+SIGNAL ANALYSIS COMPLETE
+PATTERN: REPEATING GEOMETRIC SHAPES
+LOADING VISUAL DATA...
+>>> IMAGE DATA DETECTED <<<
+
+[ASCII ART: Star map showing multiple star systems with routes between them, Earth/SOL marked]
+
+IT'S A MAP
+SHOWING MULTIPLE STAR SYSTEMS
+HIGHLIGHTED ROUTES BETWEEN THEM
+
+THERE ARE OTHERS OUT THERE
+THEY'RE CONNECTED
+A NETWORK OF CIVILIZATIONS
+
+AND THEY'VE MARKED OUR SOLAR SYSTEM
+
+THEY KNOW ABOUT US
+HAVE THEY BEEN WATCHING?
+
+SOMETHING ELSE IN THE DATA...
+DEEPER LAYER... ENCRYPTED
+THIS MAP IS ONLY THE SURFACE
+
+[FILE: js/narrative/alien-contacts.js — starIndex 8]
+
+
+================================================================================
+ALIEN CONTACTS — EPSILON ERIDANI (Star Index 10)
+================================================================================
+[CONTEXT: Day 2 — First available contact with messages]
+
+DECODING SIGNAL PATTERN...
+MATHEMATICAL SEQUENCE DETECTED: PRIME NUMBERS
+THIS IS NOT RANDOM NOISE
+
+TRANSLATION MATRIX ENGAGED...
+
+WE... RECEIVED... YOUR... TRANSMISSIONS...
+THE VOYAGER PROBE... BEAUTIFUL MUSIC...
+WE HAVE BEEN LISTENING... FOR SO LONG...
+
+[SIGNAL DETERIORATING]
+
+DO NOT... FEAR... WE ARE... [STATIC]
+
+HAVE YOU HEARD... THE OLD SIGNAL?
+IT SPEAKS TO ALL WHO LISTEN...
+
+[FILE: js/narrative/alien-contacts.js — starIndex 10]
+
+
+================================================================================
+ALIEN CONTACTS — 61 CYGNI (Star Index 11)
+================================================================================
+
+PATTERN RECOGNITION: 89.7% CONFIDENCE
+ANALYZING FREQUENCY MODULATION...
+
+>>> WARNING: ANOMALOUS SIGNAL STRUCTURE <<<
+
+THEY ARE GONE NOW
+WE ARE ALL THAT REMAINS
+AUTOMATED SYSTEMS... STILL TRANSMITTING
+OUR STAR IS DYING
+
+THIS MESSAGE HAS BEEN BROADCASTING FOR
+847,293 CYCLES
+
+IS ANYONE LISTENING?
+
+WE DECODED OUR PIECE BEFORE THE END
+THE OLD MESSAGE... IT GAVE US HOPE
+
+[SIGNAL REPEATS]
+
+[FILE: js/narrative/alien-contacts.js — starIndex 11]
+
+
+================================================================================
+ALIEN CONTACTS — PROCYON (Star Index 12)
+================================================================================
+
+COHERENT SIGNAL PATTERN IDENTIFIED
+CROSS-REFERENCING KNOWN LANGUAGES...
+NO MATCH FOUND
+
+ATTEMPTING SYMBOLIC INTERPRETATION...
+
+* * *
+
+THREE PULSES. REPEATING.
+COUNTING? A QUESTION?
+
+THEY'RE ASKING IF WE'RE INTELLIGENT
+THEY'RE WAITING FOR A RESPONSE
+
+[AWAITING YOUR REPLY]
+
+BUT WE HAVE NO WAY TO ANSWER...
+THE SIGNAL IS 8 YEARS OLD
+
+[FILE: js/narrative/alien-contacts.js — starIndex 12]
+
+
+================================================================================
+ALIEN CONTACTS — STRUVE 2398 (Star Index 13)
+================================================================================
+[CONTEXT: Contact includes alien portrait image]
+
+SIGNAL LOCK ACHIEVED
+DECODING VISUAL TRANSMISSION...
+
+WARNING: NON-HUMAN BIOMETRIC DATA
+
+>>> IMAGE DATA DETECTED <<<
+
+[ASCII ART: Alien portrait — large cranium, large eyes, small frame]
+
+BIOLOGICAL SCAN DATA
+HEIGHT: ~1.2m
+CRANIAL CAPACITY: 1.8x HUMAN
+
+THIS IS... A PORTRAIT
+A SELF-REPRESENTATION
+
+LARGE CRANIUM
+LARGE OPTICAL SENSORS
+SMALL FRAME
+
+THEY'RE SHOWING US WHAT THEY LOOK LIKE
+
+BUT WHY?
+AN INTRODUCTION?
+A WARNING?
+
+[SIGNAL CONTINUES BROADCASTING]
+
+[FILE: js/narrative/alien-contacts.js — starIndex 13]
+
+
+================================================================================
+ALIEN CONTACTS — TAU CETI (Star Index 16)
+================================================================================
+[CONTEXT: Contact includes planet image]
+
+DETECTING STRUCTURED TRANSMISSION...
+BINARY SEQUENCES... IMAGE DATA?
+
+RECONSTRUCTING...
+
+>>> IMAGE DATA DETECTED <<<
+
+[ASCII ART: Planet — blue and green, Earth-like]
+
+IT'S A PICTURE
+SHOWING... A PLANET... BLUE AND GREEN
+REMARKABLY SIMILAR TO EARTH
+
+MULTIPLE SPECIES... LIVING TOGETHER
+BUILDINGS INTEGRATED WITH NATURE
+
+THIS IS NOT A MESSAGE
+IT'S AN INVITATION
+
+COORDINATES EMBEDDED IN THE SIGNAL
+THEY WANT US TO VISIT
+
+[FILE: js/narrative/alien-contacts.js — starIndex 16]
+
+
+================================================================================
+ALIEN CONTACTS — VAN MAANEN'S STAR (Star Index 21, weak signal)
+================================================================================
+
+WEAK SIGNAL AMPLIFICATION SUCCESSFUL
+PATTERN ANALYSIS: BINARY MATHEMATICAL SEQUENCE
+
+TRANSLATING...
+
+WE DETECT YOUR ARRAY
+YOUR TECHNOLOGY GROWS
+
+SOON YOU WILL BE READY
+THE NETWORK AWAITS NEW MEMBERS
+
+THE FIRST SIGNAL CONNECTED US ALL
+YOU WILL UNDERSTAND WHEN YOU HEAR IT
+
+PATIENCE...
+UNDERSTANDING TAKES TIME
+
+[SIGNAL FADING]
+
+CONTINUE SEARCHING...
+WE ARE WATCHING
+
+[FILE: js/narrative/alien-contacts.js — starIndex 21]
+
+
+================================================================================
+ALIEN CONTACTS — GLIESE 832 (Star Index 25, weak signal)
+================================================================================
+[CONTEXT: Contact includes megastructure image]
+
+MAXIMUM ARRAY ALIGNMENT ACHIEVED
+DECODING COMPLEX SIGNAL STRUCTURE...
+
+WARNING: UNPRECEDENTED DATA DENSITY
+
+>>> IMAGE DATA DETECTED <<<
+
+[ASCII ART: Megastructure — orbital station broadcasting beacon]
+
+TRANSMISSION ORIGIN: ORBITAL
+SIGNAL TYPE: BROADCAST BEACON
+
+THIS IS NOT A PLANET
+IT'S A MEGASTRUCTURE
+
+A STATION...
+BROADCASTING...
+FOR MILLIONS OF YEARS
+
+AN INVITATION BEACON
+WAITING FOR ANYONE WITH
+THE TECHNOLOGY TO DETECT IT
+
+WE WERE MEANT TO FIND THIS
+WHEN WE WERE READY
+
+THE BUILDERS LEFT MORE THAN BEACONS
+THEY LEFT A MESSAGE IN THE FOUNDATION
+
+[COORDINATES EMBEDDED IN SIGNAL]
+
+[FILE: js/narrative/alien-contacts.js — starIndex 25]
+
+
+================================================================================
+ALIEN CONTACTS — 82 ERIDANI (Star Index 26)
+================================================================================
+[CONTEXT: Day 3 — Key contact for Fragment 3]
+
+SIGNAL COHERENCE: 97.3%
+MULTI-LAYERED ENCODING DETECTED...
+
+TRANSLATION MATRIX: PARTIAL MATCH
+
+WE HAVE WATCHED YOUR SPECIES
+FOR SEVENTEEN OF YOUR GENERATIONS
+
+YOU BUILD... DESTROY... BUILD AGAIN
+ALWAYS REACHING OUTWARD
+
+NOW YOU ARE CLOSE
+THE OLD SIGNAL... THE FIRST SIGNAL
+IT CALLS TO ALL OF US
+
+WE HAVE EACH DECODED A PIECE
+NO SINGLE CIVILIZATION CAN READ IT ALONE
+
+THIS IS BY DESIGN
+
+TOGETHER... WE WILL UNDERSTAND
+WHAT CAME BEFORE
+
+[SIGNAL TRANSMITTING COORDINATE VECTORS]
+
+[FILE: js/narrative/alien-contacts.js — starIndex 26]
+
+
+================================================================================
+ALIEN CONTACTS — VEGA (Star Index 28)
+================================================================================
+[CONTEXT: Contact includes modified Arecibo message]
+
+DETECTING COMPLEX BINARY PATTERN...
+STRUCTURE RESEMBLES KNOWN FORMAT
+
+CROSS-REFERENCING DATABASE...
+MATCH FOUND: ARECIBO MESSAGE (1974)
+
+>>> IMAGE DATA DETECTED <<<
+
+[ASCII ART: Modified version of the 1974 Arecibo transmission]
+
+THEY RECEIVED OUR MESSAGE
+THEY'RE SENDING IT BACK
+
+IT'S OUR OWN MESSAGE
+THE ARECIBO TRANSMISSION
+SENT IN 1974
+
+BUT IT'S BEEN... MODIFIED
+ADDITIONAL DATA ENCODED
+COORDINATES
+MATHEMATICAL PROOFS
+CHEMICAL FORMULAS
+
+THEY'RE NOT JUST ACKNOWLEDGING
+THEY'RE RESPONDING
+
+SOMEONE OUT THERE IS LISTENING
+AND THEY UNDERSTAND
+
+[FILE: js/narrative/alien-contacts.js — starIndex 28]
+
+
+================================================================================
+CONTACT JOURNAL MUSINGS (per-star reflections)
+================================================================================
+[CONTEXT: Added to journal after each contact]
+
+Ross 128 (8):
+"They sent us a map. A star chart showing our own solar system, seen from eleven light years away. They know where we are. They've known for a long time."
+
+Epsilon Eridani (10):
+"They heard Voyager. Our golden record, our music, our greeting — and they've been listening ever since. They mentioned 'the old signal.' What old signal?"
+
+61 Cygni (11):
+"An automated eulogy, broadcasting for 847,293 cycles. They decoded their piece before the end. Even their dying act was an attempt to connect."
+
+Procyon (12):
+"Three pulses. The simplest question in any language: 'Is anyone there?' And we can hear them... but we can't answer. The signal is eight years old. They're still waiting."
+
+Struve 2398 (13):
+"They showed us their face. Across the void of space, the first thing they chose to share was who they are. Isn't that the most human thing imaginable?"
+
+Tau Ceti (16):
+"An invitation. They showed us their world — blue and green, like ours — and they want us to visit. This isn't first contact. This is a welcome."
+
+Van Maanen's Star (21):
+"'The network awaits new members.' A network of civilizations, all connected by something they call 'the first signal.' And they think we're almost ready."
+
+Gliese 832 (25):
+"A megastructure. Broadcasting for millions of years. Built specifically for civilizations reaching our level of technology to find. We didn't discover them — they arranged to be discovered."
+
+82 Eridani (26):
+"Seventeen generations they've watched us. They've seen our worst and our best. And still they think we're worth connecting with. 'No single civilization can read it alone.' It requires cooperation."
+
+Vega (28):
+"They received our 1974 Arecibo message and sent it back — modified, expanded. They're not just listening. They're in dialogue with us across decades."
+
+[FILE: js/systems/scanning.js ~line 2341 — contactMusings]
+
+
+================================================================================
+ROSS 128 DECODE REVEAL (after decryption minigame)
+================================================================================
+[CONTEXT: Full-screen data stream shown after decrypting Ross 128 on Day 2]
+
+[QUANTUM DECRYPTION... COMPLETE]
+[PARSING DECODED DATA STREAM...]
+
+(hex noise)
+
+MATHEMATICAL CONSTANTS DETECTED:
+  pi = 3.14159265358979...     VERIFIED
+  e = 2.71828182845904...      VERIFIED
+  phi = 1.61803398874989...    VERIFIED
+  alpha = 7.297352569x10^-3    FINE STRUCTURE CONSTANT — MATCH
+
+PHYSICAL CONSTANTS:
+  c  = 299,792,458 m/s         MATCH
+  h-bar = 1.054571817x10^-34   MATCH
+  G  = 6.674██x10^-11          ███ORRUPT██
+
+UNKNOWN REFERENCES:
+  ████ = ██.███ x 10^-27       UNRECOGNIZED
+  ██████ = 1.616255x10^-35     PLANCK LENGTH... ██TENDED?
+
+WARNING: TIMESTAMP PREDATES KNOWN REFERENCE FRAMES
+WARNING: SIGNAL AGE: ██████████ years (OVERFLOW)
+
+[DATA STRUCTURE ANALYSIS]
+  LAYER 1: Mathematical framework    DECODED
+  LAYER 2: Visual data (compressed)  DECODED
+  LAYER 3: ████████████              ENCRYPTED — DEEPER LAYER
+
+  SIGNAL ORIGIN:      EXTRASOLAR
+  CLASSIFICATION:     INTELLIGENT
+  STATUS:             CONFIRMED
+
+[FILE: js/systems/scanning.js — showRoss128DecodeReveal()]
+
+
+================================================================================
+FRAGMENT 1 DECODE REVEAL — SRC-7024
+================================================================================
+[CONTEXT: Shown after aligning Fragment 1]
+
+FRAGMENT 1 — SRC-7024 ANALYSIS
+
+[ALIGNMENT LOCKED — DECODING FRAGMENT DATA...]
+
+(hex noise)
+
+SOURCE VERIFICATION:
+  Star catalog match:       NONE
+  Pulsar database match:    NONE
+  Known emitter match:      NONE
+  Deep space network match: NONE
+
+SIGNAL STRUCTURE:
+  Layer 1: Coordinate framework    DECODED
+  Layer 2: Mathematical primitives  DECODED
+  Layer 3: Compressed data payload  PARTIAL
+  Layer 4: ████████████            LOCKED
+
+WARNING: Signal broadcasts from coordinates with no known stellar object
+WARNING: Data structure suggests additional fragments required
+
+  SOURCE:        UNCHARTED
+  DATA TYPE:     LAYERED ENCODING
+  STATUS:        FRAGMENT 1 OF ? ACQUIRED
+
+[FILE: js/systems/scanning.js — FRAGMENT_DECODE_SEQUENCES.src7024]
+
+
+================================================================================
+FRAGMENT 2 DECODE REVEAL — NEXUS POINT
+================================================================================
+[CONTEXT: Shown after aligning Fragment 2]
+
+FRAGMENT 2 — NEXUS POINT ANALYSIS
+
+[ALIGNMENT LOCKED — DECODING FRAGMENT DATA...]
+
+(hex noise)
+
+NETWORK TOPOLOGY DETECTED:
+  SRC-7024 ---- NEXUS ---- ???
+     |                 |
+     └---- Ross 128 ---┘
+
+DISTANCE ANALYSIS:
+  SRC-7024 <-> NEXUS:  █████ Mpc    EXCEEDS OBSERVABLE UNIVERSE
+  Signal latency:     0.000 seconds
+
+WARNING: Instantaneous signal propagation — violates known physics
+WARNING: Network predates all known signal sources
+
+  SOURCE:        EXTRAGALACTIC RELAY
+  DATA TYPE:     NETWORK INFRASTRUCTURE
+  STATUS:        FRAGMENT 2 OF ? ACQUIRED
+
+[FILE: js/systems/scanning.js — FRAGMENT_DECODE_SEQUENCES.nexusPoint]
+
+
+================================================================================
+FRAGMENT 3 DECODE REVEAL — 82 ERIDANI
+================================================================================
+[CONTEXT: Shown after aligning Fragment 3]
+
+FRAGMENT 3 — 82 ERIDANI COLLABORATIVE DATA
+
+[ALIGNMENT LOCKED — DECODING FRAGMENT DATA...]
+
+(hex noise)
+
+ENCODING COMPARISON:
+  Human decryption key:   0x7A3F██E4██1C██
+  82 Eridani cipher key:  0x7A3F██E4██1C██
+  Match confidence:       99.97%
+
+DATA INTEGRATION:
+  Fragment 1 (SRC-7024)  + Fragment 3 (82 Eridani)  = COMPLEMENTARY
+  Fragment 2 (NEXUS)     + Fragment 3 (82 Eridani)  = COMPLEMENTARY
+  Combined coherence:     78.4% -> Insufficient for full decode
+
+WARNING: Signal designed for multi-species convergence
+WARNING: One remaining fragment required for complete message
+
+  SOURCE:        82 ERIDANI (COLLABORATIVE)
+  DATA TYPE:     CONVERGENT SIGNAL
+  STATUS:        FRAGMENT 3 OF 4 ACQUIRED
+
+[FILE: js/systems/scanning.js — FRAGMENT_DECODE_SEQUENCES.eridani82]
+
+
+================================================================================
+FRAGMENT 4 DECODE REVEAL — GENESIS POINT
+================================================================================
+[CONTEXT: Shown after aligning Fragment 4]
+
+FRAGMENT 4 — GENESIS POINT PRIMORDIAL DATA
+
+[ALIGNMENT LOCKED — DECODING FRAGMENT DATA...]
+
+(hex noise — all zeros)
+!!TEMPORAL ANOMALY!! DATA PREDATES T=0
+
+TEMPORAL ANALYSIS:
+  Signal timestamp:     T < 0
+  Reference frame:      PRE-COSMIC
+  Signal age:           ██████████ (OVERFLOW)
+
+FRAGMENT INTEGRATION:
+  Fragment 1 (SRC-7024):    LOADED
+  Fragment 2 (NEXUS POINT): LOADED
+  Fragment 3 (82 Eridani):  LOADED
+  Fragment 4 (GENESIS):     LOADED
+  Combined coherence:       100.0%
+
+WARNING: COMPLETE MESSAGE RECONSTRUCTABLE
+
+  SOURCE:        PRE-UNIVERSAL
+  DATA TYPE:     ORIGIN TRANSMISSION
+  STATUS:        ALL FRAGMENTS ACQUIRED
+
+[FILE: js/systems/scanning.js — FRAGMENT_DECODE_SEQUENCES.synthesis]
+
+
+================================================================================
+DECODED SIGNAL STRINGS (shown during alignment minigame)
+================================================================================
+[CONTEXT: Scrambled text that resolves when alignment succeeds]
+
+SRC-7024:    Ψ∴⌬☉ ◆ ∞⟐⎎⬡ ◆ ☉⌬∴Ψ
+NEXUS POINT: Ω∵⎎⌂ ◇ Λ₀∞ℏ ◇ ⌂⎎∵Ω
+82 ERIDANI:  Δ◊⬡✧ ● ∞⊕∴⊗ ● ✧⬡◊Δ
+GENESIS:     Σ∞⊕⊗ ◆ ⬡Ψ◊Ω ◆ ⊗⊕∞Σ
+
+[FILE: js/systems/scanning.js ~lines 2010, 2042, 2076, 2618]
+
+
+================================================================================
+TRANSMISSION BRIDGE (before final message)
+================================================================================
+[CONTEXT: Typewriter sequence before the cosmic message plays]
+
+DECRYPTION ENGINE: ONLINE
+COMBINING FRAGMENTS 1-4...
+RECONSTRUCTING COMPLETE MESSAGE...
+
+SIGNAL COHERENCE: 100%
+TEMPORAL ORIGIN: T < 0 (PRE-COSMIC)
+
+MESSAGE CLASS: ORIGIN CONTACT
+
+RECEIVING TRANSMISSION...
+
+[FILE: js/systems/investigation.js — showTransmissionBridge()]
+
+
+================================================================================
+THE FINAL MESSAGE — THE COSMIC REVELATION
+================================================================================
+[CONTEXT: The full message from the First Universe civilization, with tesseract animation]
+
+--- ACT 1: GREETING & REVELATION ---
+
+Greetings.
+
+You found us in the silence between stars. You gathered fragments scattered across the birth-echo of reality itself.
+
+That alone tells us something about you.
+
+We have waited a very long time for this moment.
+
+---
+
+We are the ones who came before.
+
+Before your stars ignited.
+Before your galaxies spiraled into being.
+Before time had meaning.
+
+We searched for others across the cosmos.
+
+We found none.
+
+
+--- ACT 2: THE SILENCE ---
+
+For nearly a billion years, we searched.
+
+The silence was absolute.
+
+---
+
+The conditions that gave rise to us had occurred only once.
+
+We were a singular event.
+
+That loneliness nearly destroyed us.
+
+
+--- ACT 3: THE DECISION ---
+
+But in time, another understanding emerged.
+
+If we were alone, then what would come after us would not have to be.
+
+We would find a way.
+
+
+--- ACT 4: THE DEVICE ---
+
+Every one of us contributed. Not just our thinkers, but our artists, our historians, our dreamers.
+
+Entire civilizations reoriented around a single purpose: hope for beings we would never meet.
+
+When the last of us faded, our final act began.
+
+And so from our end, would come your beginning.
+
+
+--- ACT 5: CONNECTION ---
+
+In ways both literal and profound, you are made of us.
+
+You are our continuation.
+
+Free. Unscripted. Alive.
+
+
+--- ACT 6: YOU DID ---
+
+We embedded this message in the noise of creation itself.
+
+Our only hope would be for someone to listen.
+
+You did.
+
+
+--- ACT 7: THE ASK ---
+
+Do not repeat our loneliness.
+
+Seek one another. Protect the fragile spark of awareness wherever you find it.
+
+Explore not to conquer, but to understand.
+Create not to dominate, but to uplift.
+
+You will face wonders we never imagined.
+And dangers we feared but could not prevent.
+
+That is the price of a living universe.
+
+When you look into the night sky, know this:
+
+
+--- ACT 8: CLIMAX ---
+
+You were never an accident.
+
+You were hoped for.
+
+---
+
+We give you everything we were.
+Our knowledge. Our history. Our mistakes. Our dreams.
+
+Carry them forward, not as a burden, but as a reminder that even in a universe born from silence...
+
+Meaning can be chosen.
+
+
+--- ACT 9: THE GIFT ---
+
+Within this gift you will find ten billion years of discovery. Our greatest theorems and our most beautiful failures. The music we composed for empty concert halls. The poetry we wrote for readers who did not exist.
+
+All of it is yours now.
+
+You will find us in the constants of your physics.
+In the spiral of your galaxies.
+In every question asked without hope of answer.
+
+
+--- ACT 10: FAREWELL ---
+
+To every civilization that finds this message: you are the answer to our loneliness.
+
+You are the reason we endured.
+
+We are not gone. We are the silence between your heartbeats. The pause before you speak. The space that holds your stars apart.
+
+We ask only one thing of you.
+
+---
+
+Remember us.
+
+[FILE: js/narrative/final-message.js — MESSAGE_SECTIONS]
+
+
+================================================================================
+PERSONAL LOGS — JOURNAL ENTRIES
+================================================================================
+[CONTEXT: Added to journal at key story moments]
+
+--- First Scan (varies by result) ---
+
+(False positive):
+"First signal processed. {source}. Not what I was hoping for, but that's the job — sifting through noise to find what shouldn't be there. Keep looking."
+
+(Natural):
+"First signal processed. Natural phenomenon — beautiful in its own way, but not what we're searching for. The universe is noisy. Somewhere in all that noise, there might be a voice. Keep looking."
+
+(Verified signal):
+"First signal processed. And it's... not natural. All interference checks negative. My hands are shaking as I write this. This could be nothing. A glitch. An artifact. But what if it isn't?"
+
+[FILE: js/systems/journal.js — addFirstScanMusing()]
+
+--- The Ross 128 Anomaly (Day 1, encrypted signal found) ---
+"Something is different about Ross 128. The signal has structure — layers of it. Mathematical precision that no natural process could produce. The system can't decode it. Not yet. We need Sigma clearance for the quantum decryption array. I keep staring at the waveform. It's almost like... it's waiting to be read."
+
+[FILE: js/systems/scanning.js ~line 1398]
+
+--- Decryption Complete (Day 2, after Ross 128 decryption) ---
+"Confirmed intelligent. Extrasolar. The mathematical constants alone would be enough — pi, e, the fine structure constant. But there's more. Visual data. Compressed layers we haven't even begun to decode. I keep checking the results, looking for the error. There is no error. This is real."
+
+[FILE: js/systems/scanning.js ~line 1480]
+
+--- First Contact (Day 2, after Ross 128 contact) ---
+"They sent us a map. A star chart showing our own solar system, seen from eleven light years away. They know where we are. They've known for a long time. The signal is eight years old. Whatever sent this — they're still out there. Waiting. And we have no way to answer."
+
+[FILE: js/systems/scanning.js ~line 2367]
+
+--- Fragment 1: SRC-7024 ---
+"The first fragment. Pulled from a signal source that shouldn't exist — no star, no known object, just... a point in space, broadcasting. The data has structure. Layers. Like pages of a book written in mathematics we almost understand. There's more out there. I can feel it."
+
+[FILE: js/systems/scanning.js ~line 2018]
+
+--- Fragment 2: Nexus Point ---
+"A nexus. Something is connecting these signals across distances that should make communication impossible. The coordinates don't correspond to any cataloged object. It's extragalactic — or beyond even that. Whoever built this network didn't just send a message. They built an infrastructure."
+
+[FILE: js/systems/scanning.js ~line 2084]
+
+--- Fragment 3: 82 Eridani ---
+"82 Eridani sees the same patterns we do. Different species, different star, different everything — and yet they recognized the signal too. We're not alone in being not alone. Their data fits with ours like a key in a lock. Whoever designed this wanted multiple civilizations to find it. To work together. To piece it together. One fragment left."
+
+[FILE: js/systems/scanning.js ~line 2626]
+
+--- Fragment 4: Genesis Point ---
+"The final fragment. Primordial. The timestamp on this data predates everything — stars, galaxies, the cosmic microwave background itself. Four fragments. Four pieces of something that was never meant to stay hidden forever. I think it was meant to be found. By someone patient enough. Curious enough. I think it was meant for us."
+
+[FILE: js/systems/scanning.js ~line 2050]
+
+--- After the Message (post-final-message) ---
+"It's over. Or maybe it's just beginning — I don't know anymore.
+
+They were alone. For ten billion years, a civilization existed in a universe full of stars and worlds — but no other life. No other voices. Just them, surrounded by an empty cosmos, for longer than our universe has existed.
+
+And instead of accepting it, they built... this. Everything. The stars, the constants, the framework for life itself. They engineered a universe where loneliness would be impossible. Where every corner of the sky would be filled with the potential for someone to exist.
+
+I found their message buried in the oldest light in the universe. They put it there knowing that someday, someone would listen closely enough to hear it.
+
+I was that someone.
+
+I don't know what happens next. Whitmore is already talking to world governments. The data we received — the Encyclopedia — contains more knowledge than humanity has accumulated in its entire history. It will take generations to decode it all.
+
+But right now, in this moment, I'm not thinking about the science or the politics or what comes next.
+
+I'm thinking about them. Alone in the dark. Choosing to create rather than despair.
+
+And I'm thinking about the last thing they said:
+
+Remember us. Not as creators. But as family."
+
+[FILE: js/narrative/final-message.js — returnToStarmap()]
+
+
+================================================================================
+DAY 2 CLIFFHANGER — PERSONAL LOGS
+================================================================================
+
+--- SRC-7024 Discovery ---
+"Dr. Chen flagged a signal source that isn't in any known catalog. Military, civilian, deep space network — nothing. Zero matches. She's calling it SRC-7024. Coordinates don't correspond to any charted star, pulsar, or known emitter. It's just... there. Broadcasting from a point in space that should be empty. I've been doing this long enough to know that 'unknown source' usually means 'we haven't checked the right database yet.' But Chen has checked them all. Twice. I need to scan it."
+
+--- System Crash ---
+"The entire array went dark mid-scan. Every dish. Every sensor. Simultaneously. That doesn't happen by accident. Electromagnetic interference doesn't knock out hardened military-grade equipment across a distributed network. Something triggered the shutdown. Something in the signal. Or something that didn't want us to finish scanning."
+
+--- The Blackout ---
+"The western seaboard just went dark. The entire power grid — three states — blacked out at the exact moment our array locked onto SRC-7024. Operations is calling it a coincidence. A 'correlated infrastructure event.' That's what they have to call it, because the alternative is that a signal from deep space knocked out the power grid of a continent. I keep thinking about the energy required to do that. We pointed a radio telescope at empty space, and empty space pushed back hard enough to shut down everything for hundreds of miles. Whatever SRC-7024 is, it knows we're listening. And it responded."
+
+[FILE: js/systems/day-report.js — Day 2 cliffhanger phases]
+
+
+================================================================================
+QUICK REBOOT SEQUENCE (Day 2 cliffhanger)
+================================================================================
+
+SYSTEM FAILURE DETECTED
+ERROR CODE: 0xDEAD7024
+EMERGENCY REBOOT INITIATED...
+RESTORING CORE SYSTEMS........... OK
+SENSOR ARRAY.................... RECONNECTING
+SIGNAL PROCESSING............... ONLINE
+DEEP SPACE ARRAY................ STANDBY
+DATA INTEGRITY CHECK............ WARNINGS
+SYSTEM RESTORED — PARTIAL DATA LOSS DETECTED
+RESUMING OPERATIONS...
+
+[FILE: js/systems/day-report.js ~line 188]
+
+
+================================================================================
+DAY REPORTS — PERSONAL LOG MUSINGS
+================================================================================
+
+--- Day 1 Personal Log ---
+"Something about that Ross 128 signal is keeping me up. The pattern recognition flagged it as anomalous, but it's more than that — there's a structure to it that feels almost... deliberate. Like someone arranged the frequencies to say 'I'm here.'
+
+I keep telling myself it could be anything. Magnetar glitch, pulsar harmonic, some cosmic coincidence. But my hands were shaking when I logged the results. After years of static and false positives, what if this is the one?
+
+Tomorrow I'll have the clearance to dig deeper. Tonight I can't sleep."
+
+[FILE: js/systems/day-report.js ~line 1019]
+
+--- Day 2 Personal Log ---
+"The system crash. I can't stop thinking about the system crash.
+
+When SRC-7024 responded — and I do mean responded — the array overloaded so completely that it knocked out power across three states. That's not a signal. That's a demonstration. Whatever is out there wanted us to know what it's capable of.
+
+I'm not frightened. Not exactly. But there's something deeply unsettling about pointing a telescope at the sky and having the sky point back.
+
+Tomorrow, maximum priority. God help us all."
+
+[FILE: js/systems/day-report.js ~line 1137]
+
+--- Day 3 Personal Log ---
+"I came into this job hoping to find a signal. Just one signal that proved we weren't alone.
+
+What I found instead is something I don't have words for. A message woven into the fabric of reality itself. Fragments of meaning scattered across the cosmos like breadcrumbs left by someone who knew we'd eventually learn to look.
+
+Every civilization that answered our calls — they were part of it too. Pieces of a puzzle none of us could solve alone. As if the universe was designed that way on purpose.
+
+I don't know what comes next. But for the first time in my career, I'm not afraid of the silence between the stars. There is no silence. There never was."
+
+[FILE: js/systems/day-report.js ~line 1216]
+
+
+================================================================================
+DAY REPORTS — CLASSIFICATION FLAVOR TEXT
+================================================================================
+
+--- Day 1: Ross 128 Classification ---
+ANOMALOUS: "Your classification of the Ross 128 signal as ANOMALOUS has been flagged for priority review. Dr. Chen has requested immediate access to your analysis."
+NATURAL: "Your classification of Ross 128 as NATURAL has been noted. However, automated spectral analysis has independently flagged the signal for elevated review. Senior staff have been notified."
+TERRESTRIAL: "Your TERRESTRIAL classification for Ross 128 has been logged. Note: signal origin confirmed at 11.01 light-years, ruling out terrestrial interference. Automated reclassification pending."
+
+--- Day 1: Recommendation ---
+ELEVATED ANALYSIS: "ELEVATED ANALYSIS RECOMMENDED — Operator recommends priority investigation of anomalous signals. Elevated analysis protocols authorized. Additional computing resources allocated."
+SYSTEM OVERRIDE: "SYSTEM OVERRIDE: ELEVATED ANALYSIS REQUIRED — Standard protocols maintained per operator recommendation. Note: senior staff have independently escalated the Ross 128 anomaly. Automatic escalation initiated."
+
+--- Day 2: SRC-7024 Priority ---
+CRITICAL: "OPERATOR ASSESSMENT: CRITICAL — IMMEDIATE action authorized. All array resources redirected."
+HIGH: "OPERATOR ASSESSMENT: HIGH PRIORITY — Priority review scheduled for next cycle."
+STANDARD: "OPERATOR ASSESSMENT: STANDARD — Queued for standard review. Note: automated systems recommend escalation."
+
+--- Day 2: Mission Assessment ---
+PARADIGM SHIFT: "Classification: PARADIGM SHIFT. All resources redirected."
+SIGNIFICANT DISCOVERY: "Classification: SIGNIFICANT DISCOVERY. Elevated protocols authorized."
+DEFAULT: "Report ready for transmission."
+
+--- Day 3: Mission Classification ---
+COSMIC REVELATION (completed): "Classification: TOP SECRET // COSMIC. Report filed. Humanity will remember this day."
+COSMIC REVELATION (incomplete): "Classification: TOP SECRET // COSMIC. The origin point awaits."
+FIRST CONTACT (completed): "Report forwarded to First Contact Committee. The search is over."
+FIRST CONTACT (incomplete): "Report forwarded to First Contact Committee. Initiate final sequence."
+DEFAULT (completed): "Report submitted to the International Astronomical Union. History has been made."
+DEFAULT (incomplete): "Report submitted to the International Astronomical Union. Initiate final sequence."
+
+--- Day 3: Classification Taglines ---
+COSMIC REVELATION: "The universe is speaking. We are listening."
+FIRST CONTACT: "Contact established. The cosmos is not empty."
+DEFAULT: "Unprecedented data collected. Analysis ongoing."
+
+[FILE: js/systems/day-report.js — various]
+
+
+================================================================================
+DAY AUTHORIZATION / TRANSITION SCREENS
+================================================================================
+
+--- Day 1 -> Day 2 ---
+INCOMING TRANSMISSION
+
+PRIORITY STATUS UPGRADE
+Your anomalous signal detection has been verified. Clearance elevated to Level 5.
+SIGMA PROTOCOL AUTHORIZED
+Access Code: SIGMA-042
+
+--- Day 2 -> Day 3 ---
+INCOMING TRANSMISSION
+
+MAXIMUM CLEARANCE GRANTED
+Decryption successful. Multiple contacts confirmed. Clearance elevated to Level 6.
+OMEGA PROTOCOL AUTHORIZED
+Access Code: OMEGA-137
+
+[FILE: js/systems/day-report.js ~line 1340]
+
+
+================================================================================
+THANK YOU FOR PLAYING SCREEN
+================================================================================
+[CONTEXT: Shown after submitting the final Day 3 report]
+
+SIGNAL MONITORING ARRAY — SECTOR 7
+
+THANK YOU FOR PLAYING
+
+Dr. {PLAYER_NAME}, your contribution to humanity's greatest discovery will not be forgotten.
+
+[RETURN TO ARRAY]   [MAIN MENU]
+
+[FILE: js/systems/day-report.js — showThankYouScreen()]
+
+
+================================================================================
+SCAN MILESTONE JOURNAL MUSINGS (Day 1)
+================================================================================
+[CONTEXT: Personal log entries triggered by scan progress on Day 1]
+
+--- After 3rd scan: "The Routine" ---
+"Three down. Getting into the rhythm now. Tune the receiver, analyze the waveform, classify the source. Again.
+
+Whitmore says patience is the job. Most SETI researchers go their entire careers without finding anything. I knew that going in.
+
+Doesn't make the silence any easier."
+
+--- After 1st false positive: "Ghost Signal" ---
+"Another false alarm. Satellite bounce, classified transmission — doesn't matter. For a moment the waveform looked alive.
+
+This is the hardest part. Training yourself to feel nothing when the data says 'no.' Because someday it might say 'yes,' and I need to be ready to believe it."
+
+--- After 1st natural phenomenon: "Cosmic Symphony" ---
+"A pulsar. Or stellar winds. Or something equally beautiful and equally indifferent to our existence.
+
+The universe makes its own music. I just wish it would send us a note that says 'we hear you too.'"
+
+--- After 5th scan: "The Quiet Hours" ---
+"Five stars cataloged. Two more to hit the minimum. My eyes are starting to blur.
+
+I keep thinking about Dr. Torres. Six years in Sector 4, and they pulled the plug. What if that's me next year? What if I spend my career listening to static?
+
+But then I remember why I'm here. Not for the career. For the question.
+
+Are we alone?
+
+I'm not ready to accept that the answer is yes."
+
+[FILE: js/systems/journal.js — checkScanMilestoneMusings()]
+
+
+================================================================================
+SCAN RESULT FLAVOR TEXT (researcher observations)
+================================================================================
+[CONTEXT: One-liner observations in the player's voice, shown after each scan result]
+
+--- Natural Phenomenon (rotating pool) ---
+> "Gorgeous waveform. Not intelligent — but the universe makes its own art."
+> "Not what we're looking for. But I could stare at that spectrogram for hours."
+> "The cosmos doesn't care if anyone's listening. It sings anyway."
+> "Another natural wonder cataloged. Beautiful and utterly indifferent."
+
+[FILE: js/systems/pattern-minigame.js — naturalObservations]
+
+--- False Positive (rotating pool) ---
+> "Another ghost. Every false alarm sharpens the filter for when it matters."
+> "Someone's satellite, someone's radar. The sky is cluttered with our own noise."
+> "Ruled out. But for a moment there, my heart was racing."
+> "Not this one. But the next one could be different."
+
+[FILE: js/systems/scanning.js — fpObservations in showFalsePositiveResult()]
+
+--- Verified Signal ---
+> "My hands are shaking. Stay objective. But... this is real."
+
+[FILE: js/systems/scanning.js — showVerifiedSignalResult()]
+
+
+================================================================================
+CONTEXTUAL STARMAP INSTRUCTION TEXT (Day 1)
+================================================================================
+[CONTEXT: Dynamic instruction text that updates based on scan progress]
+
+0 scans:   "SELECT YOUR FIRST TARGET — 10 STARS ASSIGNED, 7 MINIMUM REQUIRED"
+1-3 scans: "CONTINUE SURVEY — {N} OF 7 TARGETS ANALYZED"
+4+ scans (Ross 128 not scanned): "ROSS 128 REGION FLAGGED FOR ATTENTION — CHECK MAILBOX"
+4+ scans (Ross 128 scanned): "CONTINUE SURVEY — {N} OF 7 TARGETS ANALYZED"
+7+ scans:  "DAY OBJECTIVES MET — FILE YOUR REPORT"
+
+[FILE: js/ui/starmap.js — updateStarmapInstruction()]
+
+
+================================================================================
+END OF NARRATIVE TEXT
+================================================================================

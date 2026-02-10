@@ -7,8 +7,8 @@ import { gameState } from '../core/game-state.js';
 import { log, typeAnalysisText } from '../ui/rendering.js';
 import { playClick, playLockAchieved, playStaticBurst, switchToAlienMusic, startAlienSignalSound, startNaturalPhenomenaSound } from './audio.js';
 import { checkAndShowDayComplete } from './day-report.js';
-import { addJournalEntry, showJournalButton, addFirstScanMusing } from './journal.js';
-import { addMailMessage } from './mailbox.js';
+import { addJournalEntry, showJournalButton, addFirstScanMusing, checkScanMilestoneMusings } from './journal.js';
+import { addMailMessage, checkScanTriggeredEmails } from './mailbox.js';
 
 // External function references (set by main.js)
 let stopSignalAnimationFn = null;
@@ -1139,6 +1139,17 @@ function completePatternGame(star) {
         showJournalButton();
         addFirstScanMusing(star, 'natural');
 
+        // Scan milestone triggers (emails + journal musings)
+        checkScanTriggeredEmails();
+        checkScanMilestoneMusings('natural');
+
+        const naturalObservations = [
+            "Gorgeous waveform. Not intelligent — but the universe makes its own art.",
+            "Not what we're looking for. But I could stare at that spectrogram for hours.",
+            "The cosmos doesn't care if anyone's listening. It sings anyway.",
+            "Another natural wonder cataloged. Beautiful and utterly indifferent."
+        ];
+
         const lines = [
             'ANALYSIS COMPLETE',
             '════════════════════════════',
@@ -1147,7 +1158,9 @@ function completePatternGame(star) {
             phenomenon.details[0],
             phenomenon.details[1],
             '════════════════════════════',
-            'CLASSIFICATION: NATURAL PHENOMENON'
+            'CLASSIFICATION: NATURAL PHENOMENON',
+            '',
+            '> ' + naturalObservations[natIdx % naturalObservations.length]
         ];
 
         typeAnalysisText(lines, () => {

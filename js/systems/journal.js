@@ -173,3 +173,56 @@ export function addPersonalLog(title, content) {
     });
     showJournalButton();
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Scan Milestone Musings — Day 1 personal reflections at key moments
+// ─────────────────────────────────────────────────────────────────────────────
+
+let scanMilestoneFlags = {
+    routine: false,
+    ghostSignal: false,
+    cosmicSymphony: false,
+    quietHours: false
+};
+
+export function checkScanMilestoneMusings(resultType) {
+    if (gameState.currentDay !== 1) return;
+
+    const scanCount = gameState.analyzedStars.size;
+
+    // After 1st false positive
+    if (resultType === 'false_positive' && !scanMilestoneFlags.ghostSignal) {
+        if (!gameState.journalEntries.some(e => e.title === 'Personal Log: Ghost Signal')) {
+            scanMilestoneFlags.ghostSignal = true;
+            addPersonalLog('Ghost Signal',
+                "Another false alarm. Satellite bounce, classified transmission \u2014 doesn't matter. For a moment the waveform looked alive.\n\nThis is the hardest part. Training yourself to feel nothing when the data says \"no.\" Because someday it might say \"yes,\" and I need to be ready to believe it.");
+        }
+    }
+
+    // After 1st natural phenomenon
+    if (resultType === 'natural' && !scanMilestoneFlags.cosmicSymphony) {
+        if (!gameState.journalEntries.some(e => e.title === 'Personal Log: Cosmic Symphony')) {
+            scanMilestoneFlags.cosmicSymphony = true;
+            addPersonalLog('Cosmic Symphony',
+                "A pulsar. Or stellar winds. Or something equally beautiful and equally indifferent to our existence.\n\nThe universe makes its own music. I just wish it would send us a note that says \"we hear you too.\"");
+        }
+    }
+
+    // After 3rd scan (any result type)
+    if (scanCount >= 3 && !scanMilestoneFlags.routine) {
+        if (!gameState.journalEntries.some(e => e.title === 'Personal Log: The Routine')) {
+            scanMilestoneFlags.routine = true;
+            addPersonalLog('The Routine',
+                "Three down. Getting into the rhythm now. Tune the receiver, analyze the waveform, classify the source. Again.\n\nWhitmore says patience is the job. Most SETI researchers go their entire careers without finding anything. I knew that going in.\n\nDoesn't make the silence any easier.");
+        }
+    }
+
+    // After 5th scan (any result type)
+    if (scanCount >= 5 && !scanMilestoneFlags.quietHours) {
+        if (!gameState.journalEntries.some(e => e.title === 'Personal Log: The Quiet Hours')) {
+            scanMilestoneFlags.quietHours = true;
+            addPersonalLog('The Quiet Hours',
+                "Five stars cataloged. Two more to hit the minimum. My eyes are starting to blur.\n\nI keep thinking about Dr. Torres. Six years in Sector 4, and they pulled the plug. What if that's me next year? What if I spend my career listening to static?\n\nBut then I remember why I'm here. Not for the career. For the question.\n\nAre we alone?\n\nI'm not ready to accept that the answer is yes.");
+        }
+    }
+}

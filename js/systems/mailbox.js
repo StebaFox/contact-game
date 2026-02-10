@@ -221,6 +221,46 @@ export function sendRandomMail() {
     addMailMessage(randomEmail.from, randomEmail.subject, body);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Scan-Triggered Email Delivery (Day 1 pacing)
+// Force-delivers key narrative emails at specific scan milestones
+// ─────────────────────────────────────────────────────────────────────────────
+
+let deliveredScanEmails = new Set();
+
+export function checkScanTriggeredEmails() {
+    if (gameState.currentDay !== 1) return;
+
+    const scanCount = gameState.analyzedStars.size;
+
+    const schedule = [
+        { at: 1, subject: 'RE: Budget Concerns' },
+        { at: 2, subject: 'Quarterly Review Briefing Materials' },
+        { at: 4, subject: 'Cleaning Out My Desk' },
+        { at: 5, subject: 'Something weird in Sector 12' }
+    ];
+
+    for (const entry of schedule) {
+        if (scanCount >= entry.at && !deliveredScanEmails.has(entry.subject)) {
+            const email = DAY1_EMAILS.find(e => e.subject === entry.subject);
+            if (!email) continue;
+
+            // Skip if already in mailbox
+            if (gameState.mailboxMessages.some(m => m.subject === email.subject)) {
+                deliveredScanEmails.add(entry.subject);
+                continue;
+            }
+
+            deliveredScanEmails.add(entry.subject);
+            const body = email.body.replace(/{PLAYER_NAME}/g, gameState.playerName);
+            const delay = 8000 + Math.random() * 4000;
+            setTimeout(() => {
+                addMailMessage(email.from, email.subject, body);
+            }, delay);
+        }
+    }
+}
+
 // Special email sent when first alien signal is discovered
 export function sendFirstContactEmail() {
     const body = FIRST_CONTACT_EMAIL.body.replace(/{PLAYER_NAME}/g, gameState.playerName);
