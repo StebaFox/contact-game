@@ -396,7 +396,6 @@ function createAlignmentUI(isTutorial) {
     document.getElementById('alignment-cancel-btn').addEventListener('click', cancelAlignment);
 
     // Show first-encounter hint on first real alignment (single-fragment or final, not dev tutorial)
-    const isSingle = !!alignmentState.singleFragmentKey;
     if (!hasShownAlignmentHint && (isSingle || !isTutorial)) {
         hasShownAlignmentHint = true;
         showFirstTimeHint(overlay);
