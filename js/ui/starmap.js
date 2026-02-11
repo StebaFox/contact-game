@@ -59,6 +59,8 @@ function deselectStar() {
     if (scanBtn) { scanBtn.disabled = false; scanBtn.textContent = 'INITIATE SCAN'; }
     const starmapScanBtn = document.getElementById('starmap-array-scan-btn');
     if (starmapScanBtn) starmapScanBtn.style.display = 'none';
+    const arrayBtn = document.getElementById('array-status-btn');
+    if (arrayBtn) arrayBtn.style.display = 'none';
 }
 
 // Get pixel position for a star (handles dynamic stars with fractional coords)

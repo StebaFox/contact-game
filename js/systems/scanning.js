@@ -18,9 +18,21 @@ import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
 import { unlockInvestigation, onFragmentCollected } from './investigation.js';
 import { updateStarCatalogDisplay } from '../ui/starmap.js';
 import { addJournalEntry, showJournalButton, addFirstScanMusing, addPersonalLog, checkScanMilestoneMusings } from './journal.js';
+import { canTuneWeakSignal } from './dish-array.js';
 
 // Ross 128 star index - requires decryption
 const ROSS_128_INDEX = 8;
+
+// Return to starmap and refresh UI for completed stars
+function returnToStarmap() {
+    showView('starmap-view');
+    if (gameState.currentStar && gameState.scanResults.has(gameState.currentStar.id)) {
+        const arrayBtn = document.getElementById('array-status-btn');
+        if (arrayBtn) arrayBtn.style.display = 'none';
+        const starmapScanBtn = document.getElementById('starmap-array-scan-btn');
+        if (starmapScanBtn) starmapScanBtn.style.display = 'none';
+    }
+}
 
 // Track whether the pre-Ross-128 unease email has been sent
 let preRoss128EmailSent = false;
@@ -117,6 +129,18 @@ export function initiateScan() {
             return;
         }
         // If no canvas data (restored from save), fall through to re-scan
+    }
+
+    // Block scan for weak signals without sufficient dish alignment
+    if (star.signalStrength === 'weak' && !canTuneWeakSignal()) {
+        document.getElementById('scan-btn').disabled = false;
+        returnToStarmap();
+        const statusEl = document.getElementById('starmap-array-status');
+        if (statusEl) {
+            statusEl.innerHTML = '<span style="color: #f00; animation: warningPulse 1.5s ease-in-out infinite;">⚠ ALIGN DISHES BEFORE SCANNING</span>';
+        }
+        log('INSUFFICIENT DISH ALIGNMENT - Align array before scanning weak signal', 'warning');
+        return;
     }
 
     log(`Initiating deep space scan: ${star.name}`, 'highlight');
@@ -1258,7 +1282,7 @@ function showFalsePositiveResult(star, cause, display) {
             stopAlienSignalSound();
             document.getElementById('contact-protocol-box').style.display = 'none';
             document.getElementById('analyze-btn').disabled = false;
-            showView('starmap-view');
+            returnToStarmap();
             log(`False positive from ${star.name} - Source: ${cause.source}`);
             checkAndShowDayComplete();
         });
@@ -1432,7 +1456,7 @@ function showEncryptedSignalResult(star, display) {
                 switchToBackgroundMusic();
                 document.getElementById('contact-protocol-box').style.display = 'none';
                 document.getElementById('analyze-btn').disabled = false;
-                showView('starmap-view');
+                returnToStarmap();
                 log(`Encrypted signal from ${star.name} archived - Sigma clearance required`);
 
                 // Send follow-up email about the encrypted signal discovery
@@ -1509,7 +1533,7 @@ function showEncryptedSignalResult(star, display) {
                         },
                         // Cancel callback
                         () => {
-                            showView('starmap-view');
+                            returnToStarmap();
                             log('Decryption aborted.', 'warning');
                             document.getElementById('analyze-btn').disabled = false;
                         }
@@ -2043,14 +2067,14 @@ function showDynamicEncryptedResult(star, display) {
                                         }
                                         gameState.scanResults.set(star.id, { type: 'verified_signal' });
                                         autoSave();
-                                        showView('starmap-view');
+                                        returnToStarmap();
                                         document.getElementById('analyze-btn').disabled = false;
                                         scheduleSrc7024PostAlignmentEmails();
                                     });
                                 },
                                 // Alignment cancel
                                 () => {
-                                    showView('starmap-view');
+                                    returnToStarmap();
                                     log('Fragment alignment aborted.', 'warning');
                                     document.getElementById('analyze-btn').disabled = false;
                                 },
@@ -2077,14 +2101,14 @@ function showDynamicEncryptedResult(star, display) {
                                         onFragmentCollected();
                                         schedulePostGenesisEmails();
                                         autoSave();
-                                        showView('starmap-view');
+                                        returnToStarmap();
                                         document.getElementById('analyze-btn').disabled = false;
                                         checkAndShowDayComplete();
                                     });
                                 },
                                 // Alignment cancel
                                 () => {
-                                    showView('starmap-view');
+                                    returnToStarmap();
                                     log('Fragment alignment aborted.', 'warning');
                                     document.getElementById('analyze-btn').disabled = false;
                                 },
@@ -2111,14 +2135,14 @@ function showDynamicEncryptedResult(star, display) {
                                         onFragmentCollected();
                                         schedulePreBigBangEmails();
                                         autoSave();
-                                        showView('starmap-view');
+                                        returnToStarmap();
                                         document.getElementById('analyze-btn').disabled = false;
                                         checkAndShowDayComplete();
                                     });
                                 },
                                 // Alignment cancel
                                 () => {
-                                    showView('starmap-view');
+                                    returnToStarmap();
                                     log('Fragment alignment aborted.', 'warning');
                                     document.getElementById('analyze-btn').disabled = false;
                                 },
@@ -2128,7 +2152,7 @@ function showDynamicEncryptedResult(star, display) {
                     },
                     // Cancel callback
                     () => {
-                        showView('starmap-view');
+                        returnToStarmap();
                         log('Decryption aborted.', 'warning');
                         document.getElementById('analyze-btn').disabled = false;
                     },
@@ -2583,7 +2607,7 @@ function displayContactMessage(messageData, star) {
             }, 20000);
 
             gameState.tutorialCompleted = true;
-            showView('starmap-view');
+            returnToStarmap();
             log('Return to starmap to continue scanning.', 'info');
             document.getElementById('analyze-btn').disabled = false;
         });
@@ -2644,7 +2668,7 @@ function displayContactMessage(messageData, star) {
                                     onFragmentCollected();
                                     scheduleGenesisTriangulationEmails();
                                     autoSave();
-                                    showView('starmap-view');
+                                    returnToStarmap();
                                     checkAndShowDayComplete();
                                 });
                             },

@@ -315,6 +315,13 @@ body {
     51%, 100% { opacity: 0; }
 }
 
+.journal-indicator {
+    color: #0ff;
+    font-size: 20px;
+    animation: mailBlink 1s infinite;
+    margin-left: 5px;
+}
+
 /* Journal Button */
 .journal-btn {
     background: rgba(0, 255, 0, 0.08);

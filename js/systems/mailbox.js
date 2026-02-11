@@ -123,11 +123,15 @@ export function addMailMessage(from, subject, body, preview = null) {
     const dateStr = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-1995`;
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
+    // Replace {PLAYER_NAME} placeholder with actual player name in all emails
+    const resolvedBody = gameState.playerName ? body.replace(/{PLAYER_NAME}/g, gameState.playerName) : body;
+    const resolvedSubject = gameState.playerName ? subject.replace(/{PLAYER_NAME}/g, gameState.playerName) : subject;
+
     const message = {
         from: from,
-        subject: subject,
-        body: body,
-        preview: preview || body.substring(0, 80) + '...',
+        subject: resolvedSubject,
+        body: resolvedBody,
+        preview: preview || resolvedBody.substring(0, 80) + '...',
         date: `${dateStr} ${timeStr}`,
         read: false,
         timestamp: now.getTime()

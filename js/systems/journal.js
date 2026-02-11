@@ -25,6 +25,7 @@ export function openJournal() {
     const overlays = ['journal-view', 'mailbox-view'];
     journalReturnView = overlays.includes(currentView) ? 'starmap-view' : (currentView || 'starmap-view');
     showView('journal-view');
+    clearJournalIndicator();
     renderJournal();
     log('Accessing research journal...');
 }
@@ -54,7 +55,12 @@ export function addJournalEntry(type, data) {
         day:        gameState.currentDay
     });
 
+    unreadJournalCount++;
     updateJournalIndicator();
+
+    // Notify the player via the activity log
+    const label = data.title || (type === 'contact' ? 'New contact' : type === 'intel' ? 'New intel' : 'New discovery');
+    log(`Journal updated: ${label}`, 'info');
 }
 
 // -----------------------------------------------------------------------------
@@ -125,11 +131,17 @@ export function renderJournal() {
 // Indicator
 // -----------------------------------------------------------------------------
 
+let unreadJournalCount = 0;
+
 export function updateJournalIndicator() {
     const indicator = document.getElementById('journal-indicator');
     if (!indicator) return;
-    // No unread tracking for journal -- just show it's available
-    indicator.style.display = 'none';
+    indicator.style.display = unreadJournalCount > 0 ? 'inline' : 'none';
+}
+
+function clearJournalIndicator() {
+    unreadJournalCount = 0;
+    updateJournalIndicator();
 }
 
 export function showJournalButton() {
