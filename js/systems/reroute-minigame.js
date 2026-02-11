@@ -1262,6 +1262,7 @@ function getRerouteAudioCtx() {
 function playAlarmSound() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getRerouteAudioCtx();
 
         // Urgent two-tone alarm with repeat
@@ -1289,6 +1290,7 @@ function playAlarmSound() {
 function playRotateSound() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getRerouteAudioCtx();
 
         // Mechanical switch click - two-part sound
@@ -1334,6 +1336,7 @@ function playRotateSound() {
 function playErrorBlip() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getRerouteAudioCtx();
 
         // Denied buzzer sound
@@ -1356,6 +1359,7 @@ function playErrorBlip() {
 function playPowerConnectSound() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getRerouteAudioCtx();
 
         // Electrical zap/connection sound
@@ -1389,6 +1393,7 @@ function playPowerConnectSound() {
 function playPowerDisconnectSound() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getRerouteAudioCtx();
 
         // Power down sound
@@ -1409,6 +1414,7 @@ function playPowerDisconnectSound() {
 function playPowerRestoreSound() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getRerouteAudioCtx();
 
         // Big power-up sequence
@@ -1466,6 +1472,7 @@ function playPowerRestoreSound() {
 function playTrapOverloadSound() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getRerouteAudioCtx();
 
         // Electrical overload - descending buzz

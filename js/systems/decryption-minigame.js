@@ -1097,6 +1097,7 @@ function stopDecryptionAudio() {
 function playCaptureSound() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getAudioContext();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -1118,6 +1119,7 @@ function playCaptureSound() {
 function playErrorBlip() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getAudioContext();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -1138,6 +1140,7 @@ function playErrorBlip() {
 function playMissSound() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getAudioContext();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -1159,6 +1162,7 @@ function playMissSound() {
 function playPatternAppearSound() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getAudioContext();
 
         // Quick digital chirp -- two-tone ascending blip
@@ -1181,6 +1185,7 @@ function playPatternAppearSound() {
 function playDangerWarningTone() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getAudioContext();
 
         // Pulsing low warning -- two quick buzzes
@@ -1204,6 +1209,7 @@ function playDangerWarningTone() {
 function playPatternBlinkTick() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getAudioContext();
 
         // Soft tick -- very short high-freq click
@@ -1225,6 +1231,7 @@ function playPatternBlinkTick() {
 function playDangerSound() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getAudioContext();
 
         // Alarming descending tone
@@ -1249,6 +1256,7 @@ function playDangerSound() {
 function playSuccessChime() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getAudioContext();
 
         [500, 700, 900, 1200].forEach((freq, i) => {

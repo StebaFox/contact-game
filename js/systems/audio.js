@@ -1247,7 +1247,7 @@ export function playSecurityBeep(type = 'normal') {
     if (!audioContext) {
         initAudio();
     }
-    if (!audioContext) return;
+    if (!audioContext || sfxVolume === 0) return;
 
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();

@@ -5,7 +5,7 @@
 
 import { gameState } from '../core/game-state.js';
 import { log, typeAnalysisText } from '../ui/rendering.js';
-import { playClick, playLockAchieved, playStaticBurst, switchToAlienMusic, startAlienSignalSound, startNaturalPhenomenaSound } from './audio.js';
+import { playClick, playLockAchieved, playStaticBurst, switchToAlienMusic, startAlienSignalSound, startNaturalPhenomenaSound, getSfxVolume } from './audio.js';
 import { checkAndShowDayComplete } from './day-report.js';
 import { addJournalEntry, showJournalButton, addFirstScanMusing, checkScanMilestoneMusings } from './journal.js';
 import { addMailMessage, checkScanTriggeredEmails } from './mailbox.js';
@@ -1022,6 +1022,8 @@ function getPatternAudioCtx() {
 
 function playCaptureSound() {
     try {
+        const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getPatternAudioCtx();
         [880, 1320].forEach((freq, i) => {
             const osc = ctx.createOscillator();
@@ -1031,7 +1033,7 @@ function playCaptureSound() {
             osc.frequency.value = freq;
             osc.type = 'triangle';
             const t = ctx.currentTime + i * 0.08;
-            gain.gain.setValueAtTime(0.12, t);
+            gain.gain.setValueAtTime(0.12 * vol, t);
             gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
             osc.start(t);
             osc.stop(t + 0.15);

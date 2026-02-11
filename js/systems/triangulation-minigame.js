@@ -1043,6 +1043,7 @@ function closeTriAudio() {
 function playSuccessSound() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getTriAudioCtx();
 
         [400, 600, 800, 1000, 1200].forEach((freq, i) => {

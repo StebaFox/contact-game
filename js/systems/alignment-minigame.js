@@ -1190,6 +1190,7 @@ function closeAlignmentAudio() {
 function playFragmentPickup() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getAlignmentAudioCtx();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -1210,6 +1211,7 @@ function playFragmentPickup() {
 function playAlignmentSuccess() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getAlignmentAudioCtx();
 
         [600, 800, 1000].forEach((freq, i) => {
@@ -1233,6 +1235,7 @@ function playAlignmentSuccess() {
 function playAlignmentError() {
     try {
         const vol = getSfxVolume();
+        if (vol === 0) return;
         const ctx = getAlignmentAudioCtx();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
