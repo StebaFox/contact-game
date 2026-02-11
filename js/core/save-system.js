@@ -1,11 +1,11 @@
-// ═══════════════════════════════════════════════════════════════════════════
+﻿// ═══════════════════════════════════════════════════════════════════════════
 // SAVE SYSTEM
 // Auto-save, load, and day codes for quick access
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { gameState } from './game-state.js';
 
-const SAVE_KEY = 'seti_save';
+const SAVE_KEY = 'dsra_save';
 const SAVE_VERSION = '1.0';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -30,7 +30,7 @@ export function autoSave() {
 
         // Scan results (convert Map to Array of entries)
         scanResults: Array.from(gameState.scanResults?.entries() || []),
-        // Strip ImageData (canvas pixel data) from scannedSignals — too large for localStorage
+        // Strip ImageData (canvas pixel data) from scannedSignals -- too large for localStorage
         scannedSignals: Array.from(gameState.scannedSignals?.entries() || []).map(
             ([key, val]) => [key, {
                 ...val,

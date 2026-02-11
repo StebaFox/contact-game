@@ -1,4 +1,4 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // GAME STATE
 // Central state object shared across all modules
 // ═════════════════════════════════════════════════════════════════════════════
@@ -79,7 +79,7 @@ export const gameState = {
     decryptionComplete: false,
     cmbDetected: false,
     finalPuzzleComplete: false,
-    finalMessageActive: false, // True while final message is playing — suppresses mail
+    finalMessageActive: false, // True while final message is playing -- suppresses mail
     dayReportShown: 0, // Track which day's report has been shown
     day2CliffhangerPhase: -1, // -1=not started, 0-4=active phases, 5=complete
 

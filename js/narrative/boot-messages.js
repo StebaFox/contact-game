@@ -4,7 +4,7 @@
 // ═════════════════════════════════════════════════════════════════════════════
 
 export const BOOT_INITIAL = [
-    { text: 'SETI DEEP SPACE MONITORING SYSTEM v1.3.7', class: 'success', delay: 200, beep: 'success' },
+    { text: 'DSRA DEEP SPACE MONITORING SYSTEM v1.3.7', class: 'success', delay: 200, beep: 'success' },
     { text: 'Copyright (c) 1995 Advanced Signal Intelligence Division', class: '', delay: 100 },
     { text: '═══════════════════════════════════════════════════════', class: '', delay: 100 },
     { text: '', class: '', delay: 50 },

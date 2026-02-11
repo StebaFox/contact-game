@@ -1,4 +1,4 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // DISH ARRAY SYSTEM
 // Code-based dish alignment for weak signal stars
 // ═════════════════════════════════════════════════════════════════════════════
@@ -485,7 +485,7 @@ function finishAlignment() {
     if (codeSectionEl) codeSectionEl.style.display = 'none';
     log('Dish array alignment complete', 'success');
 
-    // Play acknowledgement sound immediately — the clunk just played
+    // Play acknowledgement sound immediately -- the clunk just played
     playLockAchieved();
 
     // Clear the flag so button can now appear

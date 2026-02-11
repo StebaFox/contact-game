@@ -1,6 +1,6 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // ALIGNMENT MINIGAME
-// Fragment alignment puzzle - tutorial (2 frags) and final (4 frags)
+// Fragment alignment puzzle - single signal (3-6 sub-frags) and final (4 frags)
 // ═════════════════════════════════════════════════════════════════════════════
 
 import { gameState } from '../core/game-state.js';
@@ -47,6 +47,9 @@ let alignmentState = {
     customRevealMessage: null,
     singleOptions: null
 };
+
+// First-encounter hint flag (resets per session, not persisted)
+let hasShownAlignmentHint = false;
 
 // Fragment visual patterns - each is a piece of a larger message
 const FRAGMENT_PATTERNS = {
@@ -391,6 +394,64 @@ function createAlignmentUI(isTutorial) {
     // Event listeners
     document.getElementById('alignment-confirm-btn').addEventListener('click', confirmAlignment);
     document.getElementById('alignment-cancel-btn').addEventListener('click', cancelAlignment);
+
+    // Show first-encounter hint on first real alignment (single-fragment or final, not dev tutorial)
+    const isSingle = !!alignmentState.singleFragmentKey;
+    if (!hasShownAlignmentHint && (isSingle || !isTutorial)) {
+        hasShownAlignmentHint = true;
+        showFirstTimeHint(overlay);
+    }
+}
+
+// First-time instruction overlay - shows once per session on first real alignment
+function showFirstTimeHint(parentOverlay) {
+    const hint = document.createElement('div');
+    hint.id = 'alignment-hint-overlay';
+    hint.style.cssText = `
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 10001;
+        cursor: pointer;
+        animation: hintFadeIn 0.3s ease-out;
+    `;
+    hint.innerHTML = `
+        <div style="
+            border: 2px solid #0ff;
+            background: rgba(0, 20, 30, 0.95);
+            padding: 30px 40px;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.3);
+            font-family: 'VT323', monospace;
+        ">
+            <div style="color: #ff0; font-size: 18px; margin-bottom: 15px; letter-spacing: 2px;">
+                SIGNAL FRAGMENT ALIGNMENT
+            </div>
+            <div style="color: #0ff; font-size: 15px; line-height: 1.8; margin-bottom: 10px;">
+                <span style="color: #ff0;">DRAG</span> fragments into the highlighted zones<br>
+                ${alignmentState.rotationEnabled ? '<span style="color: #f0f;">RIGHT-CLICK</span> to rotate and match the <span style="color: #f0f;">orientation bar</span><br>' : ''}
+                <span style="color: #ff0;">STUDY</span> the corner symbols to find matches
+            </div>
+            <div style="color: #555; font-size: 13px; margin-top: 15px;">
+                [ CLICK ANYWHERE TO BEGIN ]
+            </div>
+        </div>
+    `;
+
+    const dismiss = () => {
+        hint.style.opacity = '0';
+        hint.style.transition = 'opacity 0.3s';
+        setTimeout(() => hint.remove(), 300);
+    };
+
+    hint.addEventListener('click', dismiss);
+    // Auto-dismiss after 8 seconds
+    setTimeout(() => { if (hint.parentNode) dismiss(); }, 8000);
+
+    parentOverlay.style.position = 'relative';
+    parentOverlay.appendChild(hint);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -854,7 +915,7 @@ function drawZones(ctx) {
             ctx.setLineDash([]);
         }
 
-        // Orientation indicator bar (top edge — shows expected fragment orientation)
+        // Orientation indicator bar (top edge -- shows expected fragment orientation)
         if (!zone.occupied) {
             ctx.fillStyle = `rgba(255, 255, 255, ${0.15 + pulse * 0.1})`;
             ctx.fillRect(zone.x + 6, zone.y + 4, zone.width - 12, 4);
@@ -934,7 +995,7 @@ function drawFragments(ctx) {
         ctx.fillStyle = gradient;
         ctx.fillRect(f.x, f.y, f.width, f.height);
 
-        // Orientation bar (top edge — rotates with fragment to show orientation)
+        // Orientation bar (top edge -- rotates with fragment to show orientation)
         if (!f.aligned) {
             const barH = 5;
             const barGrad = ctx.createLinearGradient(f.x, f.y, f.x + f.width, f.y);
@@ -1352,8 +1413,8 @@ function completeAlignment(success) {
     // Handle completion
     if (success) {
         if (alignmentState.singleFragmentKey) {
-            // Single-fragment mode — callback handles fragment collection
-            log('FRAGMENT ALIGNED — Signal decoded!', 'highlight');
+            // Single-fragment mode -- callback handles fragment collection
+            log('FRAGMENT ALIGNED -- Signal decoded!', 'highlight');
         } else if (alignmentState.isTutorial) {
             gameState.tutorialCompleted = true;
             log('Alignment training complete!', 'info');

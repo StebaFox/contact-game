@@ -1,5 +1,5 @@
-// ═════════════════════════════════════════════════════════════════════════════
-// INVESTIGATION PAGE — "PROJECT LIGHTHOUSE"
+﻿// ═════════════════════════════════════════════════════════════════════════════
+// INVESTIGATION PAGE -- "PROJECT LIGHTHOUSE"
 // Fragment display, 3D wireframe shape rendering, breadcrumb trail hub
 // ═════════════════════════════════════════════════════════════════════════════
 
@@ -32,7 +32,7 @@ let investigationState = {
     glowPulse: 0
 };
 
-// Fragment content data — scientific/alien fluff for each decoded fragment
+// Fragment content data -- scientific/alien fluff for each decoded fragment
 const FRAGMENT_CONTENT = {
     src7024: {
         title: 'FRAGMENT 1: SRC-7024',
@@ -94,7 +94,7 @@ const FRAGMENT_CONTENT = {
 
 export function openInvestigation() {
     const currentView = document.querySelector('.view.active')?.id || 'starmap-view';
-    // Only capture return view from "real" views — not mailbox or other overlays
+    // Only capture return view from "real" views -- not mailbox or other overlays
     if (currentView !== 'investigation-view' && currentView !== 'mailbox-view') {
         investigationReturnView = currentView;
     }
@@ -130,7 +130,7 @@ export function hideInvestigationIndicator() {
     if (indicator) indicator.style.display = 'none';
 }
 
-// Called when a new fragment is collected — update the page
+// Called when a new fragment is collected -- update the page
 export function onFragmentCollected() {
     updateFragmentCards();
     updateShapeDisplay();
@@ -152,35 +152,35 @@ function updateFragmentCards() {
     const fragments = gameState.fragments;
     const fragCount = fragments.collected.length;
 
-    // Progressive reveal — only show cards when the previous fragment is collected
+    // Progressive reveal -- only show cards when the previous fragment is collected
     const frag2Visible = !!fragments.sources.src7024;
     const frag3Visible = !!fragments.sources.nexusPoint;
     const frag4Visible = fragCount >= 3;
 
-    // Fragment 1: SRC-7024 — always visible
+    // Fragment 1: SRC-7024 -- always visible
     updateCard(1, 'src7024', fragments.sources.src7024, {
         actionLabel: 'TRIANGULATE COORDINATES',
         actionId: 'frag1-action',
         showAction: fragments.sources.src7024 && !fragments.sources.nexusPoint && !gameState.cmbDetected
     });
 
-    // Fragment 2: NEXUS POINT — visible after fragment 1 collected
+    // Fragment 2: NEXUS POINT -- visible after fragment 1 collected
     updateCard(2, 'nexusPoint', fragments.sources.nexusPoint, {
         visible: frag2Visible
     });
 
-    // Fragment 3: 82 ERIDANI — visible after fragment 2 collected
+    // Fragment 3: 82 ERIDANI -- visible after fragment 2 collected
     updateCard(3, 'eridani82', fragments.sources.eridani82, {
         visible: frag3Visible
     });
 
-    // Fragment 4: GENESIS POINT — visible after all 3 fragments collected
+    // Fragment 4: GENESIS POINT -- visible after all 3 fragments collected
     const hasGenesis = gameState.dynamicStars.some(s => s.id === 'genesis');
     updateCard(4, 'synthesis', fragments.sources.synthesis, {
         visible: frag4Visible,
         lockedText: hasGenesis
             ? '[SCAN GENESIS POINT TO DECODE]'
-            : (fragCount >= 3 ? '[TRIANGULATE TO LOCATE SOURCE]' : `[REQUIRES 3 DECODED FRAGMENTS — ${fragCount}/3]`)
+            : (fragCount >= 3 ? '[TRIANGULATE TO LOCATE SOURCE]' : `[REQUIRES 3 DECODED FRAGMENTS -- ${fragCount}/3]`)
     });
 
     // Update action buttons
@@ -254,7 +254,7 @@ function updateCard(cardNum, sourceKey, isDecoded, options = {}) {
     }
     card.style.display = '';
 
-    // Update header — show real title only when decoded, otherwise hide source name
+    // Update header -- show real title only when decoded, otherwise hide source name
     const content = FRAGMENT_CONTENT[sourceKey];
     if (header) {
         const statusSpan = `<span class="fragment-status" id="frag${cardNum}-status">${isDecoded ? '■' : '□'}</span>`;
@@ -492,7 +492,7 @@ function showTransmissionBridge(onComplete) {
         });
 
         if (line.text === '') {
-            // Empty line — just a pause
+            // Empty line -- just a pause
             lineIndex++;
             setTimeout(typeLine, line.delay);
             return;

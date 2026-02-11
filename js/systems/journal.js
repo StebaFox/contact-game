@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // JOURNAL SYSTEM
 // Archives alien contacts, key intel, and scan discoveries for re-reading
 // =============================================================================
@@ -21,7 +21,7 @@ export function openJournal() {
         return;
     }
 
-    // Never save mailbox/journal as return target — always fall back to starmap
+    // Never save mailbox/journal as return target -- always fall back to starmap
     const overlays = ['journal-view', 'mailbox-view'];
     journalReturnView = overlays.includes(currentView) ? 'starmap-view' : (currentView || 'starmap-view');
     showView('journal-view');
@@ -128,7 +128,7 @@ export function renderJournal() {
 export function updateJournalIndicator() {
     const indicator = document.getElementById('journal-indicator');
     if (!indicator) return;
-    // No unread tracking for journal — just show it's available
+    // No unread tracking for journal -- just show it's available
     indicator.style.display = 'none';
 }
 
@@ -138,7 +138,7 @@ export function showJournalButton() {
 }
 
 // -----------------------------------------------------------------------------
-// Personal Log Musings — flavor entries at narrative moments
+// Personal Log Musings -- flavor entries at narrative moments
 // -----------------------------------------------------------------------------
 
 let firstScanMusingAdded = false;
@@ -150,9 +150,9 @@ export function addFirstScanMusing(star, resultType, source) {
 
     let reflection = '';
     if (resultType === 'false_positive') {
-        reflection = `First signal processed. ${source || 'Terrestrial interference'}. Not what I was hoping for, but that's the job — sifting through noise to find what shouldn't be there.\n\nKeep looking.`;
+        reflection = `First signal processed. ${source || 'Terrestrial interference'}. Not what I was hoping for, but that's the job. Sifting through noise to find what shouldn't be there.\n\nKeep looking.`;
     } else if (resultType === 'natural') {
-        reflection = `First signal processed. Natural phenomenon — beautiful in its own way, but not what we're searching for.\n\nThe universe is noisy. Somewhere in all that noise, there might be a voice.\n\nKeep looking.`;
+        reflection = `First signal processed. Natural phenomenon. Beautiful in its own way, but not what we're searching for.\n\nThe universe is noisy. Somewhere in all that noise, there might be a voice.\n\nKeep looking.`;
     } else if (resultType === 'verified_signal') {
         reflection = `First signal processed. And it's... not natural. All interference checks negative. My hands are shaking as I write this.\n\nThis could be nothing. A glitch. An artifact.\n\nBut what if it isn't?`;
     }
@@ -175,7 +175,7 @@ export function addPersonalLog(title, content) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Scan Milestone Musings — Day 1 personal reflections at key moments
+// Scan Milestone Musings -- Day 1 personal reflections at key moments
 // ─────────────────────────────────────────────────────────────────────────────
 
 let scanMilestoneFlags = {
@@ -195,7 +195,7 @@ export function checkScanMilestoneMusings(resultType) {
         if (!gameState.journalEntries.some(e => e.title === 'Personal Log: Ghost Signal')) {
             scanMilestoneFlags.ghostSignal = true;
             addPersonalLog('Ghost Signal',
-                "Another false alarm. Satellite bounce, classified transmission \u2014 doesn't matter. For a moment the waveform looked alive.\n\nThis is the hardest part. Training yourself to feel nothing when the data says \"no.\" Because someday it might say \"yes,\" and I need to be ready to believe it.");
+                "Another false alarm. Satellite bounce, classified transmission. Doesn't matter. For a moment the waveform looked alive.\n\nThis is the hardest part. Training yourself to feel nothing when the data says \"no.\" Because someday it might say \"yes,\" and I need to be ready to believe it.");
         }
     }
 
@@ -213,7 +213,7 @@ export function checkScanMilestoneMusings(resultType) {
         if (!gameState.journalEntries.some(e => e.title === 'Personal Log: The Routine')) {
             scanMilestoneFlags.routine = true;
             addPersonalLog('The Routine',
-                "Three down. Getting into the rhythm now. Tune the receiver, analyze the waveform, classify the source. Again.\n\nWhitmore says patience is the job. Most SETI researchers go their entire careers without finding anything. I knew that going in.\n\nDoesn't make the silence any easier.");
+                "Three down. Getting into the rhythm now. Tune the receiver, analyze the waveform, classify the source. Again.\n\nWhitmore says patience is the job. Most DSRA researchers go their entire careers without finding anything. I knew that going in.\n\nDoesn't make the silence any easier.");
         }
     }
 

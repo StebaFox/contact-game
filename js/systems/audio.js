@@ -1,4 +1,4 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // AUDIO SYSTEM
 // All sound effects, music, and audio management
 // ═════════════════════════════════════════════════════════════════════════════
@@ -162,7 +162,7 @@ export function setDay3Music() {
 // Set music volume
 export function setMusicVolume(volume) {
     musicVolume = Math.max(0, Math.min(1, volume));
-    localStorage.setItem('seti-musicVolume', musicVolume);
+    localStorage.setItem('dsra-musicVolume', musicVolume);
 
     // Update currently playing music volume
     if (currentMusic === glassCathedralMusic && glassCathedralMusic) {
@@ -192,7 +192,7 @@ function isBgTrack(el) {
 // Set SFX volume
 export function setSfxVolume(volume) {
     sfxVolume = Math.max(0, Math.min(1, volume));
-    localStorage.setItem('seti-sfxVolume', sfxVolume);
+    localStorage.setItem('dsra-sfxVolume', sfxVolume);
 }
 
 // Get volumes
@@ -206,13 +206,13 @@ export function getSfxVolume() {
 
 // Load saved volume settings from localStorage
 export function loadVolumeSettings() {
-    const savedMusic = localStorage.getItem('seti-musicVolume');
-    const savedSfx = localStorage.getItem('seti-sfxVolume');
+    const savedMusic = localStorage.getItem('dsra-musicVolume');
+    const savedSfx = localStorage.getItem('dsra-sfxVolume');
     if (savedMusic !== null) musicVolume = parseFloat(savedMusic);
     if (savedSfx !== null) sfxVolume = parseFloat(savedSfx);
 }
 
-// Switch to alien music (crossfade) — randomly picks a track
+// Switch to alien music (crossfade) -- randomly picks a track
 export function switchToAlienMusic() {
     if (alienTracks.length === 0) return;
     if (currentMusic && isAlienTrack(currentMusic)) return;
@@ -252,7 +252,7 @@ export function switchToAlienMusic() {
     }, fadeInterval);
 }
 
-// Switch back to background music (crossfade) — resumes current playlist position
+// Switch back to background music (crossfade) -- resumes current playlist position
 export function switchToBackgroundMusic() {
     const playlist = getActivePlaylist();
     if (playlist.length === 0) return;
@@ -414,7 +414,7 @@ export function resumeAllMusic() {
     }
 }
 
-// Echoing ping — sonar-like tone with reverb tail for star reveals
+// Echoing ping -- sonar-like tone with reverb tail for star reveals
 export function playEchoingPing() {
     if (!audioContext || sfxVolume === 0) return;
 
@@ -467,7 +467,7 @@ export function playClick() {
     oscillator.stop(audioContext.currentTime + 0.1);
 }
 
-// Zoom in sound — short rising chirp
+// Zoom in sound -- short rising chirp
 export function playZoomIn() {
     if (!audioContext || sfxVolume === 0) return;
     const osc = audioContext.createOscillator();
@@ -483,7 +483,7 @@ export function playZoomIn() {
     osc.stop(audioContext.currentTime + 0.1);
 }
 
-// Zoom out sound — short falling chirp
+// Zoom out sound -- short falling chirp
 export function playZoomOut() {
     if (!audioContext || sfxVolume === 0) return;
     const osc = audioContext.createOscillator();
@@ -1098,7 +1098,7 @@ export function stopAlienSignalSound() {
     }
 }
 
-// Fragment signal sound — structural, almost musical resonance unique to each fragment star
+// Fragment signal sound -- structural, almost musical resonance unique to each fragment star
 let fragmentSignalOscillators = [];
 let fragmentSignalGain = null;
 
@@ -1119,7 +1119,7 @@ export function startFragmentSignalSound(star) {
 
     const starSeed = star ? (typeof star.id === 'number' ? star.id + 1 : hashStarId(star.id)) : 1;
 
-    // Musical chord structure — each fragment star gets a unique chord
+    // Musical chord structure -- each fragment star gets a unique chord
     const chords = [
         [220, 277.18, 329.63, 440],       // A minor: A3, C#4, E4, A4
         [261.63, 329.63, 392, 523.25],     // C major: C4, E4, G4, C5
@@ -1129,7 +1129,7 @@ export function startFragmentSignalSound(star) {
     ];
     const chord = chords[starSeed % chords.length];
 
-    // Main chord tones — sine waves for a clean, crystalline sound
+    // Main chord tones -- sine waves for a clean, crystalline sound
     chord.forEach((freq, i) => {
         const osc = audioContext.createOscillator();
         const oscGain = audioContext.createGain();
@@ -1146,7 +1146,7 @@ export function startFragmentSignalSound(star) {
         fragmentSignalOscillators.push({ osc, oscGain });
     });
 
-    // Add a shimmering high harmonic — triangle wave for texture
+    // Add a shimmering high harmonic -- triangle wave for texture
     const shimmer = audioContext.createOscillator();
     const shimmerGain = audioContext.createGain();
     shimmer.type = 'triangle';
@@ -1167,7 +1167,7 @@ export function startFragmentSignalSound(star) {
     vibrato.start();
     fragmentSignalOscillators.push({ osc: vibrato, oscGain: vibratoGain });
 
-    // Slow chord tone shifting — notes gently drift in pitch
+    // Slow chord tone shifting -- notes gently drift in pitch
     const drift = audioContext.createOscillator();
     const driftGain = audioContext.createGain();
     drift.frequency.value = 0.05; // Very slow

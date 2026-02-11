@@ -1,4 +1,4 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // TRIANGULATION MINIGAME
 // 3D starmap puzzle for locating CMB signal origin in Day 3
 // ═════════════════════════════════════════════════════════════════════════════
@@ -1004,7 +1004,7 @@ function completeTriangulation(success) {
     if (overlay) overlay.remove();
 
     if (success) {
-        // Triangulation reveals the NEXUS POINT — fragment is awarded on scan/decrypt
+        // Triangulation reveals the NEXUS POINT -- fragment is awarded on scan/decrypt
         gameState.cmbDetected = true;
         log('TRIANGULATION COMPLETE - Deep space target coordinates locked', 'highlight');
         autoSave();

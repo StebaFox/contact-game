@@ -1,4 +1,4 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // STARMAP UI
 // Star catalog, canvas rendering, and star selection
 // ═════════════════════════════════════════════════════════════════════════════
@@ -128,7 +128,7 @@ export function generateBackgroundStars() {
         return 1 + 1.2 * Math.exp(-dist * dist * 35); // peaks at 2.2x at center, tighter falloff
     };
 
-    // Milky way — glow spots along the diagonal band (slightly brighter near bulge)
+    // Milky way -- glow spots along the diagonal band (slightly brighter near bulge)
     const bandAngle = Math.atan2(-0.75 * nh, nw);
     for (let i = 0; i < 16; i++) {
         const t = (i + 0.5) / 16;
@@ -145,7 +145,7 @@ export function generateBackgroundStars() {
         nCtx.fillRect(cx - r, cy - r, r * 2, r * 2);
     }
 
-    // White nebula wisps — irregular curving tendrils built from chained blobs
+    // White nebula wisps -- irregular curving tendrils built from chained blobs
     const bandDx = Math.cos(bandAngle);
     const bandDy = Math.sin(bandAngle);
     const perpDx = -bandDy; // perpendicular to band
@@ -205,7 +205,7 @@ export function generateBackgroundStars() {
         nCtx.fillRect(bandX, bandY, size, size);
     }
 
-    // Dark dust lanes — dark patches that cut across the band (drawn on top to obscure)
+    // Dark dust lanes -- dark patches that cut across the band (drawn on top to obscure)
     nCtx.globalCompositeOperation = 'destination-out';
     for (let i = 0; i < 6; i++) {
         const t = Math.random() * 0.7 + 0.15;
@@ -249,7 +249,7 @@ function getSpectralColor(starType) {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// SKY CHART — RA/Dec projection utilities
+// SKY CHART -- RA/Dec projection utilities
 // ═════════════════════════════════════════════════════════════════════════════
 
 const SKY_PAD = 30; // padding from canvas edges
@@ -374,7 +374,7 @@ function resolveLabels(stars, ctx, canvasWidth, canvasHeight, scale = 1) {
             side = 'right'; // textAlign right = label goes to left of star
             placed.push({ x1: c.lx1, y1: c.ly1, x2: c.lx1 + c.w, y2: c.ly1 + c.h });
         } else {
-            // Both sides overlap — try vertical offsets (below then above)
+            // Both sides overlap -- try vertical offsets (below then above)
             const shifts = [c.h + margin * 2, -(c.h + margin * 2)];
             let found = false;
             for (const shift of shifts) {
@@ -390,7 +390,7 @@ function resolveLabels(stars, ctx, canvasWidth, canvasHeight, scale = 1) {
                 }
             }
             if (!found) {
-                // Last resort — place to right, accept overlap
+                // Last resort -- place to right, accept overlap
                 side = c.rightFits ? 'left' : 'right';
                 const bx = side === 'left' ? c.rx1 : c.lx1;
                 placed.push({ x1: bx, y1: c.ry1, x2: bx + c.w, y2: c.ry1 + c.h });
@@ -460,7 +460,7 @@ export function generateSkyChartBackground() {
         return { tanX: dx / len, tanY: dy / len, perpX: -dy / len, perpY: dx / len };
     });
 
-    // Dense stars along galactic plane — jitter along tangent + spread perpendicular
+    // Dense stars along galactic plane -- jitter along tangent + spread perpendicular
     for (let i = 0; i < 1200; i++) {
         const idx = Math.floor(Math.random() * galacticPoints.length);
         const p = galacticPoints[idx];
@@ -489,7 +489,7 @@ export function generateSkyChartBackground() {
         ctx.fillRect(x, y, Math.random() * 1.4 + 0.4, Math.random() * 1.4 + 0.4);
     }
 
-    // Dark dust lanes — multi-segment chains that wander along the band
+    // Dark dust lanes -- multi-segment chains that wander along the band
     ctx.globalCompositeOperation = 'destination-out';
     for (let i = 0; i < 5; i++) {
         let idx = Math.floor(Math.random() * galacticPoints.length);
@@ -569,7 +569,7 @@ export function generateSkyChartBackground() {
     }
     ctx.globalCompositeOperation = 'source-over';
 
-    // Bright nebula wisps — white/pale elongated clouds along the band
+    // Bright nebula wisps -- white/pale elongated clouds along the band
     for (let i = 0; i < 6; i++) {
         const idx = Math.floor(Math.random() * galacticPoints.length);
         const tang = galacticTangents[idx];
@@ -1334,7 +1334,7 @@ export function renderStarMap() {
     }
 }
 
-// Sky Chart view — real RA/Dec projection with galactic plane
+// Sky Chart view -- real RA/Dec projection with galactic plane
 function renderSkyChart() {
     const canvas = document.getElementById('starmap-canvas');
     const ctx = canvas.getContext('2d');
@@ -1741,7 +1741,7 @@ function renderSkyChart() {
     }
 }
 
-// Array View — original parallax starmap
+// Array View -- original parallax starmap
 function renderArrayView() {
     const canvas = document.getElementById('starmap-canvas');
     const ctx = canvas.getContext('2d');
@@ -2425,7 +2425,7 @@ export function setupStarMapCanvas() {
             }
 
             if (!clickedDynamic) {
-                // Check catalog stars at sky positions — find closest match
+                // Check catalog stars at sky positions -- find closest match
                 let closestDist = hitRadius;
                 let closestStar = null;
                 gameState.stars.forEach(star => {
@@ -2500,7 +2500,7 @@ export function setupStarMapCanvas() {
         }
 
         if (!clickedDynamic) {
-            // Find clicked catalog star — closest match
+            // Find clicked catalog star -- closest match
             let closestDist = 10;
             let closestStar = null;
             gameState.stars.forEach(star => {

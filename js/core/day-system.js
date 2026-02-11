@@ -1,4 +1,4 @@
-// ═══════════════════════════════════════════════════════════════════════════
+﻿// ═══════════════════════════════════════════════════════════════════════════
 // DAY SYSTEM
 // Controls 3-day narrative progression and star gating
 // ═══════════════════════════════════════════════════════════════════════════
@@ -19,8 +19,8 @@ export const DAY_CONFIG = {
         criticalStars: [8], // Ross 128 must be scanned
         objectives: [
             'Survey assigned star systems (7 minimum)',
-            'Catalog all signals — the oversight committee needs data',
-            'Flag anything unusual — your career may depend on it'
+            'Catalog all signals. The oversight committee needs data',
+            'Flag anything unusual. Your career may depend on it'
         ],
         bootMessages: [
             'CLEARANCE LEVEL: 4 (STANDARD)',

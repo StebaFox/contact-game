@@ -1,4 +1,4 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // MAILBOX SYSTEM
 // Email/message system for in-game communication
 // ═════════════════════════════════════════════════════════════════════════════
@@ -17,7 +17,7 @@ export function openMailbox() {
         return;
     }
 
-    // Save current view to return to — never save another overlay as return target
+    // Save current view to return to -- never save another overlay as return target
     const overlays = ['journal-view', 'mailbox-view'];
     gameState.previousView = overlays.includes(currentView) ? 'starmap-view' : currentView;
 
@@ -151,7 +151,7 @@ export function addMailMessage(from, subject, body, preview = null) {
         });
     }
 
-    // If mailbox is currently open, refresh it — but preserve expanded email
+    // If mailbox is currently open, refresh it -- but preserve expanded email
     const activeView = document.querySelector('.view.active');
     if (activeView && activeView.id === 'mailbox-view') {
         const expandedItem = document.querySelector('.mail-item.expanded');

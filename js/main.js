@@ -1,4 +1,4 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // MAIN ENTRY POINT
 // Imports all modules and initializes the game
 // ═════════════════════════════════════════════════════════════════════════════
@@ -233,7 +233,7 @@ function setupEventListeners() {
         toggleLayoutMode();
     });
 
-    // Starmap (Array) button — quick nav back to starmap from anywhere
+    // Starmap (Array) button -- quick nav back to starmap from anywhere
     document.getElementById('starmap-btn')?.addEventListener('click', () => {
         playClick();
         showView('starmap-view');

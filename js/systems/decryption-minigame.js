@@ -1,4 +1,4 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // DECRYPTION MINIGAME
 // Interactive pattern-capture puzzle for Day 2 signal decryption
 // ═════════════════════════════════════════════════════════════════════════════
@@ -1161,7 +1161,7 @@ function playPatternAppearSound() {
         const vol = getSfxVolume();
         const ctx = getAudioContext();
 
-        // Quick digital chirp — two-tone ascending blip
+        // Quick digital chirp -- two-tone ascending blip
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
@@ -1183,7 +1183,7 @@ function playDangerWarningTone() {
         const vol = getSfxVolume();
         const ctx = getAudioContext();
 
-        // Pulsing low warning — two quick buzzes
+        // Pulsing low warning -- two quick buzzes
         for (let i = 0; i < 2; i++) {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
@@ -1206,7 +1206,7 @@ function playPatternBlinkTick() {
         const vol = getSfxVolume();
         const ctx = getAudioContext();
 
-        // Soft tick — very short high-freq click
+        // Soft tick -- very short high-freq click
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);

@@ -1,6 +1,6 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // PATTERN RECOGNITION MINIGAME
-// Signal Pattern Identification — cycle filters to isolate signal patterns
+// Signal Pattern Identification -- cycle filters to isolate signal patterns
 // ═════════════════════════════════════════════════════════════════════════════
 
 import { gameState } from '../core/game-state.js';
@@ -226,7 +226,7 @@ export function startPatternRecognitionGame(star) {
     animate();
 
     document.getElementById('pattern-status').textContent = 'CYCLE FILTERS TO ISOLATE THE SIGNAL PATTERN';
-    log('Signal pattern analysis initiated — cycle through filters to find the signal', 'info');
+    log('Signal pattern analysis initiated -- cycle through filters to find the signal', 'info');
 
     // Show auto-analyze button on Day 2+ (player has already done this many times)
     showAutoAnalyzeButton(star);
@@ -306,7 +306,7 @@ function showAutoAnalyzeButton(star) {
             addMailMessage(
                 'Dr. Eleanor Chen - Radio Astronomy',
                 'System Upgrade: Pattern Recognition Algorithm',
-                `Dr. ${name},\n\nAfter processing the volume of signal data from your Day 1 survey, our pattern recognition system has built a robust baseline model.\n\nThe algorithm can now automatically cycle filters and isolate repeating patterns without manual intervention. You'll see an [AUTO-ANALYZE] button during future signal analysis.\n\nIt's essentially doing what you were doing by hand — just faster. Your manual work trained the model. Nice job.\n\nNote: The system still needs you for the hard calls. Verification, classification, contact protocols — that's all you.\n\n- Eleanor`
+                `Dr. ${name},\n\nAfter processing the volume of signal data from your Day 1 survey, our pattern recognition system has built a robust baseline model.\n\nThe algorithm can now automatically cycle filters and isolate repeating patterns without manual intervention. You'll see an [AUTO-ANALYZE] button during future signal analysis.\n\nIt's essentially doing what you were doing by hand -- just faster. Your manual work trained the model. Nice job.\n\nNote: The system still needs you for the hard calls. Verification, classification, contact protocols -- that's all you.\n\n- Eleanor`
             );
         }, 10000);
 
@@ -347,8 +347,8 @@ function autoAnalyze() {
             return;
         }
 
-        // Phase 2: On correct filter — select the pattern region
-        statusEl.innerHTML = '<span style="color:#0f0;">AUTO-ANALYZE: Pattern detected — isolating...</span>';
+        // Phase 2: On correct filter -- select the pattern region
+        statusEl.innerHTML = '<span style="color:#0f0;">AUTO-ANALYZE: Pattern detected -- isolating...</span>';
 
         setTimeout(() => {
             if (!patternState.active || patternState.captures.length >= 3) return;
@@ -782,7 +782,7 @@ function handleCapture(region) {
             if (patternState.active && patternState.captures.length < 3) {
                 generateFrame();
                 document.getElementById('pattern-status').textContent =
-                    'NEW SIGNAL FRAME — CYCLE FILTERS TO FIND THE PATTERN';
+                    'NEW SIGNAL FRAME -- CYCLE FILTERS TO FIND THE PATTERN';
                 setTimeout(() => {
                     if (patternState.active && patternState.captures.length < 3) {
                         document.getElementById('pattern-status').textContent =
@@ -809,7 +809,7 @@ function handleWrongFilter() {
     playStaticBurst();
 
     document.getElementById('pattern-status').innerHTML =
-        '<span style="color:#f80;">WRONG FILTER — NO PATTERN ON THIS BAND</span>';
+        '<span style="color:#f80;">WRONG FILTER -- NO PATTERN ON THIS BAND</span>';
 
     setTimeout(() => {
         if (patternState.active && patternState.captures.length < 3) {
@@ -824,7 +824,7 @@ function handleMiss() {
     playStaticBurst();
 
     document.getElementById('pattern-status').innerHTML =
-        '<span style="color:#f80;">NO SIGNIFICANT PATTERN — TRY ANOTHER REGION</span>';
+        '<span style="color:#f80;">NO SIGNIFICANT PATTERN -- TRY ANOTHER REGION</span>';
 
     setTimeout(() => {
         if (patternState.active && patternState.captures.length < 3) {
@@ -1127,14 +1127,14 @@ function completePatternGame(star) {
             "Not what we're looking for, but the cosmos has its own kind of music.",
             "Nature doesn't need intelligence to be extraordinary.",
             "Beautiful in its own way. The universe is spectacular even when no one's sending messages.",
-            "Another natural wonder. The universe is full of surprises — just not the ones I'm looking for today.",
+            "Another natural wonder. The universe is full of surprises. Just not the ones I'm looking for today.",
             "Cataloged. Sometimes I wonder if we're so focused on finding voices that we forget to listen to the song."
         ];
         const natIdx = (gameState.journalEntries || []).filter(e => e.title?.startsWith('Natural:')).length;
         addJournalEntry('discovery', {
             starName: star.name,
             title: `Natural: ${phenomenon.type}`,
-            content: `Source: ${phenomenon.source}\n${phenomenon.details.join('\n')}\n\n— ${natMusings[natIdx % natMusings.length]}`
+            content: `Source: ${phenomenon.source}\n${phenomenon.details.join('\n')}\n\n-- ${natMusings[natIdx % natMusings.length]}`
         });
         showJournalButton();
         addFirstScanMusing(star, 'natural');
@@ -1144,7 +1144,7 @@ function completePatternGame(star) {
         checkScanMilestoneMusings('natural');
 
         const naturalObservations = [
-            "Gorgeous waveform. Not intelligent — but the universe makes its own art.",
+            "Gorgeous waveform. Not intelligent, but the universe makes its own art.",
             "Not what we're looking for. But I could stare at that spectrogram for hours.",
             "The cosmos doesn't care if anyone's listening. It sings anyway.",
             "Another natural wonder cataloged. Beautiful and utterly indifferent."
@@ -1164,7 +1164,7 @@ function completePatternGame(star) {
         ];
 
         typeAnalysisText(lines, () => {
-            // Analyze button stays disabled — analysis is complete for this star
+            // Analyze button stays disabled -- analysis is complete for this star
         });
     }
 }

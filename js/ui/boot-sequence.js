@@ -1,4 +1,4 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // BOOT SEQUENCE
 // Game startup animation and player name entry
 // ═════════════════════════════════════════════════════════════════════════════
@@ -965,7 +965,7 @@ function animateStarsAppearing() {
         if (scanY < height + 50) {
             requestAnimationFrame(drawScanEffect);
         }
-        // No final render needed — last frame already called renderStarMapFn
+        // No final render needed -- last frame already called renderStarMapFn
     }
 
     drawScanEffect();

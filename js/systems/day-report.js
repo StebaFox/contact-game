@@ -1,4 +1,4 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // DAY REPORT SYSTEM
 // End-of-day summaries and day transitions
 // ═════════════════════════════════════════════════════════════════════════════
@@ -30,7 +30,7 @@ export function checkAndShowDayComplete() {
         return false;
     }
 
-    // Already shown the popup for this day — just ensure nav button is visible
+    // Already shown the popup for this day -- just ensure nav button is visible
     if (gameState.dayReportShown === gameState.currentDay) {
         if (!gameState.daysCompleted.includes(gameState.currentDay)) {
             showDayReportButton();
@@ -68,14 +68,14 @@ export function hideDayReportButton() {
     if (btn) btn.style.display = 'none';
 }
 
-// Called when player clicks the nav button — open the classification flow
+// Called when player clicks the nav button -- open the classification flow
 export function openDayReport() {
     hideDayReportButton();
     showInteractiveClassification();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Day 2 Cliffhanger — SRC-7024 Reveal
+// Day 2 Cliffhanger -- SRC-7024 Reveal
 // ─────────────────────────────────────────────────────────────────────────────
 
 function triggerDay2Cliffhanger() {
@@ -101,7 +101,7 @@ function triggerDay2Cliffhanger() {
     }, 1500);
 }
 
-// State machine for Day 2 cliffhanger — called by mailbox.js and scanning.js
+// State machine for Day 2 cliffhanger -- called by mailbox.js and scanning.js
 export function advanceDay2Cliffhanger(triggerPhase) {
     if (gameState.day2CliffhangerPhase !== triggerPhase) return;
 
@@ -120,7 +120,7 @@ export function advanceDay2Cliffhanger(triggerPhase) {
                 log('Select SRC-7024 on the starmap to begin scanning.', 'info');
 
                 addPersonalLog('SRC-7024',
-                    `Dr. Chen flagged a signal source that isn't in any known catalog. Military, civilian, deep space network — nothing. Zero matches.\n\nShe's calling it SRC-7024. Coordinates don't correspond to any charted star, pulsar, or known emitter. It's just... there. Broadcasting from a point in space that should be empty.\n\nI've been doing this long enough to know that "unknown source" usually means "we haven't checked the right database yet." But Chen has checked them all. Twice.\n\nI need to scan it.`
+                    `Dr. Chen flagged a signal source that isn't in any known catalog. Military, civilian, deep space network -- nothing. Zero matches.\n\nShe's calling it SRC-7024. Coordinates don't correspond to any charted star, pulsar, or known emitter. It's just... there. Broadcasting from a point in space that should be empty.\n\nI've been doing this long enough to know that "unknown source" usually means "we haven't checked the right database yet." But Chen has checked them all. Twice.\n\nI need to scan it.`
                 );
 
                 autoSave();
@@ -159,7 +159,7 @@ export function advanceDay2Cliffhanger(triggerPhase) {
                 log('EMERGENCY ALERT: New priority message received.', 'warning');
 
                 addPersonalLog('The Blackout',
-                    `The western seaboard just went dark. The entire power grid — three states — blacked out at the exact moment our array locked onto SRC-7024.\n\nOperations is calling it a coincidence. A "correlated infrastructure event." That's what they have to call it, because the alternative is that a signal from deep space knocked out the power grid of a continent.\n\nI keep thinking about the energy required to do that. We pointed a radio telescope at empty space, and empty space pushed back hard enough to shut down everything for hundreds of miles.\n\nWhatever SRC-7024 is, it knows we're listening. And it responded.`
+                    `The western seaboard just went dark. The entire power grid -- three states -- blacked out at the exact moment our array locked onto SRC-7024.\n\nOperations is calling it a coincidence. A "correlated infrastructure event." That's what they have to call it, because the alternative is that a signal from deep space knocked out the power grid of a continent.\n\nI keep thinking about the energy required to do that. We pointed a radio telescope at empty space, and empty space pushed back hard enough to shut down everything for hundreds of miles.\n\nWhatever SRC-7024 is, it knows we're listening. And it responded.`
                 );
             }, 7000);
             break;
@@ -198,7 +198,7 @@ function startQuickReboot() {
         { text: 'DEEP SPACE ARRAY................ STANDBY', delay: 350 },
         { text: 'DATA INTEGRITY CHECK............ WARNINGS', delay: 400, cls: 'warning' },
         { text: '', delay: 300 },
-        { text: 'SYSTEM RESTORED — PARTIAL DATA LOSS DETECTED', delay: 500, cls: 'warning' },
+        { text: 'SYSTEM RESTORED -- PARTIAL DATA LOSS DETECTED', delay: 500, cls: 'warning' },
         { text: 'RESUMING OPERATIONS...', delay: 800 }
     ];
 
@@ -212,7 +212,7 @@ function startQuickReboot() {
                 // is already covering the starmap before we fade the reboot overlay
                 import('../ui/boot-sequence.js').then(module => {
                     module.initializeStarmapSequence();
-                    // Now fade and remove the reboot overlay — loading bar overlay is underneath
+                    // Now fade and remove the reboot overlay -- loading bar overlay is underneath
                     overlay.style.transition = 'opacity 0.5s';
                     overlay.style.opacity = '0';
                     setTimeout(() => {
@@ -310,7 +310,7 @@ function showDayCompletePopup() {
             </div>
             <div style="color: #0ff; font-size: 16px; margin-bottom: 15px;">
                 ${scanned} / ${total} assigned targets analyzed.<br>
-                Minimum survey requirement met — daily report authorized.
+                Minimum survey requirement met -- daily report authorized.
             </div>
             ${continueText}
             <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
@@ -414,10 +414,10 @@ function buildDay1ClassificationForm(choices) {
     function getScanSummary(starIndex) {
         const result = gameState.scanResults.get(starIndex);
         if (!result) return { text: 'PENDING ANALYSIS', color: '#666' };
-        if (result.type === 'natural') return { text: `NATURAL — ${result.phenomenonType || 'Classified phenomenon'}`, color: '#0ff' };
-        if (result.type === 'false_positive') return { text: `FALSE POSITIVE — ${result.source || 'Terrestrial source'}`, color: '#f80' };
+        if (result.type === 'natural') return { text: `NATURAL -- ${result.phenomenonType || 'Classified phenomenon'}`, color: '#0ff' };
+        if (result.type === 'false_positive') return { text: `FALSE POSITIVE -- ${result.source || 'Terrestrial source'}`, color: '#f80' };
         if (result.type === 'verified_signal') return { text: 'VERIFIED EXTRASOLAR SIGNAL', color: '#f0f' };
-        if (result.type === 'encrypted_signal') return { text: 'ENCRYPTED SIGNAL — DECRYPTION REQUIRED', color: '#ff0' };
+        if (result.type === 'encrypted_signal') return { text: 'ENCRYPTED SIGNAL -- DECRYPTION REQUIRED', color: '#ff0' };
         return { text: 'SIGNAL DETECTED', color: '#0f0' };
     }
 
@@ -555,7 +555,7 @@ function buildDay2ClassificationForm(choices) {
                 ${contactRows}
 
                 <div class="classification-section-label" style="margin-top: 20px;">
-                    SRC-7024 — UNCHARTED SIGNAL SOURCE
+                    SRC-7024 -- UNCHARTED SIGNAL SOURCE
                     <span style="color: #ff0; font-size: 12px; margin-left: 10px;">PRIORITY ASSESSMENT REQUIRED</span>
                 </div>
                 <div style="display: flex; gap: 8px; padding: 8px 0;">
@@ -635,7 +635,7 @@ function buildDay3ClassificationForm(choices) {
         const statusText = collected ? 'COLLECTED' : 'PENDING';
         const btnHTML = collected
             ? `<button class="fragment-ack-btn" data-fragment="${f.key}">ACKNOWLEDGE</button>`
-            : `<span style="color: #333; font-size: 12px;">—</span>`;
+            : `<span style="color: #333; font-size: 12px;">--</span>`;
 
         fragmentRows += `
             <div class="fragment-row" data-fragment="${f.key}">
@@ -788,7 +788,7 @@ function showDayReport(choices = null) {
                 padding: 15px 20px;
             ">
                 <div style="color: #0f0; font-size: 12px; letter-spacing: 2px;">
-                    SETI INSTITUTE - DAILY OPERATIONS REPORT
+                    DSRA - DAILY OPERATIONS REPORT
                 </div>
                 <div style="color: #fff; font-size: 22px; text-shadow: 0 0 10px #0f0; margin-top: 5px;">
                     ${report.title}
@@ -1018,10 +1018,10 @@ function generateDay1Report(natural, falsePos, verified, verifiedStars, choices 
 
             <div style="margin-top: 25px; padding: 15px; border-top: 1px solid #030; font-style: italic;">
                 <div style="color: #0a0; font-size: 12px; letter-spacing: 2px; margin-bottom: 8px;">
-                    PERSONAL LOG — DR. ${gameState.playerName.toUpperCase()}
+                    PERSONAL LOG -- DR. ${gameState.playerName.toUpperCase()}
                 </div>
                 <div style="color: #0f0; font-size: 14px; line-height: 1.6; opacity: 0.8;">
-                    Something about that Ross 128 signal is keeping me up. The pattern recognition flagged it as anomalous, but it's more than that — there's a structure to it that feels almost... deliberate. Like someone arranged the frequencies to say "I'm here."
+                    Something about that Ross 128 signal is keeping me up. The pattern recognition flagged it as anomalous, but it's more than that. There's a structure to it that feels almost... deliberate. Like someone arranged the frequencies to say "I'm here."
                     <br><br>
                     I keep telling myself it could be anything. Magnetar glitch, pulsar harmonic, some cosmic coincidence. But my hands were shaking when I logged the results. After years of static and false positives, what if this is the one?
                     <br><br>
@@ -1063,10 +1063,10 @@ function generateDay2Report(natural, falsePos, verified, verifiedStars, choices 
     const priorityLevel = choices?.src7024Priority || 'HIGH';
     const priorityColor = priorityLevel === 'CRITICAL' ? '#ff0' : priorityLevel === 'HIGH' ? '#0ff' : '#0a0';
     const priorityNote = priorityLevel === 'CRITICAL'
-        ? '<br><span style="color: #ff0; font-size: 12px;">OPERATOR ASSESSMENT: CRITICAL — IMMEDIATE action authorized. All array resources redirected.</span>'
+        ? '<br><span style="color: #ff0; font-size: 12px;">OPERATOR ASSESSMENT: CRITICAL -- IMMEDIATE action authorized. All array resources redirected.</span>'
         : priorityLevel === 'HIGH'
-        ? '<br><span style="color: #0ff; font-size: 12px;">OPERATOR ASSESSMENT: HIGH PRIORITY — Priority review scheduled for next cycle.</span>'
-        : '<br><span style="color: #0a0; font-size: 12px;">OPERATOR ASSESSMENT: STANDARD — Queued for standard review. Note: automated systems recommend escalation.</span>';
+        ? '<br><span style="color: #0ff; font-size: 12px;">OPERATOR ASSESSMENT: HIGH PRIORITY -- Priority review scheduled for next cycle.</span>'
+        : '<br><span style="color: #0a0; font-size: 12px;">OPERATOR ASSESSMENT: STANDARD -- Queued for standard review. Note: automated systems recommend escalation.</span>';
 
     // Mission assessment from operator
     const assessment = choices?.missionAssessment || 'SIGNIFICANT_DISCOVERY';
@@ -1136,12 +1136,12 @@ function generateDay2Report(natural, falsePos, verified, verifiedStars, choices 
 
             <div style="margin-top: 25px; padding: 15px; border-top: 1px solid #030; font-style: italic;">
                 <div style="color: #0a0; font-size: 12px; letter-spacing: 2px; margin-bottom: 8px;">
-                    PERSONAL LOG — DR. ${gameState.playerName.toUpperCase()}
+                    PERSONAL LOG -- DR. ${gameState.playerName.toUpperCase()}
                 </div>
                 <div style="color: #0f0; font-size: 14px; line-height: 1.6; opacity: 0.8;">
                     The system crash. I can't stop thinking about the system crash.
                     <br><br>
-                    When SRC-7024 responded — and I do mean <em>responded</em> — the array overloaded so completely that it knocked out power across three states. That's not a signal. That's a demonstration. Whatever is out there wanted us to know what it's capable of.
+                    When SRC-7024 responded (and I do mean <em>responded</em>) the array overloaded so completely that it knocked out power across three states. That's not a signal. That's a demonstration. Whatever is out there wanted us to know what it's capable of.
                     <br><br>
                     I'm not frightened. Not exactly. But there's something deeply unsettling about pointing a telescope at the sky and having the sky point back.
                     <br><br>
@@ -1215,14 +1215,14 @@ function generateDay3Report(natural, falsePos, verified, verifiedStars, choices 
 
             <div style="margin-top: 25px; padding: 15px; border-top: 1px solid #030; font-style: italic;">
                 <div style="color: #0a0; font-size: 12px; letter-spacing: 2px; margin-bottom: 8px;">
-                    PERSONAL LOG — DR. ${gameState.playerName.toUpperCase()}
+                    PERSONAL LOG -- DR. ${gameState.playerName.toUpperCase()}
                 </div>
                 <div style="color: #0f0; font-size: 14px; line-height: 1.6; opacity: 0.8;">
                     I came into this job hoping to find a signal. Just one signal that proved we weren't alone.
                     <br><br>
                     What I found instead is something I don't have words for. A message woven into the fabric of reality itself. Fragments of meaning scattered across the cosmos like breadcrumbs left by someone who knew we'd eventually learn to look.
                     <br><br>
-                    Every civilization that answered our calls — they were part of it too. Pieces of a puzzle none of us could solve alone. As if the universe was designed that way on purpose.
+                    Every civilization that answered our calls, they were part of it too. Pieces of a puzzle none of us could solve alone. As if the universe was designed that way on purpose.
                     <br><br>
                     I don't know what comes next. But for the first time in my career, I'm not afraid of the silence between the stars. There is no silence. There never was.
                 </div>
@@ -1285,7 +1285,7 @@ function showThankYouScreen() {
     overlay.innerHTML = `
         <div style="text-align:center; max-width:550px; line-height:1.8;">
             <div style="font-size:14px; color:#556; letter-spacing:4px; margin-bottom:30px;">
-                SIGNAL MONITORING ARRAY — SECTOR 7
+                SIGNAL MONITORING ARRAY -- SECTOR 7
             </div>
             <div style="font-size:36px; color:#0ff; text-shadow:0 0 30px rgba(0,255,255,0.4); margin-bottom:20px; letter-spacing:3px;">
                 THANK YOU FOR PLAYING
@@ -1509,9 +1509,9 @@ function showDayTransition() {
             if (gameState.currentDay === 3) {
                 setTimeout(() => {
                     addMailMessage(
-                        'Dr. James Whitmore - SETI Director',
-                        '[PRIORITY] SRC-7024 — Top Target Today',
-                        `Dr. ${gameState.playerName},\n\nSRC-7024 is your top priority today. That uncharted signal source that appeared at the end of yesterday's survey — we need answers.\n\nScan it first. Whatever it is, it's not in any catalog we have access to. Dr. Chen has been monitoring it overnight and reports the signal is getting stronger.\n\nThe entire team is watching. Don't keep us waiting.\n\n- James Whitmore\n  SETI Program Director`
+                        'Dr. James Whitmore - DSRA Director',
+                        '[PRIORITY] SRC-7024: Top Target Today',
+                        `Dr. ${gameState.playerName},\n\nSRC-7024 is your top priority today. That uncharted signal source that appeared at the end of yesterday's survey. We need answers.\n\nScan it first. Whatever it is, it's not in any catalog we have access to. Dr. Chen has been monitoring it overnight and reports the signal is getting stronger.\n\nThe entire team is watching. Don't keep us waiting.\n\n- James Whitmore\n  DSRA Program Director`
                     );
                 }, 5000);
             }

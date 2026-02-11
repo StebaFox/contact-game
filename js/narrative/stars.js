@@ -1,10 +1,10 @@
 // ═════════════════════════════════════════════════════════════════════════════
 // STAR CATALOG DATA
-// Nearby star systems known in 1995 - targets for SETI radio telescope array
+// Nearby star systems known in 1995 - targets for DSRA radio telescope array
 // ═════════════════════════════════════════════════════════════════════════════
 
 export const STAR_NAMES = [
-    // Primary SETI targets - nearby sun-like and red dwarf stars
+    // Primary DSRA targets - nearby sun-like and red dwarf stars
     "ALPHA CENTAURI",   // Closest star system
     "BARNARD'S STAR",   // Second closest, high proper motion
     "WOLF 359",         // Nearby red dwarf
@@ -15,13 +15,13 @@ export const STAR_NAMES = [
     "ROSS 248",         // Nearby red dwarf
     "ROSS 128",         // Nearby quiet red dwarf - Day 1 anomaly
     "LACAILLE 9352",    // Nearby red dwarf
-    "EPSILON ERIDANI",  // Prime SETI target, sun-like
+    "EPSILON ERIDANI",  // Prime DSRA target, sun-like
     "61 CYGNI",         // Historic binary system
     "PROCYON",          // Nearby bright star
     "STRUVE 2398",      // Binary red dwarf system
     "GROOMBRIDGE 34",   // Nearby red dwarf binary
     "EPSILON INDI",     // Nearby orange dwarf
-    "TAU CETI",         // Prime SETI target, very sun-like
+    "TAU CETI",         // Prime DSRA target, very sun-like
     "YZ CETI",          // Nearby red dwarf
     "LUYTEN'S STAR",    // Nearby red dwarf
     "KAPTEYN'S STAR",   // High velocity star
@@ -33,8 +33,8 @@ export const STAR_NAMES = [
     "GLIESE 674",       // Distant red dwarf
     "GLIESE 832",       // Distant red dwarf
     "82 ERIDANI",       // Sun-like, more distant
-    "DELTA PAVONIS",    // Sun-like, SETI target
-    "VEGA"              // Bright A-type star, SETI target
+    "DELTA PAVONIS",    // Sun-like, DSRA target
+    "VEGA"              // Bright A-type star, DSRA target
 ];
 
 // Star type information (real astronomical data for 1995)

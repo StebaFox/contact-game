@@ -1,4 +1,4 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // TUNING MINIGAME
 // Signal tuning sliders and lock mechanism
 // ═════════════════════════════════════════════════════════════════════════════
@@ -116,9 +116,9 @@ export function startTuningMinigame(star) {
             const name = gameState.playerName;
             setTimeout(() => {
                 addMailMessage(
-                    'SETI Array Operations',
+                    'DSRA Array Operations',
                     'System Upgrade: Auto-Tune Calibration Complete',
-                    `${name},\n\nGood news — after three successful signal acquisitions, the array has accumulated enough calibration data to enable automatic tuning.\n\nYou'll see an [AUTO-TUNE] button on future scans. It uses your previous lock patterns to sweep the sliders automatically. Should save you some time on the routine targets.\n\nNote: Auto-tune is disabled for weak signals. Those still need manual finesse and dish alignment — the system can't reliably compensate for signal drift on its own.\n\nKeep up the good work out there.\n\n— Array Operations`
+                    `${name},\n\nGood news: after three successful signal acquisitions, the array has accumulated enough calibration data to enable automatic tuning.\n\nYou'll see an [AUTO-TUNE] button on future scans. It uses your previous lock patterns to sweep the sliders automatically. Should save you some time on the routine targets.\n\nNote: Auto-tune is disabled for weak signals. Those still need manual finesse and dish alignment. The system can't reliably compensate for signal drift on its own.\n\nKeep up the good work out there.\n\n-- Array Operations`
                 );
             }, 10000);
 
@@ -158,7 +158,7 @@ function showTuningTooltip() {
     tooltip.innerHTML = `
         <div style="margin-bottom: 6px; color: #0f0; font-weight: bold;">SIGNAL TUNING</div>
         Adjust <span style="color: #0ff;">FREQUENCY</span> and <span style="color: #0ff;">GAIN</span> sliders until the signal locks.<br>
-        Watch the waveform — <span style="color: #0f0;">green</span> means you're close.
+        Watch the waveform. <span style="color: #0f0;">Green</span> means you're close.
     `;
     tooltip.style.cssText = `
         position: absolute;

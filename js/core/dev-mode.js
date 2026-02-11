@@ -1,4 +1,4 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // DEVELOPER MODE
 // Debug tools and shortcuts for development/testing
 // ═════════════════════════════════════════════════════════════════════════════
@@ -398,14 +398,14 @@ function devRestartCurrentDay() {
 function devFullReset() {
     // Nuke all saved data
     deleteSave();
-    localStorage.removeItem('setiPlayerName');
-    localStorage.removeItem('setiScannedSignals');
-    localStorage.removeItem('setiAnalyzedStars');
-    localStorage.removeItem('setiContactedStars');
-    localStorage.removeItem('setiDiscoveredMessages');
-    localStorage.removeItem('setiReadEmails');
-    localStorage.removeItem('setiScanResults');
-    log('DEV: Full reset — reloading...', 'warning');
+    localStorage.removeItem('dsraPlayerName');
+    localStorage.removeItem('dsraScannedSignals');
+    localStorage.removeItem('dsraAnalyzedStars');
+    localStorage.removeItem('dsraContactedStars');
+    localStorage.removeItem('dsraDiscoveredMessages');
+    localStorage.removeItem('dsraReadEmails');
+    localStorage.removeItem('dsraScanResults');
+    log('DEV: Full reset -- reloading...', 'warning');
     // Reload the page so the boot sequence / name entry plays from scratch
     setTimeout(() => {
         window.location.href = window.location.pathname;
@@ -416,7 +416,7 @@ function devSkipToStarmap() {
     // Set player name if not set
     if (!gameState.playerName) {
         gameState.playerName = 'DEV_USER';
-        localStorage.setItem('setiPlayerName', gameState.playerName);
+        localStorage.setItem('dsraPlayerName', gameState.playerName);
     }
     showView('starmap-view');
     log('DEV: Skipped to starmap', 'highlight');
@@ -577,13 +577,13 @@ function devTriggerContact() {
 }
 
 function devResetProgress() {
-    localStorage.removeItem('setiScannedSignals');
-    localStorage.removeItem('setiAnalyzedStars');
-    localStorage.removeItem('setiContactedStars');
-    localStorage.removeItem('setiDiscoveredMessages');
-    localStorage.removeItem('setiPlayerName');
-    localStorage.removeItem('setiReadEmails');
-    localStorage.removeItem('setiScanResults');
+    localStorage.removeItem('dsraScannedSignals');
+    localStorage.removeItem('dsraAnalyzedStars');
+    localStorage.removeItem('dsraContactedStars');
+    localStorage.removeItem('dsraDiscoveredMessages');
+    localStorage.removeItem('dsraPlayerName');
+    localStorage.removeItem('dsraReadEmails');
+    localStorage.removeItem('dsraScanResults');
     gameState.scannedSignals.clear();
     gameState.analyzedStars.clear();
     gameState.contactedStars.clear();

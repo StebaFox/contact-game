@@ -1,4 +1,4 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // FINAL MESSAGE
 // The cosmic revelation from the First Universe
 // This file is separate for easy editing of the narrative content
@@ -355,7 +355,7 @@ const CODE_LINES = [
     'SIGNAL_LOCK', 'DRIFT:+0.02Hz/s', 'EPOCH:J1995.0'
 ];
 
-// Warp stream content — equations, elements, history, geometry, culture
+// Warp stream content -- equations, elements, history, geometry, culture
 const WARP_CONTENT = [
     'E=mc\u00B2', 'F=ma', '\u2207\u00D7B=\u03BC\u2080J', '\u0394S\u22650', 'PV=nRT', '\u03BB=h/p',
     '\u03C8=Ae^(ikx)', '\u2202\u03C8/\u2202t=H\u03C8', 'S=k\u00B7ln\u03A9', 'G=6.674\u00D710\u207B\u00B9\u00B9',
@@ -415,7 +415,7 @@ function computeProgressColors(progress) {
         inner = lerpColor(0, 255, 255, 255, 0, 255, t);
         connecting = lerpColor(255, 0, 255, 255, 215, 0, t);
     } else {
-        // Hold at vibrant cyan/magenta/gold — don't wash out to white
+        // Hold at vibrant cyan/magenta/gold -- don't wash out to white
         outer = [0, 255, 255];
         inner = [255, 0, 255];
         connecting = [255, 215, 0];
@@ -478,7 +478,7 @@ function updateAndDrawWarpStreams(ctx, w, h) {
         }
     }
 
-    // Spawn new particles — stop spawning during fade
+    // Spawn new particles -- stop spawning during fade
     if (!messageState.warpFadeOut && Math.random() < 0.35) {
         const angle = Math.random() * Math.PI * 2;
         const contentIdx = Math.floor(Math.random() * WARP_CONTENT.length);
@@ -681,7 +681,7 @@ function startTesseractAnimation() {
             finalScale = finalScale * (1 - ease);
 
             if (t >= 1) {
-                // Fully collapsed — draw pulsing point
+                // Fully collapsed -- draw pulsing point
                 const pulse = 0.6 + 0.4 * Math.sin(Date.now() * 0.003);
                 const pointRadius = 4 + 3 * pulse;
                 const [or, og, ob] = colors.outer;
@@ -885,7 +885,7 @@ function startBreathingMoment() {
     // Stop spawning warp particles (existing ones fly off naturally)
     messageState.warpActive = false;
 
-    // Complete the download bar then fade it out (safety net — should already be done)
+    // Complete the download bar then fade it out (safety net -- should already be done)
     if (messageState.downloadElement) {
         messageState.downloadCompleting = true;
     }
@@ -1185,16 +1185,16 @@ function returnToStarmap() {
     // Post-revelation email (delayed so it feels like a response)
     setTimeout(() => {
         addMailMessage(
-            'Dr. James Whitmore - SETI Director',
+            'Dr. James Whitmore - DSRA Director',
             'What Comes Next',
-            `Dr. ${gameState.playerName},\n\nI've been staring at the data for hours. I don't think any of us have slept.\n\nThe full contents of the transmission are still being cataloged — mathematical frameworks, physical constants, compressed visual data, entire knowledge structures we don't even have classifications for yet. The Encyclopedia alone will take decades to fully decode.\n\nBut the message itself... I keep coming back to it. They were alone for ten billion years. They built an entire universe so that no one else would have to experience that silence.\n\nI've spent my entire career searching for proof that we're not alone. I never imagined the answer would be this.\n\nEverything changes now. Everything.\n\nI've already been on the phone with Geneva, Washington, and Beijing. The world will know soon. And when they ask who found it — who actually listened — I'll make sure they know your name.\n\nThank you, ${gameState.playerName}. For all of it.\n\n- James`
+            `Dr. ${gameState.playerName},\n\nI've been staring at the data for hours. I don't think any of us have slept.\n\nThe full contents of the transmission are still being cataloged: mathematical frameworks, physical constants, compressed visual data, entire knowledge structures we don't even have classifications for yet. The Encyclopedia alone will take decades to fully decode.\n\nBut the message itself... I keep coming back to it. They were alone for ten billion years. They built an entire universe so that no one else would have to experience that silence.\n\nI've spent my entire career searching for proof that we're not alone. I never imagined the answer would be this.\n\nEverything changes now. Everything.\n\nI've already been on the phone with Geneva, Washington, and Beijing. The world will know soon. And when they ask who found it, who actually listened, I'll make sure they know your name.\n\nThank you, ${gameState.playerName}. For all of it.\n\n- James`
         );
     }, 8000);
 
-    // Post-revelation journal entry (immediate — the player would write this right away)
+    // Post-revelation journal entry (immediate -- the player would write this right away)
     setTimeout(() => {
         addPersonalLog('After the Message',
-            `It's over. Or maybe it's just beginning — I don't know anymore.\n\nThey were alone. For ten billion years, a civilization existed in a universe full of stars and worlds — but no other life. No other voices. Just them, surrounded by an empty cosmos, for longer than our universe has existed.\n\nAnd instead of accepting it, they built... this. Everything. The stars, the constants, the framework for life itself. They engineered a universe where loneliness would be impossible. Where every corner of the sky would be filled with the potential for someone to exist.\n\nI found their message buried in the oldest light in the universe. They put it there knowing that someday, someone would listen closely enough to hear it.\n\nI was that someone.\n\nI don't know what happens next. Whitmore is already talking to world governments. The data we received — the Encyclopedia — contains more knowledge than humanity has accumulated in its entire history. It will take generations to decode it all.\n\nBut right now, in this moment, I'm not thinking about the science or the politics or what comes next.\n\nI'm thinking about them. Alone in the dark. Choosing to create rather than despair.\n\nAnd I'm thinking about the last thing they said:\n\nRemember us. Not as creators. But as family.`
+            `It's over. Or maybe it's just beginning. I don't know anymore.\n\nThey were alone. For ten billion years, a civilization existed in a universe full of stars and worlds, but no other life. No other voices. Just them, surrounded by an empty cosmos, for longer than our universe has existed.\n\nAnd instead of accepting it, they built... this. Everything. The stars, the constants, the framework for life itself. They engineered a universe where loneliness would be impossible. Where every corner of the sky would be filled with the potential for someone to exist.\n\nI found their message buried in the oldest light in the universe. They put it there knowing that someday, someone would listen closely enough to hear it.\n\nI was that someone.\n\nI don't know what happens next. Whitmore is already talking to world governments. The data we received, the Encyclopedia, contains more knowledge than humanity has accumulated in its entire history. It will take generations to decode it all.\n\nBut right now, in this moment, I'm not thinking about the science or the politics or what comes next.\n\nI'm thinking about them. Alone in the dark. Choosing to create rather than despair.\n\nAnd I'm thinking about the last thing they said:\n\nRemember us. Not as creators. But as family.`
         );
     }, 3000);
 

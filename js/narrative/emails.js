@@ -1,11 +1,11 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // EMAIL CONTENT
 // All email messages used in the game's mailbox system
 // ═════════════════════════════════════════════════════════════════════════════
 
 export const WELCOME_EMAIL = {
-    from: 'Dr. James Whitmore - SETI Director',
-    subject: 'Your First Shift — Read Before You Start',
+    from: 'Dr. James Whitmore - DSRA Director',
+    subject: 'Your First Shift: Read Before You Start',
     body: `Dr. {PLAYER_NAME},
 
 I pulled some strings to get you assigned here. Your thesis on signal anomaly detection was the best work I've read in a decade, and this program needs people who still believe the work matters.
@@ -14,7 +14,7 @@ I won't sugarcoat it: Congress is reviewing our funding next quarter. Thirty yea
 
 Your job today is straightforward. Survey the ten star systems in your assignment, tune the receivers, analyze what you find. Most of it will be noise. Some of it will be beautiful noise. Catalog everything.
 
-But between you and me — keep your eyes open. Hell, your ears too! I didn't bring you out here to catalog pulsars or point at the secret spy satellites no one knows are up there. Something in this sector has been nagging at me for months. I can't point to it. Just a feeling.
+But between you and me, keep your eyes open. Hell, your ears too! I didn't bring you out here to catalog pulsars or point at the secret spy satellites no one knows are up there. Something in this sector has been nagging at me for months. I can't point to it. Just a feeling.
 
 Good luck, Dr. {PLAYER_NAME}. Make it count.
 
@@ -24,7 +24,7 @@ Good luck, Dr. {PLAYER_NAME}. Make it count.
 // Day-aware random email pools
 // Note: {PLAYER_NAME} will be replaced with the actual player name at runtime
 
-// Day 1: Mundane atmosphere — routine, bureaucratic, small hints of strangeness
+// Day 1: Mundane atmosphere -- routine, bureaucratic, small hints of strangeness
 export const DAY1_EMAILS = [
     {
         from: 'PROJECT OVERSIGHT - CLASSIFIED',
@@ -66,7 +66,7 @@ Please plan signal acquisition accordingly.
 - Technical Services`
     },
     {
-        from: 'Dr. James Whitmore - SETI Director',
+        from: 'Dr. James Whitmore - DSRA Director',
         subject: 'After Hours',
         body: `Dr. {PLAYER_NAME},
 
@@ -92,7 +92,7 @@ Due to supply chain delays, the following items are temporarily unavailable:
 
 We apologize for any inconvenience. Freeze-dried alternatives are available.
 
-P.S. — Has anyone else noticed the terminal displays flickering near the coffee machine? Maintenance says it's nothing but it's been going on all week.
+P.S. Has anyone else noticed the terminal displays flickering near the coffee machine? Maintenance says it's nothing but it's been going on all week.
 
 - Sector 7 Food Services`
     },
@@ -116,7 +116,7 @@ Just thought you should know in case you see it in your data too.
 
 I've compiled atmospheric data for several targets in your monitoring zone. Three of them show promising biosignature potential.
 
-I know SETI focuses on technological signatures, but sometimes life announces itself in simpler ways first. Keep an eye on the oxygen-rich candidates. As my favorite character would say, "Life... Uh... Uh... Finds a way!" ;)
+I know DSRA focuses on technological signatures, but sometimes life announces itself in simpler ways first. Keep an eye on the oxygen-rich candidates. As my favorite character would say, "Life... Uh... Uh... Finds a way!" ;)
 
 Attached: Spectral analysis summary (encrypted)
 
@@ -127,7 +127,7 @@ Attached: Spectral analysis summary (encrypted)
         subject: 'Quarterly Review Briefing Materials',
         body: `Dr. {PLAYER_NAME},
 
-Friendly heads-up — I've been asked to prepare briefing materials for the Senate Subcommittee on Science. They want a summary of "program deliverables" from Sector 7 for the past fiscal year.
+Friendly heads-up: I've been asked to prepare briefing materials for the Senate Subcommittee on Science. They want a summary of "program deliverables" from Sector 7 for the past fiscal year.
 
 I've looked at the data. Between us, it's thin. A lot of cataloged natural phenomena, a few false positives, nothing that makes a compelling case for continued appropriations.
 
@@ -136,7 +136,7 @@ If you find ANYTHING today that even hints at anomalous activity, flag it. I can
 I'm on your side here. But I need you to give me something.
 
 - David Pearson
-  Congressional Liaison, SETI Program`
+  Congressional Liaison, DSRA Program`
     },
     {
         from: 'Dr. Rachel Torres - Former Sector 4',
@@ -147,7 +147,7 @@ They closed Sector 4 last month. Budget review didn't go our way. Six years of l
 
 I heard you got assigned to Sector 7. Whitmore's territory. He's been fighting for that sector since before either of us were in grad school.
 
-Do me a favor. Find something. Not for the program — for all of us who spent years staring at noise and still believed there was a voice in it.
+Do me a favor. Find something. Not for the program. For all of us who spent years staring at noise and still believed there was a voice in it.
 
 I'm teaching undergrad physics at Arizona State now. It's fine. It's fine.
 
@@ -155,7 +155,7 @@ I'm teaching undergrad physics at Arizona State now. It's fine. It's fine.
     }
 ];
 
-// Day 2: Escalation — colleagues react to events, systems behaving strangely
+// Day 2: Escalation -- colleagues react to events, systems behaving strangely
 export const DAY2_EMAILS = [
     {
         from: 'Dr. Marcus Webb - Xenolinguistics',
@@ -190,17 +190,17 @@ Note: Anomalous data patterns flagged in sectors 7-12. Manual review recommended
         subject: 'RE: Something weird in Sector 12',
         body: `Dr. {PLAYER_NAME},
 
-Okay, remember that 47-second pattern I mentioned? It's gone. Completely. Vanished from the background noise overnight — right around the time you found that Ross 128 signal.
+Okay, remember that 47-second pattern I mentioned? It's gone. Completely. Vanished from the background noise overnight, right around the time you found that Ross 128 signal.
 
 Coincidence? Yeah. Probably. But the timing is weird, right?
 
-Also — did you hear what happened? Half the building is talking about your signal. Dr. Chen was in the break room at 3 AM with printouts taped to the wall.
+Also, did you hear what happened? Half the building is talking about your signal. Dr. Chen was in the break room at 3 AM with printouts taped to the wall.
 
 - Tom`
     },
     {
         from: 'SYSTEM ADMINISTRATOR',
-        subject: 'Array Calibration Anomaly — Advisory',
+        subject: 'Array Calibration Anomaly: Advisory',
         body: `NOTICE TO SECTOR 7 PERSONNEL:
 
 Automated diagnostics have detected a calibration drift across dishes 4, 7, and 11. All three receivers are gradually shifting toward the same coordinates without operator input.
@@ -226,11 +226,11 @@ Note: Given recent... developments... this training is more relevant than ever.
     }
 ];
 
-// Day 3: Tension — lockdown, personal confessions, the weight of discovery
+// Day 3: Tension -- lockdown, personal confessions, the weight of discovery
 export const DAY3_EMAILS = [
     {
-        from: 'SETI OPERATIONS - SECURITY',
-        subject: 'Building Access Restriction — Effective Immediately',
+        from: 'DSRA OPERATIONS - SECURITY',
+        subject: 'Building Access Restriction: Effective Immediately',
         body: `[PRIORITY NOTICE]
 
 By order of the Program Director, effective immediately:
@@ -238,11 +238,11 @@ By order of the Program Director, effective immediately:
 - Building access is restricted to Level 6 clearance and above
 - All non-essential personnel have been reassigned
 - External communications are being routed through secure channels only
-- Media inquiries are to be directed to the Public Affairs office — do NOT respond directly
+- Media inquiries are to be directed to the Public Affairs office. Do NOT respond directly
 
 This is a precautionary measure. There is no cause for alarm.
 
-- SETI Security Operations`
+- DSRA Security Operations`
     },
     {
         from: 'Dr. Marcus Webb - Xenolinguistics',
@@ -251,7 +251,7 @@ This is a precautionary measure. There is no cause for alarm.
 
 It's 4 AM and I can't sleep. I keep running the encoding analysis in my head.
 
-This is going to sound unscientific, but the signal structure feels... inevitable. Like it was designed not for us specifically, but for any civilization that reached a certain point. Any species that developed information theory, quantum mechanics, mathematical constants — they would be able to read this.
+This is going to sound unscientific, but the signal structure feels... inevitable. Like it was designed not for us specifically, but for any civilization that reached a certain point. Any species that developed information theory, quantum mechanics, mathematical constants would be able to read this.
 
 The mathematical constants it uses as reference frames are ones we only formalized in the last century. The compression algorithm maps to information theory we published in the 1960s. It's not that someone was watching us. It's that the message was written for whoever got there first.
 
@@ -268,7 +268,7 @@ I know how that sounds. I know. But look at the data and tell me I'm wrong.
 
 They're rotating out all non-Level-6 staff starting tomorrow. I'm being reassigned to the Mojave relay station.
 
-I just want you to know — whatever you're working on in there, I believe in it. I've been doing night shifts at radio telescopes for twelve years and I've never seen the senior staff act like this. Dr. Whitmore was pacing the hall at midnight. Dr. Chen hasn't left the building in two days.
+I just want you to know, whatever you're working on in there, I believe in it. I've been doing night shifts at radio telescopes for twelve years and I've never seen the senior staff act like this. Dr. Whitmore was pacing the hall at midnight. Dr. Chen hasn't left the building in two days.
 
 Something big is happening. I can feel it.
 
@@ -304,7 +304,7 @@ Sector 7`
 
 // Email sent at start of Day 2 - Ross 128 decryption now available
 export const ROSS128_DECRYPT_EMAIL = {
-    from: 'Dr. James Whitmore - SETI Director',
+    from: 'Dr. James Whitmore - DSRA Director',
     subject: '[URGENT] Quantum Processor Online - Ross 128 Signal',
     body: `Dr. {PLAYER_NAME},
 
@@ -317,7 +317,7 @@ Whatever is in that signal, Washington wants answers. Re-scan Ross 128 and initi
 Don't keep us waiting.
 
 - James Whitmore
-  SETI Program Director`
+  DSRA Program Director`
 };
 
 // Special email sent when first alien signal is discovered
@@ -351,7 +351,7 @@ export const DAY2_CHEN_SIGNAL_EMAIL = {
 
 The overnight co-processor flagged something extraordinary during batch analysis of today's survey data.
 
-A coherent signal source at coordinates that do NOT match any entry in our stellar catalog. I have cross-referenced with every known database — military, civilian, deep space network — and returned zero matches.
+A coherent signal source at coordinates that do NOT match any entry in our stellar catalog. I have cross-referenced with every known database (military, civilian, deep space network) and returned zero matches.
 
 This signal is coming from somewhere we have never looked before.
 
@@ -365,8 +365,8 @@ I have been in this field for twenty-three years. I have never seen anything lik
 
 // Day 2 cliffhanger: Western seaboard blackout email
 export const DAY2_BLACKOUT_EMAIL = {
-    from: 'EMERGENCY ALERT - SETI OPERATIONS',
-    subject: '[CRITICAL] System Failure — Western Grid Event',
+    from: 'EMERGENCY ALERT - DSRA OPERATIONS',
+    subject: '[CRITICAL] System Failure: Western Grid Event',
     body: `[AUTOMATED PRIORITY ALERT]
 
 Dr. {PLAYER_NAME},
@@ -387,5 +387,5 @@ Further analysis will resume tomorrow with all resources dedicated to SRC-7024.
 
 Report your findings and stand down for the night.
 
-- SETI Emergency Operations`
+- DSRA Emergency Operations`
 };

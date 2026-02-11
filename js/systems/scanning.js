@@ -1,4 +1,4 @@
-// ═════════════════════════════════════════════════════════════════════════════
+﻿// ═════════════════════════════════════════════════════════════════════════════
 // SCANNING SYSTEM
 // Signal generation, analysis, and contact protocols
 // ═════════════════════════════════════════════════════════════════════════════
@@ -10,7 +10,7 @@ import { playClick, playAnalysisSound, playContactSound, playSecurityBeep, playT
 import { startTuningMinigame } from './tuning-minigame.js';
 import { startPatternRecognitionGame } from './pattern-minigame.js';
 import { startDecryptionMinigame } from './decryption-minigame.js';
-import { startAlignmentTutorial, startSingleFragmentAlignment } from './alignment-minigame.js';
+import { startSingleFragmentAlignment } from './alignment-minigame.js';
 import { startTriangulationMinigame } from './triangulation-minigame.js';
 import { sendFirstContactEmail, addMailMessage, checkScanTriggeredEmails } from './mailbox.js';
 import { checkAndShowDayComplete } from './day-report.js';
@@ -43,8 +43,8 @@ function checkPreRoss128Unease() {
         setTimeout(() => {
             addMailMessage(
                 'Dr. Eleanor Chen - Radio Astronomy',
-                'Background Pattern — Probably Nothing',
-                `Dr. ${name},\n\nThis might be nothing, but there's a low-level pattern in the cosmic microwave background data from your sector. It's below our standard detection threshold, but it's structured. Almost like a carrier wave.\n\nI can't isolate the source. It's not coming from any single star — it's more like it's embedded in the background itself.\n\nKeep scanning. If you notice anything unusual in the Ross 128 region, flag it immediately.\n\n- Eleanor`
+                'Background Pattern: Probably Nothing',
+                `Dr. ${name},\n\nThis might be nothing, but there's a low-level pattern in the cosmic microwave background data from your sector. It's below our standard detection threshold, but it's structured. Almost like a carrier wave.\n\nI can't isolate the source. It's not coming from any single star. It's more like it's embedded in the background itself.\n\nKeep scanning. If you notice anything unusual in the Ross 128 region, flag it immediately.\n\n- Eleanor`
             );
         }, 10000);
     }
@@ -85,7 +85,7 @@ export function initiateScan() {
         gameState.analyzedStars.delete(star.id);
     }
 
-    // Check for cached scan data (with canvas data intact — not from a save/load cycle)
+    // Check for cached scan data (with canvas data intact -- not from a save/load cycle)
     if (gameState.scannedSignals.has(star.id)) {
         const cachedSignal = gameState.scannedSignals.get(star.id);
 
@@ -153,7 +153,7 @@ export function initiateScan() {
 
     showView('analysis-view');
 
-    // Deep space (dynamic) signals skip tuning/verification — show encrypted result directly
+    // Deep space (dynamic) signals skip tuning/verification -- show encrypted result directly
     if (star.isDynamic && star.hasIntelligence) {
         generateSignal(star, true);
         startSignalAnimation();
@@ -272,7 +272,7 @@ export function initiateSRC7024CrashScan() {
         playSecurityBeep('warning');
     }, 4000);
 
-    // Phase 2.5: The signal is responding — one extra second of dread
+    // Phase 2.5: The signal is responding -- one extra second of dread
     setTimeout(() => {
         log('ALERT: Signal appears to be responding to our scan...', 'warning');
         document.getElementById('analysis-text').innerHTML +=
@@ -426,7 +426,7 @@ function launchCrashOverlay() {
         ctx.fillStyle = `rgba(0, 0, 0, ${bgAlpha})`;
         ctx.fillRect(0, 0, w, h);
 
-        // Phase 1: Random code text — slow buildup, then intensifies
+        // Phase 1: Random code text -- slow buildup, then intensifies
         if (progress < 0.75) {
             const textIntensity = Math.min(1, progress * 2);
             const lineCount = Math.floor(textIntensity * 40);
@@ -442,7 +442,7 @@ function launchCrashOverlay() {
             ctx.globalAlpha = 1;
         }
 
-        // Phase 2: Geometric shapes — earlier start, more buildup
+        // Phase 2: Geometric shapes -- earlier start, more buildup
         if (progress > 0.15 && progress < 0.85) {
             const shapeProg = (progress - 0.15) / 0.7;
             const shapeCount = Math.floor(shapeProg * shapeProg * 25);
@@ -460,7 +460,7 @@ function launchCrashOverlay() {
             ctx.globalAlpha = 1;
         }
 
-        // Phase 3: Horizontal scan line distortion — wider range
+        // Phase 3: Horizontal scan line distortion -- wider range
         if (progress > 0.4 && progress < 0.92) {
             const distortionIntensity = Math.min(1, (progress - 0.4) * 3);
             const barCount = Math.floor(5 + distortionIntensity * 12);
@@ -490,14 +490,14 @@ function launchCrashOverlay() {
         if (frame < totalFrames) {
             requestAnimationFrame(renderCrashFrame);
         } else {
-            // Screen is black — stop all music immediately
+            // Screen is black -- stop all music immediately
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, w, h);
             stopAllMusic();
 
             // Play power-down sound (fades out at end), wait for completion
             playPowerDownSound().then(() => {
-                // 5 seconds of dead silence on black screen — agonizing
+                // 5 seconds of dead silence on black screen -- agonizing
                 setTimeout(() => {
                     overlay.remove();
                     import('./day-report.js').then(module => {
@@ -1203,11 +1203,11 @@ function showFalsePositiveResult(star, cause, display) {
     addJournalEntry('discovery', {
         starName: star.name,
         title: `False Positive: ${star.name}`,
-        content: `Signal identified as terrestrial interference.\nSource: ${cause.source}\n\n— ${fpMusings[fpIdx % fpMusings.length]}`
+        content: `Signal identified as terrestrial interference.\nSource: ${cause.source}\n\n-- ${fpMusings[fpIdx % fpMusings.length]}`
     });
     showJournalButton();
 
-    // First scan musing — introduce journal on Day 1
+    // First scan musing -- introduce journal on Day 1
     addFirstScanMusing(star, 'false_positive', cause.source);
 
     // Auto-save after scan result
@@ -1294,11 +1294,11 @@ function showVerifiedSignalResult(star, display) {
     addJournalEntry('discovery', {
         starName: star.name,
         title: `Verified Signal: ${star.name}`,
-        content: `Non-natural signal confirmed at ${star.distance}.\nAll terrestrial interference checks negative.\nIntelligent origin probable.\n\n— ${vsMusings[vsIdx % vsMusings.length]}`
+        content: `Non-natural signal confirmed at ${star.distance}.\nAll terrestrial interference checks negative.\nIntelligent origin probable.\n\n-- ${vsMusings[vsIdx % vsMusings.length]}`
     });
     showJournalButton();
 
-    // First scan musing — introduce journal on Day 1
+    // First scan musing -- introduce journal on Day 1
     addFirstScanMusing(star, 'verified_signal');
 
     // Auto-save after scan result
@@ -1418,7 +1418,7 @@ function showEncryptedSignalResult(star, display) {
 
         // Ross 128 encrypted signal musing
         addPersonalLog('The Ross 128 Anomaly',
-            `Something is different about Ross 128. The signal has structure — layers of it. Mathematical precision that no natural process could produce.\n\nThe system can't decode it. Not yet. We need Sigma clearance for the quantum decryption array.\n\nI keep staring at the waveform. It's almost like... it's waiting to be read.`
+            `Something is different about Ross 128. The signal has structure. Layers of it. Mathematical precision that no natural process could produce.\n\nThe system can't decode it. Not yet. We need Sigma clearance for the quantum decryption array.\n\nI keep staring at the waveform. It's almost like... it's waiting to be read.`
         );
 
         setTimeout(() => {
@@ -1440,8 +1440,8 @@ function showEncryptedSignalResult(star, display) {
                 setTimeout(() => {
                     addMailMessage(
                         'Dr. Eleanor Chen - Radio Astronomy',
-                        `RE: ${star.name} — Encrypted Signal`,
-                        `Dr. ${name},\n\nI just saw the alert come through — an encrypted signal from ${star.name}? That's not something you see every day. Or ever, frankly.\n\nThe encoding structure doesn't match anything in our terrestrial database. No known satellite, no military comm protocol, nothing. I ran it through three different pattern libraries and got zero hits.\n\nWhatever this is, it's not noise. Something put that structure there deliberately.\n\nThe bad news is we can't touch it without Sigma clearance — the quantum decryption system is locked behind that. I'd recommend flagging it in your daily report. If Oversight sees what I'm seeing, they'll have to approve the upgrade.\n\nThis could be the one, Dr. ${name}. Don't let it slip through the cracks.\n\n- Eleanor`
+                        `RE: ${star.name} (Encrypted Signal)`,
+                        `Dr. ${name},\n\nI just saw the alert come through. An encrypted signal from ${star.name}? That's not something you see every day. Or ever, frankly.\n\nThe encoding structure doesn't match anything in our terrestrial database. No known satellite, no military comm protocol, nothing. I ran it through three different pattern libraries and got zero hits.\n\nWhatever this is, it's not noise. Something put that structure there deliberately.\n\nThe bad news is we can't touch it without Sigma clearance. The quantum decryption system is locked behind that. I'd recommend flagging it in your daily report. If Oversight sees what I'm seeing, they'll have to approve the upgrade.\n\nThis could be the one, Dr. ${name}. Don't let it slip through the cracks.\n\n- Eleanor`
                     );
                 }, 15000);
             });
@@ -1492,7 +1492,7 @@ function showEncryptedSignalResult(star, display) {
                 setTimeout(() => {
                     document.getElementById('contact-protocol-box').style.display = 'none';
                     startDecryptionMinigame(
-                        // Success callback — dramatic decode reveal
+                        // Success callback -- dramatic decode reveal
                         () => {
                             gameState.decryptionComplete = true;
                             gameState.scanResults.set(8, { type: 'verified_signal' });
@@ -1500,7 +1500,7 @@ function showEncryptedSignalResult(star, display) {
 
                             // Decryption musing
                             addPersonalLog('Decryption Complete',
-                                `Confirmed intelligent. Extrasolar. The mathematical constants alone would be enough — pi, e, the fine structure constant. But there's more. Visual data. Compressed layers we haven't even begun to decode.\n\nI keep checking the results, looking for the error. There is no error.\n\nThis is real.`
+                                `Confirmed intelligent. Extrasolar. The mathematical constants alone would be enough: pi, e, the fine structure constant. But there's more. Visual data. Compressed layers we haven't even begun to decode.\n\nI keep checking the results, looking for the error. There is no error.\n\nThis is real.`
                             );
                             updateStarCatalogDisplay();
 
@@ -1593,7 +1593,7 @@ function showRoss128DecodeReveal(star) {
     overlay.appendChild(container);
     document.body.appendChild(overlay);
 
-    // Define the decode sequence — each entry: { text, color, delay (ms before next), style }
+    // Define the decode sequence -- each entry: { text, color, delay (ms before next), style }
     const decodeLines = [
         // Phase 1: Header
         { text: '[QUANTUM DECRYPTION... COMPLETE]', color: '#0f0', delay: 800, style: 'font-size: 16px; text-shadow: 0 0 8px #0f0;' },
@@ -1651,7 +1651,7 @@ function showRoss128DecodeReveal(star) {
 
     function showNextLine() {
         if (lineIndex >= decodeLines.length) {
-            // All lines shown — add the contact protocol button
+            // All lines shown -- add the contact protocol button
             showDecodeContactButton(star, display);
             return;
         }
@@ -1738,14 +1738,14 @@ function showDecodeContactButton(star, display) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Fragment Decode Reveal — post-alignment data dump for each fragment
+// Fragment Decode Reveal -- post-alignment data dump for each fragment
 // ─────────────────────────────────────────────────────────────────────────────
 
 const FRAGMENT_DECODE_SEQUENCES = {
     src7024: {
-        header: 'FRAGMENT 1 — SRC-7024 ANALYSIS',
+        header: 'FRAGMENT 1 -- SRC-7024 ANALYSIS',
         lines: [
-            { text: '[ALIGNMENT LOCKED — DECODING FRAGMENT DATA...]', color: '#0f0', delay: 800, style: 'font-size: 16px; text-shadow: 0 0 8px #0f0;' },
+            { text: '[ALIGNMENT LOCKED -- DECODING FRAGMENT DATA...]', color: '#0f0', delay: 800, style: 'font-size: 16px; text-shadow: 0 0 8px #0f0;' },
             { text: '', delay: 300 },
             { text: '0xA2 \u2588\u2588 7F 0xE1 \u2588\u2588 0xBC \u25883 0x4D \u2588\u2588 9A 0xF7 \u2588\u2588 0x3B...', color: '#0a0', delay: 100, style: 'opacity: 0.6; font-size: 11px;' },
             { text: '\u2588\u2588 0xD3 0x\u2588\u2588 5E 0x8A \u2588\u2588 \u2588\u2588 0xC1 6B 0xF2 \u2588\u2588 0x7E...', color: '#0a0', delay: 100, style: 'opacity: 0.6; font-size: 11px;' },
@@ -1775,9 +1775,9 @@ const FRAGMENT_DECODE_SEQUENCES = {
         buttonColor: '#0ff'
     },
     nexusPoint: {
-        header: 'FRAGMENT 2 — NEXUS POINT ANALYSIS',
+        header: 'FRAGMENT 2 -- NEXUS POINT ANALYSIS',
         lines: [
-            { text: '[ALIGNMENT LOCKED — DECODING FRAGMENT DATA...]', color: '#0f0', delay: 800, style: 'font-size: 16px; text-shadow: 0 0 8px #0f0;' },
+            { text: '[ALIGNMENT LOCKED -- DECODING FRAGMENT DATA...]', color: '#0f0', delay: 800, style: 'font-size: 16px; text-shadow: 0 0 8px #0f0;' },
             { text: '', delay: 300 },
             { text: '0xF1 \u2588\u2588 3D 0xA8 \u2588\u2588 0x6E \u25887 0xBB \u2588\u2588 2C 0xD9 \u2588\u2588 0x51...', color: '#0a0', delay: 100, style: 'opacity: 0.6; font-size: 11px;' },
             { text: '\u2588\u2588 0x94 0x\u2588\u2588 E2 0x7A \u2588\u2588 \u2588\u2588 0x1F 8D 0xC5 \u2588\u2588 0xA6...', color: '#0a0', delay: 100, style: 'opacity: 0.6; font-size: 11px;' },
@@ -1791,7 +1791,7 @@ const FRAGMENT_DECODE_SEQUENCES = {
             { text: '  SRC-7024 \u2194 NEXUS:  \u2588\u2588\u2588\u2588\u2588 Mpc    EXCEEDS OBSERVABLE UNIVERSE', color: '#f44', delay: 500, style: 'text-shadow: 0 0 3px #f00;' },
             { text: '  Signal latency:     0.000 seconds', color: '#f44', delay: 500, style: 'text-shadow: 0 0 3px #f00;' },
             { text: '', delay: 300 },
-            { text: '\u26A0 Instantaneous signal propagation — violates known physics', color: '#ff0', delay: 700, style: 'animation: warningPulse 1.5s ease-in-out infinite;' },
+            { text: '\u26A0 Instantaneous signal propagation -- violates known physics', color: '#ff0', delay: 700, style: 'animation: warningPulse 1.5s ease-in-out infinite;' },
             { text: '\u26A0 Network predates all known signal sources', color: '#ff0', delay: 600 },
             { text: '', delay: 500 },
             { text: '\u2550'.repeat(45), color: '#f0f', delay: 300, style: 'text-shadow: 0 0 5px #f0f;' },
@@ -1804,9 +1804,9 @@ const FRAGMENT_DECODE_SEQUENCES = {
         buttonColor: '#f0f'
     },
     eridani82: {
-        header: 'FRAGMENT 3 — 82 ERIDANI COLLABORATIVE DATA',
+        header: 'FRAGMENT 3 -- 82 ERIDANI COLLABORATIVE DATA',
         lines: [
-            { text: '[ALIGNMENT LOCKED — DECODING FRAGMENT DATA...]', color: '#0f0', delay: 800, style: 'font-size: 16px; text-shadow: 0 0 8px #0f0;' },
+            { text: '[ALIGNMENT LOCKED -- DECODING FRAGMENT DATA...]', color: '#0f0', delay: 800, style: 'font-size: 16px; text-shadow: 0 0 8px #0f0;' },
             { text: '', delay: 300 },
             { text: '0x5C \u2588\u2588 B1 0x3E \u2588\u2588 0xD7 \u25889 0x62 \u2588\u2588 FA 0x84 \u2588\u2588 0xC0...', color: '#0a0', delay: 100, style: 'opacity: 0.6; font-size: 11px;' },
             { text: '\u2588\u2588 0xE6 0x\u2588\u2588 49 0xAB \u2588\u2588 \u2588\u2588 0x73 DE 0x1B \u2588\u2588 0x96...', color: '#0a0', delay: 100, style: 'opacity: 0.6; font-size: 11px;' },
@@ -1834,9 +1834,9 @@ const FRAGMENT_DECODE_SEQUENCES = {
         buttonColor: '#0ff'
     },
     synthesis: {
-        header: 'FRAGMENT 4 — GENESIS POINT PRIMORDIAL DATA',
+        header: 'FRAGMENT 4 -- GENESIS POINT PRIMORDIAL DATA',
         lines: [
-            { text: '[ALIGNMENT LOCKED — DECODING FRAGMENT DATA...]', color: '#0f0', delay: 800, style: 'font-size: 16px; text-shadow: 0 0 8px #0f0;' },
+            { text: '[ALIGNMENT LOCKED -- DECODING FRAGMENT DATA...]', color: '#0f0', delay: 800, style: 'font-size: 16px; text-shadow: 0 0 8px #0f0;' },
             { text: '', delay: 300 },
             { text: '0x00 \u2588\u2588 00 0x00 \u2588\u2588 0x00 \u258800 0x00 \u2588\u2588 00 0x00 \u2588\u2588 0x00...', color: '#0a0', delay: 100, style: 'opacity: 0.6; font-size: 11px;' },
             { text: '!!TEMPORAL ANOMALY!! DATA PREDATES T=0', color: '#f44', delay: 300, style: 'font-size: 12px; text-shadow: 0 0 5px #f00;' },
@@ -2026,7 +2026,7 @@ function showDynamicEncryptedResult(star, display) {
                     () => {
                         if (isSrc7024) {
                             // SRC-7024: Chain into alignment minigame (3 sub-frags, easy)
-                            log('DECRYPTION COMPLETE — Initiating fragment alignment...', 'highlight');
+                            log('DECRYPTION COMPLETE -- Initiating fragment alignment...', 'highlight');
                             startSingleFragmentAlignment(
                                 'src7024',
                                 '\u03A8\u2234\u232C\u2609 \u25C6 \u221E\u27D0\u238E\u2B21 \u25C6 \u2609\u232C\u2234\u03A8',
@@ -2038,7 +2038,7 @@ function showDynamicEncryptedResult(star, display) {
                                             gameState.fragments.sources[fragmentKey] = true;
                                             log(`FRAGMENT ${fragmentNum} ACQUIRED: ${fragmentLabel}`, 'highlight');
                                             addPersonalLog('Fragment 1: SRC-7024',
-                                                `The first fragment. Pulled from a signal source that shouldn't exist — no star, no known object, just... a point in space, broadcasting.\n\nThe data has structure. Layers. Like pages of a book written in mathematics we almost understand.\n\nThere's more out there. I can feel it.`
+                                                `The first fragment. Pulled from a signal source that shouldn't exist. No star, no known object, just... a point in space, broadcasting.\n\nThe data has structure. Layers. Like pages of a book written in mathematics we almost understand.\n\nThere's more out there. I can feel it.`
                                             );
                                         }
                                         gameState.scanResults.set(star.id, { type: 'verified_signal' });
@@ -2058,7 +2058,7 @@ function showDynamicEncryptedResult(star, display) {
                             );
                         } else if (isGenesis) {
                             // GENESIS POINT: Chain into alignment minigame (6 sub-frags, hard)
-                            log('DECRYPTION COMPLETE — Initiating fragment alignment...', 'highlight');
+                            log('DECRYPTION COMPLETE -- Initiating fragment alignment...', 'highlight');
                             startSingleFragmentAlignment(
                                 'synthesis',
                                 '\u03A3\u221E\u2295\u2297 \u25C6 \u2B21\u03A8\u25CA\u03A9 \u25C6 \u2297\u2295\u221E\u03A3',
@@ -2070,7 +2070,7 @@ function showDynamicEncryptedResult(star, display) {
                                             gameState.fragments.sources[fragmentKey] = true;
                                             log(`FRAGMENT ${fragmentNum} ACQUIRED: ${fragmentLabel}`, 'highlight');
                                             addPersonalLog('Fragment 4: Genesis Point',
-                                                `The final fragment. Primordial. The timestamp on this data predates everything — stars, galaxies, the cosmic microwave background itself.\n\nFour fragments. Four pieces of something that was never meant to stay hidden forever.\n\nI think it was meant to be found. By someone patient enough. Curious enough.\n\nI think it was meant for us.`
+                                                `The final fragment. Primordial. The timestamp on this data predates everything. Stars, galaxies, the cosmic microwave background itself.\n\nFour fragments. Four pieces of something that was never meant to stay hidden forever.\n\nI think it was meant to be found. By someone patient enough. Curious enough.\n\nI think it was meant for us.`
                                             );
                                         }
                                         gameState.scanResults.set(star.id, { type: 'verified_signal' });
@@ -2092,7 +2092,7 @@ function showDynamicEncryptedResult(star, display) {
                             );
                         } else {
                             // NEXUS POINT: Chain into alignment minigame (4 sub-frags, medium)
-                            log('DECRYPTION COMPLETE — Initiating fragment alignment...', 'highlight');
+                            log('DECRYPTION COMPLETE -- Initiating fragment alignment...', 'highlight');
                             startSingleFragmentAlignment(
                                 'nexusPoint',
                                 '\u03A9\u2235\u238E\u2302 \u25C7 \u039B\u2080\u221E\u210F \u25C7 \u2302\u238E\u2235\u03A9',
@@ -2104,7 +2104,7 @@ function showDynamicEncryptedResult(star, display) {
                                             gameState.fragments.sources[fragmentKey] = true;
                                             log(`FRAGMENT ${fragmentNum} ACQUIRED: ${fragmentLabel}`, 'highlight');
                                             addPersonalLog('Fragment 2: Nexus Point',
-                                                `A nexus. Something is connecting these signals across distances that should make communication impossible.\n\nThe coordinates don't correspond to any cataloged object. It's extragalactic — or beyond even that.\n\nWhoever built this network didn't just send a message. They built an infrastructure.`
+                                                `A nexus. Something is connecting these signals across distances that should make communication impossible.\n\nThe coordinates don't correspond to any cataloged object. It's extragalactic. Or beyond even that.\n\nWhoever built this network didn't just send a message. They built an infrastructure.`
                                             );
                                         }
                                         gameState.scanResults.set(star.id, { type: 'verified_signal' });
@@ -2166,7 +2166,7 @@ function scheduleTriangulationEmails() {
         addMailMessage(
             'Dr. Marcus Webb - Xenolinguistics',
             'SRC-7024 Encoding Analysis',
-            `Dr. ${name},\n\nI've been analyzing the decoded SRC-7024 data. The encoding has definite positional structure — these aren't random symbols. The mathematical sequences embed what appear to be spatial coordinates.\n\nWhatever sent this signal wanted us to find something specific.\n\nCheck the PROJECT LIGHTHOUSE investigation page. I believe we can triangulate these coordinates.\n\n- Marcus`
+            `Dr. ${name},\n\nI've been analyzing the decoded SRC-7024 data. The encoding has definite positional structure. These aren't random symbols. The mathematical sequences embed what appear to be spatial coordinates.\n\nWhatever sent this signal wanted us to find something specific.\n\nCheck the PROJECT LIGHTHOUSE investigation page. I believe we can triangulate these coordinates.\n\n- Marcus`
         );
     }, 15000);
 
@@ -2174,15 +2174,15 @@ function scheduleTriangulationEmails() {
         addMailMessage(
             'Dr. Eleanor Chen - Radio Astronomy',
             'Triangulation Vectors in SRC-7024 Data',
-            `Dr. ${name},\n\nCross-referencing the SRC-7024 fragment with pulsar timing arrays — these look like triangulation vectors. Three reference points, all pointing to a single location in deep space.\n\nI've flagged the triangulation option on your investigation page. This is big.\n\n- Eleanor`
+            `Dr. ${name},\n\nCross-referencing the SRC-7024 fragment with pulsar timing arrays. These look like triangulation vectors. Three reference points, all pointing to a single location in deep space.\n\nI've flagged the triangulation option on your investigation page. This is big.\n\n- Eleanor`
         );
     }, 30000);
 
     setTimeout(() => {
         addMailMessage(
-            'Dr. James Whitmore - SETI Director',
+            'Dr. James Whitmore - DSRA Director',
             '[URGENT] Triangulate SRC-7024 Coordinates',
-            `Dr. ${name},\n\nDr. Chen and Dr. Webb both confirm: the SRC-7024 data contains triangulation vectors pointing to an unknown location in deep space.\n\nIf these are real coordinates, we need to triangulate NOW. Use PROJECT LIGHTHOUSE to initiate the sequence.\n\nThis could change everything.\n\n- James Whitmore\n  SETI Program Director`
+            `Dr. ${name},\n\nDr. Chen and Dr. Webb both confirm: the SRC-7024 data contains triangulation vectors pointing to an unknown location in deep space.\n\nIf these are real coordinates, we need to triangulate NOW. Use PROJECT LIGHTHOUSE to initiate the sequence.\n\nThis could change everything.\n\n- James Whitmore\n  DSRA Program Director`
         );
     }, 45000);
 }
@@ -2191,12 +2191,12 @@ function scheduleTriangulationEmails() {
 function scheduleSrc7024PostAlignmentEmails() {
     const name = gameState.playerName;
 
-    // First email: Chen explains the signal is fragmented — frames the hunt
+    // First email: Chen explains the signal is fragmented -- frames the hunt
     setTimeout(() => {
         addMailMessage(
             'Dr. Eleanor Chen - Signal Intelligence',
-            'SRC-7024 Signal Structure — It\'s Incomplete',
-            `Dr. ${name},\n\nI've been running structural analysis on the SRC-7024 data since your alignment locked in. Here's the problem: the signal is incomplete.\n\nNot corrupted — deliberately partitioned. The encoding contains header markers that reference additional data blocks we don't have. Like receiving chapter 1 of a book with a table of contents that lists chapters we've never seen.\n\nWhoever — whatever — sent this, they split the message across multiple transmission points. SRC-7024 was just the first piece.\n\nThe other pieces are out there somewhere. We need to find them.\n\n- Eleanor`
+            'SRC-7024 Signal Structure: It\'s Incomplete',
+            `Dr. ${name},\n\nI've been running structural analysis on the SRC-7024 data since your alignment locked in. Here's the problem: the signal is incomplete.\n\nNot corrupted. Deliberately partitioned. The encoding contains header markers that reference additional data blocks we don't have. Like receiving chapter 1 of a book with a table of contents that lists chapters we've never seen.\n\nWhoever (whatever) sent this, they split the message across multiple transmission points. SRC-7024 was just the first piece.\n\nThe other pieces are out there somewhere. We need to find them.\n\n- Eleanor`
         );
     }, 3000);
 
@@ -2204,7 +2204,7 @@ function scheduleSrc7024PostAlignmentEmails() {
         addMailMessage(
             'Dr. Marcus Webb - Xenolinguistics',
             'SRC-7024 Fragment Analysis',
-            `Dr. ${name},\n\nMy hands are actually shaking. In twenty years of xenolinguistics, I've never seen encoding this purposeful.\n\nEleanor's right — this is only a fragment. But even this piece has definite positional structure. The mathematical sequences embed what appear to be spatial coordinates. Triangulation vectors pointing us to the next piece, maybe.\n\nWhatever sent this signal wanted us to follow the trail.\n\n- Marcus`
+            `Dr. ${name},\n\nMy hands are actually shaking. In twenty years of xenolinguistics, I've never seen encoding this purposeful.\n\nEleanor's right. This is only a fragment. But even this piece has definite positional structure. The mathematical sequences embed what appear to be spatial coordinates. Triangulation vectors pointing us to the next piece, maybe.\n\nWhatever sent this signal wanted us to follow the trail.\n\n- Marcus`
         );
     }, 12000);
 
@@ -2218,9 +2218,9 @@ function scheduleSrc7024PostAlignmentEmails() {
 
     setTimeout(() => {
         addMailMessage(
-            'Dr. James Whitmore - SETI Director',
-            '[URGENT] PROJECT LIGHTHOUSE — Investigation Page Activated',
-            `Dr. ${name},\n\nChen and Webb both confirm: the SRC-7024 fragment contains triangulation vectors pointing to an unknown location in deep space. If the rest of the message is out there, this is how we find it.\n\nI've authorized the creation of a dedicated investigation workspace — PROJECT LIGHTHOUSE. You'll find it in your navigation panel.\n\nThis is a treasure hunt, ${name}. And we just found the first clue.\n\n- James Whitmore\n  SETI Program Director`
+            'Dr. James Whitmore - DSRA Director',
+            '[URGENT] PROJECT LIGHTHOUSE: Investigation Page Activated',
+            `Dr. ${name},\n\nChen and Webb both confirm: the SRC-7024 fragment contains triangulation vectors pointing to an unknown location in deep space. If the rest of the message is out there, this is how we find it.\n\nI've authorized the creation of a dedicated investigation workspace -- PROJECT LIGHTHOUSE. You'll find it in your navigation panel.\n\nThis is a treasure hunt, ${name}. And we just found the first clue.\n\n- James Whitmore\n  DSRA Program Director`
         );
 
         // Unlock investigation page after this email arrives
@@ -2236,16 +2236,16 @@ function schedulePreBigBangEmails() {
     setTimeout(() => {
         addMailMessage(
             'Dr. Sarah Okonkwo - Astrobiology',
-            'NEXUS POINT Data — I need to tell someone',
-            `Dr. ${name},\n\nI need to tell someone because I can't tell my team without causing a panic.\n\nThe physical constants in the NEXUS POINT fragment don't match our universe. They describe different initial conditions — as if someone is documenting the parameters of a DIFFERENT cosmos. And the temporal markers predate the Big Bang by billions of years.\n\nThat sentence should be meaningless. It should be gibberish. But the math is clean.\n\nI'm terrified.\n\nTwo fragments down. The message is still incomplete. Keep scanning — any star could be carrying another piece.\n\n- Sarah`
+            'NEXUS POINT Data: I need to tell someone',
+            `Dr. ${name},\n\nI need to tell someone because I can't tell my team without causing a panic.\n\nThe physical constants in the NEXUS POINT fragment don't match our universe. They describe different initial conditions, as if someone is documenting the parameters of a DIFFERENT cosmos. And the temporal markers predate the Big Bang by billions of years.\n\nThat sentence should be meaningless. It should be gibberish. But the math is clean.\n\nI'm terrified.\n\nTwo fragments down. The message is still incomplete. Keep scanning. Any star could be carrying another piece.\n\n- Sarah`
         );
     }, 20000);
 
     setTimeout(() => {
         addMailMessage(
             'Dr. Eleanor Chen - Radio Astronomy',
-            'RE: NEXUS POINT — A different perspective',
-            `Dr. ${name},\n\nSarah just told me. I know she's scared. I'm not.\n\nI'm awed.\n\nThink about it — if they wanted to hurt us, they wouldn't have scattered the message across multiple stars for collaborative decryption. They wouldn't have embedded coordinates we could follow. This feels like... a gift.\n\nSomeone wanted to be found. Someone wanted us to understand.\n\nLet's keep going.\n\n- Eleanor`
+            'RE: NEXUS POINT: A different perspective',
+            `Dr. ${name},\n\nSarah just told me. I know she's scared. I'm not.\n\nI'm awed.\n\nThink about it. If they wanted to hurt us, they wouldn't have scattered the message across multiple stars for collaborative decryption. They wouldn't have embedded coordinates we could follow. This feels like... a gift.\n\nSomeone wanted to be found. Someone wanted us to understand.\n\nLet's keep going.\n\n- Eleanor`
         );
     }, 40000);
 
@@ -2274,8 +2274,8 @@ function scheduleEridaniHintIfNeeded() {
             const name = gameState.playerName;
             addMailMessage(
                 'Dr. Marcus Webb - Xenolinguistics',
-                'RE: NEXUS POINT Analysis — "Before Time"',
-                `Dr. ${name},\n\nDr. Okonkwo is right. The temporal markers in Fragment 2 point to events before the Big Bang. I keep coming back to the 82 Eridani signal — that civilization mentioned "what came before."\n\nWe need their data. If they've decoded another piece of this message, combining it with ours might reveal the full picture.\n\nHave you established contact with 82 Eridani yet?\n\n- Marcus`
+                'RE: NEXUS POINT Analysis: "Before Time"',
+                `Dr. ${name},\n\nDr. Okonkwo is right. The temporal markers in Fragment 2 point to events before the Big Bang. I keep coming back to the 82 Eridani signal. That civilization mentioned "what came before."\n\nWe need their data. If they've decoded another piece of this message, combining it with ours might reveal the full picture.\n\nHave you established contact with 82 Eridani yet?\n\n- Marcus`
             );
         }
     }, CHECK_INTERVAL);
@@ -2290,25 +2290,25 @@ function scheduleGenesisTriangulationEmails() {
 
     setTimeout(() => {
         addMailMessage(
-            'Dr. James Whitmore - SETI Director',
+            'Dr. James Whitmore - DSRA Director',
             'Before we go further',
-            `Dr. ${name},\n\nBefore Eleanor sends you the triangulation data — I need a moment.\n\nI started this program thirty years ago. Fought the funding cuts. Every year, the same question from the oversight committee: "Why are we still listening?" I never had a good answer. Just faith.\n\nNow I'm looking at three fragments of a message from before the Big Bang, and I'm crying at my desk like a child.\n\nThank you. For everything.\n\n- James`
+            `Dr. ${name},\n\nBefore Eleanor sends you the triangulation data, I need a moment.\n\nI started this program thirty years ago. Fought the funding cuts. Every year, the same question from the oversight committee: "Why are we still listening?" I never had a good answer. Just faith.\n\nNow I'm looking at three fragments of a message from before the Big Bang, and I'm crying at my desk like a child.\n\nThank you. For everything.\n\n- James`
         );
     }, 5000);
 
     setTimeout(() => {
         addMailMessage(
             'Dr. Eleanor Chen - Radio Astronomy',
-            'All Three Fragments — Pattern Emerging',
-            `Dr. ${name},\n\nWith all three fragments decoded, I ran a cross-correlation analysis. The data from SRC-7024, NEXUS POINT, and 82 Eridani aren't just pieces of a message — they contain a SECOND set of triangulation vectors.\n\nThese vectors don't point to any known object. They converge on a position that predates our earliest sky surveys.\n\nCheck PROJECT LIGHTHOUSE. We need to triangulate this immediately.\n\n- Eleanor`
+            'All Three Fragments: Pattern Emerging',
+            `Dr. ${name},\n\nWith all three fragments decoded, I ran a cross-correlation analysis. The data from SRC-7024, NEXUS POINT, and 82 Eridani aren't just pieces of a message. They contain a SECOND set of triangulation vectors.\n\nThese vectors don't point to any known object. They converge on a position that predates our earliest sky surveys.\n\nCheck PROJECT LIGHTHOUSE. We need to triangulate this immediately.\n\n- Eleanor`
         );
     }, 15000);
 
     setTimeout(() => {
         addMailMessage(
             'Dr. Marcus Webb - Xenolinguistics',
-            'RE: Fragment Cross-Analysis — "The Origin Point"',
-            `Dr. ${name},\n\nEleanor is right. These three fragments, when combined, contain precise triangulation data pointing to what the encoding describes as a "genesis coordinate."\n\nWhatever created these signals is directing us to the source — the very origin of the message.\n\nUse the investigation page to run the triangulation. I believe this is the final piece.\n\n- Marcus`
+            'RE: Fragment Cross-Analysis: "The Origin Point"',
+            `Dr. ${name},\n\nEleanor is right. These three fragments, when combined, contain precise triangulation data pointing to what the encoding describes as a "genesis coordinate."\n\nWhatever created these signals is directing us to the source, the very origin of the message.\n\nUse the investigation page to run the triangulation. I believe this is the final piece.\n\n- Marcus`
         );
     }, 30000);
 }
@@ -2319,9 +2319,9 @@ function schedulePostGenesisEmails() {
 
     setTimeout(() => {
         addMailMessage(
-            'Dr. James Whitmore - SETI Director',
+            'Dr. James Whitmore - DSRA Director',
             'It\'s just us now',
-            `Dr. ${name},\n\nI've cleared the building. It's just us now — the original team. Chen, Webb, Okonkwo, and you.\n\nAll four fragments are decoded. The complete message is reconstructable.\n\nOpen PROJECT LIGHTHOUSE when you're ready. Take your time.\n\nWe've been waiting 13.8 billion years. A few more minutes won't matter.\n\n- James`
+            `Dr. ${name},\n\nI've cleared the building. It's just us now. The original team. Chen, Webb, Okonkwo, and you.\n\nAll four fragments are decoded. The complete message is reconstructable.\n\nOpen PROJECT LIGHTHOUSE when you're ready. Take your time.\n\nWe've been waiting 13.8 billion years. A few more minutes won't matter.\n\n- James`
         );
     }, 5000);
 }
@@ -2371,19 +2371,19 @@ function initiateContact(star) {
         // Contact-specific personal musings
         const contactMusings = {
             8:  "They sent us a map. A star chart showing our own solar system, seen from eleven light years away. They know where we are. They've known for a long time.",
-            10: "They heard Voyager. Our golden record, our music, our greeting — and they've been listening ever since. They mentioned 'the old signal.' What old signal?",
+            10: "They heard Voyager. Our golden record, our music, our greeting. And they've been listening ever since. They mentioned 'the old signal.' What old signal?",
             11: "An automated eulogy, broadcasting for 847,293 cycles. They decoded their piece before the end. Even their dying act was an attempt to connect.",
             12: "Three pulses. The simplest question in any language: 'Is anyone there?' And we can hear them... but we can't answer. The signal is eight years old. They're still waiting.",
-            16: "An invitation. They showed us their world — blue and green, like ours — and they want us to visit. This isn't first contact. This is a welcome.",
+            16: "An invitation. They showed us their world, blue and green like ours, and they want us to visit. This isn't first contact. This is a welcome.",
             13: "They showed us their face. Across the void of space, the first thing they chose to share was who they are. Isn't that the most human thing imaginable?",
-            28: "They received our 1974 Arecibo message and sent it back — modified, expanded. They're not just listening. They're in dialogue with us across decades.",
+            28: "They received our 1974 Arecibo message and sent it back, modified and expanded. They're not just listening. They're in dialogue with us across decades.",
             21: "'The network awaits new members.' A network of civilizations, all connected by something they call 'the first signal.' And they think we're almost ready.",
             26: "Seventeen generations they've watched us. They've seen our worst and our best. And still they think we're worth connecting with. 'No single civilization can read it alone.' It requires cooperation.",
-            25: "A megastructure. Broadcasting for millions of years. Built specifically for civilizations reaching our level of technology to find. We didn't discover them — they arranged to be discovered."
+            25: "A megastructure. Broadcasting for millions of years. Built specifically for civilizations reaching our level of technology to find. We didn't discover them. They arranged to be discovered."
         };
         const musing = contactMusings[star.id];
         if (musing) {
-            contactText += `\n\n— ${musing}`;
+            contactText += `\n\n-- ${musing}`;
         }
 
         addJournalEntry('contact', {
@@ -2396,7 +2396,7 @@ function initiateContact(star) {
         // Personal reflections after key contacts
         if (star.id === ROSS_128_INDEX) {
             addPersonalLog('First Contact',
-                `They sent us a map. A star chart showing our own solar system, seen from eleven light years away.\n\nThey know where we are. They've known for a long time.\n\nThe signal is eight years old. Whatever sent this — they're still out there. Waiting.\n\nAnd we have no way to answer.`
+                `They sent us a map. A star chart showing our own solar system, seen from eleven light years away.\n\nThey know where we are. They've known for a long time.\n\nThe signal is eight years old. Whatever sent this is still out there. Waiting.\n\nAnd we have no way to answer.`
             );
         }
     }
@@ -2532,14 +2532,14 @@ function displayContactMessage(messageData, star) {
     function showPostContactActions(star) {
         if (!star) return;
 
-        // Ross 128 — first alien contact: send email + alignment tutorial
+        // Ross 128 -- first alien contact: send email + alignment tutorial
         if (star.id === ROSS_128_INDEX && gameState.decryptionComplete && !gameState.tutorialCompleted) {
             setTimeout(() => {
                 showRoss128PostContact();
             }, 2000);
         }
 
-        // 82 Eridani — collaborative decryption data (Fragment 3)
+        // 82 Eridani -- collaborative decryption data (Fragment 3)
         const ERIDANI_82_INDEX = 26;
         if (star.id === ERIDANI_82_INDEX && !gameState.fragments.sources.eridani82) {
             setTimeout(() => {
@@ -2577,32 +2577,15 @@ function displayContactMessage(messageData, star) {
             setTimeout(() => {
                 addMailMessage(
                     'Dr. Eleanor Chen - Radio Astronomy',
-                    'RE: Ross 128 — Decryption Results',
-                    `${pName},\n\nI've been staring at the decoded output for the last hour. I don't even know where to begin.\n\nThe signal isn't just a message. Embedded alongside it are fragments of what can only be described as scientific data — mathematical constants, molecular structures, quantum states. Some of it maps to known physics. Some of it... doesn't. Not yet.\n\nBut here's what's keeping me up: the encoding predates anything we thought possible. The timestamp markers in the signal structure suggest an origin point that shouldn't exist. I've triple-checked. The math doesn't lie.\n\nWhoever sent this was thinking in timescales we can barely comprehend.\n\nWe need to keep scanning. If Ross 128 had this, there may be more signals out there — more pieces of whatever puzzle this is. I have a feeling we've only scratched the surface.\n\nStay sharp out there.\n\n- Eleanor`
+                    'RE: Ross 128 Decryption Results',
+                    `${pName},\n\nI've been staring at the decoded output for the last hour. I don't even know where to begin.\n\nThe signal isn't just a message. Embedded alongside it are fragments of what can only be described as scientific data: mathematical constants, molecular structures, quantum states. Some of it maps to known physics. Some of it... doesn't. Not yet.\n\nBut here's what's keeping me up: the encoding predates anything we thought possible. The timestamp markers in the signal structure suggest an origin point that shouldn't exist. I've triple-checked. The math doesn't lie.\n\nWhoever sent this was thinking in timescales we can barely comprehend.\n\nWe need to keep scanning. If Ross 128 had this, there may be more signals out there. More pieces of whatever puzzle this is. I have a feeling we've only scratched the surface.\n\nStay sharp out there.\n\n- Eleanor`
                 );
             }, 20000);
 
-            // Launch alignment tutorial if not completed
-            if (!gameState.tutorialCompleted) {
-                log('INITIALIZING ALIGNMENT TRAINING...', 'info');
-                startAlignmentTutorial(
-                    () => {
-                        log('Training complete! Return to starmap to continue scanning.', 'info');
-                        showView('starmap-view');
-                        document.getElementById('analyze-btn').disabled = false;
-                    },
-                    () => {
-                        log('Training skipped. Return to starmap to continue scanning.', 'info');
-                        gameState.tutorialCompleted = true;
-                        showView('starmap-view');
-                        document.getElementById('analyze-btn').disabled = false;
-                    }
-                );
-            } else {
-                showView('starmap-view');
-                log('Return to starmap to continue scanning.', 'info');
-                document.getElementById('analyze-btn').disabled = false;
-            }
+            gameState.tutorialCompleted = true;
+            showView('starmap-view');
+            log('Return to starmap to continue scanning.', 'info');
+            document.getElementById('analyze-btn').disabled = false;
         });
 
         wrapper.appendChild(btn);
@@ -2643,7 +2626,7 @@ function displayContactMessage(messageData, star) {
                     // Success callback
                     () => {
                         // Chain into alignment minigame (5 sub-frags, hard)
-                        log('DECRYPTION COMPLETE — Initiating fragment alignment...', 'highlight');
+                        log('DECRYPTION COMPLETE -- Initiating fragment alignment...', 'highlight');
                         startSingleFragmentAlignment(
                             'eridani82',
                             '\u2206\u25CA\u2B21\u2727 \u25CF \u221E\u2295\u2234\u2297 \u25CF \u2727\u2B21\u25CA\u2206',
@@ -2655,7 +2638,7 @@ function displayContactMessage(messageData, star) {
                                         gameState.fragments.sources.eridani82 = true;
                                         log('FRAGMENT 3 ACQUIRED: 82 Eridani collaborative data', 'highlight');
                                         addPersonalLog('Fragment 3: 82 Eridani',
-                                            `82 Eridani sees the same patterns we do. Different species, different star, different everything — and yet they recognized the signal too.\n\nWe're not alone in being not alone.\n\nTheir data fits with ours like a key in a lock. Whoever designed this wanted multiple civilizations to find it. To work together. To piece it together.\n\nOne fragment left.`
+                                            `82 Eridani sees the same patterns we do. Different species, different star, different everything, and yet they recognized the signal too.\n\nWe're not alone in being not alone.\n\nTheir data fits with ours like a key in a lock. Whoever designed this wanted multiple civilizations to find it. To work together. To piece it together.\n\nOne fragment left.`
                                         );
                                     }
                                     onFragmentCollected();
