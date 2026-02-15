@@ -7,7 +7,7 @@ import { gameState } from '../core/game-state.js';
 import { showView, log } from './rendering.js';
 import { playClick, playTypingBeep } from '../systems/audio.js';
 import { BOOT_INITIAL, BOOT_CONTINUATION } from '../narrative/boot-messages.js';
-import { WELCOME_EMAIL } from '../narrative/emails.js';
+import { WELCOME_EMAIL, DAY2_CHEN_SIGNAL_EMAIL, DAY2_BLACKOUT_EMAIL } from '../narrative/emails.js';
 import { ALIEN_CONTACTS } from '../narrative/alien-contacts.js';
 import { addMailMessage } from '../systems/mailbox.js';
 import {
@@ -384,15 +384,58 @@ function resumeGame() {
     log(`Welcome back, Dr. ${gameState.playerName}`, 'highlight');
     log(`Resuming Day ${gameState.currentDay} operations...`, 'info');
 
-    // Day 2 cliffhanger recovery: if interrupted during non-interactive phases (crash/reboot),
-    // skip ahead to reboot phase after starmap loads
-    if (gameState.day2CliffhangerPhase === 2 || gameState.day2CliffhangerPhase === 3) {
+    // Day 2 cliffhanger recovery: resume stuck phases after reload
+    const phase = gameState.day2CliffhangerPhase;
+
+    if (phase === 0) {
+        // Phase 0: waiting for player to read Chen email -- ensure it exists
+        const hasChenEmail = gameState.mailboxMessages.some(
+            msg => msg.subject.includes('Deep Space Anomaly')
+        );
+        if (!hasChenEmail) {
+            const body = DAY2_CHEN_SIGNAL_EMAIL.body.replace(/{PLAYER_NAME}/g, gameState.playerName);
+            addMailMessage(DAY2_CHEN_SIGNAL_EMAIL.from, DAY2_CHEN_SIGNAL_EMAIL.subject, body);
+        }
+        setTimeout(() => {
+            log('ALERT: Unread priority message in your mailbox.', 'warning');
+        }, 3000);
+    } else if (phase === 1) {
+        // Phase 1: SRC-7024 added, waiting for player to scan it
+        setTimeout(() => {
+            log('REMINDER: Scan SRC-7024 on the starmap to continue.', 'highlight');
+        }, 3000);
+    } else if (phase === 2 || phase === 3) {
+        // Phase 2-3: interrupted during crash/reboot -- skip to reboot
         gameState.day2CliffhangerPhase = 3;
         setTimeout(() => {
             import('../systems/day-report.js').then(module => {
                 module.advanceDay2Cliffhanger(3);
             });
         }, 3000);
+    } else if (phase === 4) {
+        // Phase 4: waiting for player to read blackout email -- ensure it exists
+        const hasBlackoutEmail = gameState.mailboxMessages.some(
+            msg => msg.subject.includes('System Failure')
+        );
+        if (!hasBlackoutEmail) {
+            const time = new Date().toTimeString().substring(0, 5);
+            const body = DAY2_BLACKOUT_EMAIL.body
+                .replace(/{PLAYER_NAME}/g, gameState.playerName)
+                .replace(/{TIME}/g, time);
+            addMailMessage(DAY2_BLACKOUT_EMAIL.from, DAY2_BLACKOUT_EMAIL.subject, body);
+        }
+        setTimeout(() => {
+            log('EMERGENCY ALERT: Unread priority message in your mailbox.', 'warning');
+        }, 3000);
+        // Escape hatch: show day report button after 20s if still stuck
+        setTimeout(() => {
+            if (gameState.day2CliffhangerPhase === 4) {
+                import('../systems/day-report.js').then(module => {
+                    module.showDayReportButton();
+                });
+                log('Day report now available.', 'info');
+            }
+        }, 20000);
     }
 }
 

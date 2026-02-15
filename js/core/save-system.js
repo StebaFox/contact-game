@@ -101,7 +101,11 @@ export function loadSave() {
 }
 
 export function hasSaveFile() {
-    return localStorage.getItem(SAVE_KEY) !== null;
+    try {
+        return localStorage.getItem(SAVE_KEY) !== null;
+    } catch (e) {
+        return false;
+    }
 }
 
 export function applySaveData(data) {

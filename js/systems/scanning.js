@@ -2520,6 +2520,20 @@ function displayContactMessage(messageData, star) {
     }
 
     function displayImageData(messageData, star) {
+        // Strip common leading whitespace so art isn't pushed off-screen
+        const lines = messageData.imageData;
+        const minLeading = Math.min(
+            ...lines.filter(l => l.trim().length > 0).map(l => l.match(/^\s*/)[0].length)
+        );
+        const trimmedLines = lines.map(l => l.substring(minLeading));
+
+        // Calculate font size to fit widest line on screen
+        const maxLineLen = Math.max(...trimmedLines.map(l => l.length));
+        const containerWidth = messageDisplay.clientWidth - 30;
+        const charWidthRatio = 0.6; // monospace character width ≈ 0.6 × font-size
+        const fittedSize = Math.floor(containerWidth / (maxLineLen * charWidthRatio));
+        const fontSize = Math.max(4, Math.min(10, fittedSize));
+
         // Wrapper to center the image box
         const imageWrapper = document.createElement('div');
         imageWrapper.style.cssText = 'text-align: center; margin: 20px 0;';
@@ -2531,11 +2545,11 @@ function displayContactMessage(messageData, star) {
 
         let lineIndex = 0;
         function displayNextImageLine() {
-            if (lineIndex < messageData.imageData.length) {
+            if (lineIndex < trimmedLines.length) {
                 const imageLine = document.createElement('div');
                 imageLine.className = 'message-line';
-                imageLine.textContent = messageData.imageData[lineIndex];
-                imageLine.style.cssText = 'color: #0ff; text-shadow: 0 0 3px #0ff; animation: fadeIn 0.2s forwards; margin: 0; line-height: 1.0; font-size: 10px; white-space: pre; font-family: "Courier New", monospace;';
+                imageLine.textContent = trimmedLines[lineIndex];
+                imageLine.style.cssText = `color: #0ff; text-shadow: 0 0 3px #0ff; animation: fadeIn 0.2s forwards; margin: 0; line-height: 1.0; font-size: ${fontSize}px; white-space: pre; font-family: "Courier New", monospace;`;
                 imageBox.appendChild(imageLine);
 
                 messageDisplay.scrollTop = messageDisplay.scrollHeight;

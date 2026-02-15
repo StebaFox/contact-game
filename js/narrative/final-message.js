@@ -1136,11 +1136,7 @@ export function showCreditsScreen() {
     credits.innerHTML = `
         <div style="text-align:center; max-width:500px; line-height:1.8;">
             <div style="font-size:16px; color:#556; margin-bottom:40px; letter-spacing:4px;">A GAME BY</div>
-            <div style="font-size:32px; color:#0ff; text-shadow:0 0 20px rgba(0,255,255,0.4); margin-bottom:60px; letter-spacing:3px;">STEPHEN REPONEN</div>
-
-            <div style="font-size:16px; color:#556; margin-bottom:20px; letter-spacing:4px;">THANK YOU</div>
-            <div style="font-size:22px; color:#aad; margin-bottom:10px;">Henrik Wetterstrand</div>
-            <div style="font-size:22px; color:#aad; margin-bottom:60px;">Elina Adams</div>
+            <div style="font-size:32px; color:#0ff; text-shadow:0 0 20px rgba(0,255,255,0.4); margin-bottom:60px; letter-spacing:3px;">DARK4CE</div>
 
             <div id="credits-continue" style="
                 font-size:18px; color:#0ff; cursor:pointer; opacity:0;

@@ -456,12 +456,19 @@ function bindCanvasEvents() {
         }
     };
 
-    // Touch support
+    // Touch support -- only preventDefault for horizontal drags (selection),
+    // allow vertical swipes to scroll the page normally
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchLocked = false; // true once we commit to drag vs scroll
+
     canvas.ontouchstart = (e) => {
         if (!patternState.active || patternState.captures.length >= 3) return;
         if (patternState.resultFlash !== 0) return;
-        e.preventDefault();
         const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        touchLocked = false;
         const coords = getCanvasCoords(touch);
         patternState.isDragging = true;
         patternState.dragStartX = coords.x;
@@ -470,8 +477,23 @@ function bindCanvasEvents() {
 
     canvas.ontouchmove = (e) => {
         if (!patternState.isDragging) return;
-        e.preventDefault();
         const touch = e.touches[0];
+        if (!touchLocked) {
+            const dx = Math.abs(touch.clientX - touchStartX);
+            const dy = Math.abs(touch.clientY - touchStartY);
+            if (dy > 10 && dy > dx) {
+                // Vertical scroll -- cancel drag and let browser scroll
+                patternState.isDragging = false;
+                patternState.dragStartX = -1;
+                return;
+            }
+            if (dx > 10) {
+                touchLocked = true; // commit to horizontal drag
+            }
+        }
+        if (touchLocked) {
+            e.preventDefault();
+        }
         const coords = getCanvasCoords(touch);
         patternState.dragCurrentX = coords.x;
     };
@@ -479,6 +501,7 @@ function bindCanvasEvents() {
     canvas.ontouchend = () => {
         if (!patternState.isDragging) return;
         patternState.isDragging = false;
+        touchLocked = false;
         checkSelection();
     };
 }
@@ -521,8 +544,11 @@ function generateFrame() {
         });
     }
 
-    // Pattern region for the correct filter
-    const patternWidth = 70 + Math.floor(Math.random() * 30);
+    // Day-based difficulty: shrink pattern width on later days
+    const day = gameState.currentDay || 1;
+    const widthBase = day === 1 ? 70 : day === 2 ? 55 : 45;
+    const widthRange = day === 1 ? 30 : day === 2 ? 25 : 20;
+    const patternWidth = widthBase + Math.floor(Math.random() * widthRange);
     const margin = 40;
     const startX = margin + Math.floor(Math.random() * (w - patternWidth - margin * 2));
     patternState.patternRegions = [{ startX, endX: startX + patternWidth }];
@@ -559,7 +585,9 @@ function generateFrame() {
                         } else if (x > region.endX) {
                             fade = ((region.endX + fadeWidth) - x) / fadeWidth;
                         }
-                        patternIntensity = Math.max(patternIntensity, Math.max(0, fade) * 0.85);
+                        // Signal dims on later days (0.85 → 0.70 → 0.55)
+                        const dayIntensity = day === 1 ? 0.85 : day === 2 ? 0.70 : 0.55;
+                        patternIntensity = Math.max(patternIntensity, Math.max(0, fade) * dayIntensity);
                     }
                 }
             }
@@ -594,9 +622,11 @@ function drawFilterColumn(ctx, x, height, patternIntensity, columnOffset, noiseG
         const n11 = noiseGrid[idx + noiseGridW + 1] || 0;
         const smoothNoise = (n00 * (1 - fx) + n10 * fx) * (1 - fy) + (n01 * (1 - fx) + n11 * fx) * fy;
 
-        // Base noise layer - deliberately noisy so signals don't stand out easily
+        // Base noise layer - scales with day difficulty
+        const day = gameState.currentDay || 1;
+        const noiseBoost = day === 1 ? 0 : day === 2 ? 0.08 : 0.18;
         const rnd2 = Math.random();
-        const baseIntensity = smoothNoise * 0.45 + rnd * 0.25 + rnd2 * 0.1;
+        const baseIntensity = smoothNoise * (0.45 + noiseBoost) + rnd * (0.25 + noiseBoost * 0.5) + rnd2 * 0.1;
         let r = Math.floor(baseIntensity * 12);
         let g = Math.floor(baseIntensity * 55);
         let b = Math.floor(baseIntensity * 70);
@@ -673,9 +703,11 @@ function drawFilterColumn(ctx, x, height, patternIntensity, columnOffset, noiseG
             // Make fakes strong enough to be convincing decoys
             const fakeSig = fakeFilterRenderer(y, height, columnOffset, seed, filter.filterSeed);
             if (fakeSig > 0) {
+                // Fake signals get more convincing on later days
+                const fakeStr = day === 1 ? 0.75 : day === 2 ? 0.85 : 0.95;
                 g = Math.max(g, Math.floor(fakeSig * 180));
                 b = Math.max(b, Math.floor(fakeSig * 150));
-                a = Math.max(a, fakeSig * 0.75 + 0.15);
+                a = Math.max(a, fakeSig * fakeStr + 0.15);
             }
         }
 

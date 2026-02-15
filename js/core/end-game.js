@@ -275,7 +275,7 @@ export function restartGame() {
 
     setTimeout(() => {
         // Clear all progress
-        localStorage.clear();
+        try { localStorage.clear(); } catch (e) {}
 
         // Reload the page
         location.reload();

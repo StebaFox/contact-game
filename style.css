@@ -1197,6 +1197,7 @@ h2 {
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     max-width: 100%;
+    touch-action: none;
 }
 
 /* Starmap mode toggle */
@@ -3350,6 +3351,7 @@ body.white-mode .layout-toggle-btn:hover {
         width: 100%;
         overflow-y: auto;
         overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
     }
 
     body:not(.force-desktop) .container {
@@ -3394,10 +3396,12 @@ body.white-mode .layout-toggle-btn:hover {
         margin-left: 5px;
     }
 
-    /* Main content mobile */
+    /* Main content mobile -- remove competing scroll container */
     body:not(.force-desktop) .main-content {
         height: auto;
         min-height: calc(100vh - 150px);
+        overflow-y: visible;
+        overflow-x: hidden;
     }
 
     /* Start screen mobile */
@@ -3531,7 +3535,7 @@ body.white-mode .layout-toggle-btn:hover {
     body:not(.force-desktop) .star-grid {
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
         gap: 8px;
-        max-height: 180px;
+        max-height: none;
     }
 
     body:not(.force-desktop) .star-btn {
@@ -4053,7 +4057,7 @@ body.force-mobile .star-info-panel {
 body.force-mobile .star-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 8px;
-    max-height: 180px;
+    max-height: none;
 }
 
 body.force-mobile .star-btn {

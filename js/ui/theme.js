@@ -18,18 +18,20 @@ export function toggleColorScheme() {
     schemeLabel.textContent = isWhiteMode ? 'WHITE' : 'GREEN';
 
     // Save preference to localStorage
-    localStorage.setItem('colorScheme', isWhiteMode ? 'white' : 'green');
+    try { localStorage.setItem('colorScheme', isWhiteMode ? 'white' : 'green'); } catch (e) {}
 
     log(`Color scheme changed to ${isWhiteMode ? 'WHITE' : 'GREEN'} mode`);
 }
 
 // Load saved color scheme from localStorage
 export function loadColorScheme() {
-    const savedScheme = localStorage.getItem('colorScheme');
-    if (savedScheme === 'white') {
-        document.body.classList.add('white-mode');
-        document.getElementById('scheme-label').textContent = 'WHITE';
-    }
+    try {
+        const savedScheme = localStorage.getItem('colorScheme');
+        if (savedScheme === 'white') {
+            document.body.classList.add('white-mode');
+            document.getElementById('scheme-label').textContent = 'WHITE';
+        }
+    } catch (e) { /* localStorage unavailable (e.g. itch.io iframe) */ }
 }
 
 // Toggle layout mode (AUTO -> DESKTOP -> MOBILE -> AUTO)
@@ -56,14 +58,16 @@ export function toggleLayoutMode() {
     }
 
     // Save preference
-    localStorage.setItem('layoutMode', currentLayoutMode);
+    try { localStorage.setItem('layoutMode', currentLayoutMode); } catch (e) {}
 
     log(`Layout mode: ${currentLayoutMode.toUpperCase()}`);
 }
 
 // Load saved layout mode from localStorage
 export function loadLayoutMode() {
-    const savedMode = localStorage.getItem('layoutMode');
+    let savedMode = null;
+    try { savedMode = localStorage.getItem('layoutMode'); } catch (e) {}
+
     const body = document.body;
     const layoutLabel = document.getElementById('layout-label');
 

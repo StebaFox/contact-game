@@ -162,7 +162,7 @@ export function setDay3Music() {
 // Set music volume
 export function setMusicVolume(volume) {
     musicVolume = Math.max(0, Math.min(1, volume));
-    localStorage.setItem('dsra-musicVolume', musicVolume);
+    try { localStorage.setItem('dsra-musicVolume', musicVolume); } catch (e) {}
 
     // Update currently playing music volume
     if (currentMusic === glassCathedralMusic && glassCathedralMusic) {
@@ -192,7 +192,7 @@ function isBgTrack(el) {
 // Set SFX volume
 export function setSfxVolume(volume) {
     sfxVolume = Math.max(0, Math.min(1, volume));
-    localStorage.setItem('dsra-sfxVolume', sfxVolume);
+    try { localStorage.setItem('dsra-sfxVolume', sfxVolume); } catch (e) {}
 }
 
 // Get volumes
@@ -206,10 +206,12 @@ export function getSfxVolume() {
 
 // Load saved volume settings from localStorage
 export function loadVolumeSettings() {
-    const savedMusic = localStorage.getItem('dsra-musicVolume');
-    const savedSfx = localStorage.getItem('dsra-sfxVolume');
-    if (savedMusic !== null) musicVolume = parseFloat(savedMusic);
-    if (savedSfx !== null) sfxVolume = parseFloat(savedSfx);
+    try {
+        const savedMusic = localStorage.getItem('dsra-musicVolume');
+        const savedSfx = localStorage.getItem('dsra-sfxVolume');
+        if (savedMusic !== null) musicVolume = parseFloat(savedMusic);
+        if (savedSfx !== null) sfxVolume = parseFloat(savedSfx);
+    } catch (e) { /* localStorage unavailable */ }
 }
 
 // Switch to alien music (crossfade) -- randomly picks a track

@@ -1460,7 +1460,8 @@ function renderSkyChart() {
             labelColor = spectralColor;
         }
 
-        const radius = (isSelected && isHighlighted ? 6 : 4) / sc.scale;
+        const isMobileSky = window.innerWidth <= 768;
+        const radius = (isSelected && isHighlighted ? (isMobileSky ? 9 : 6) : (isMobileSky ? 6 : 4)) / sc.scale;
         ctx.fillStyle = starColor;
         ctx.shadowColor = starColor;
         ctx.shadowBlur = (isSelected && isHighlighted ? 18 : (isHighlighted ? 12 : 6)) / sc.scale;
@@ -1900,8 +1901,9 @@ function renderArrayView() {
             labelColor = spectralColor;
         }
 
-        // Draw glowing circle
-        const radius = isSelected && isHighlighted ? 6 : 4;
+        // Draw glowing circle -- larger on mobile for easier tapping
+        const isMobile = window.innerWidth <= 768;
+        const radius = isSelected && isHighlighted ? (isMobile ? 9 : 6) : (isMobile ? 6 : 4);
         ctx.fillStyle = starColor;
         ctx.shadowColor = starColor;
         ctx.shadowBlur = isSelected && isHighlighted ? 18 : (isHighlighted ? 12 : 6);
@@ -2272,7 +2274,7 @@ export function setupStarMapCanvas() {
                 const my = (e.clientY - rect.top) * scaleY;
                 const wx = (mx - sc.panX) / sc.scale;
                 const wy = (my - sc.panY) / sc.scale;
-                const hitR = 15 / sc.scale;
+                const hitR = (window.innerWidth <= 768 ? 30 : 15) / sc.scale;
                 let hovering = false;
                 // Check star dots
                 for (const star of gameState.stars) {
@@ -2377,7 +2379,7 @@ export function setupStarMapCanvas() {
             const sc = gameState.skyChart;
             const wx = (x - sc.panX) / sc.scale;
             const wy = (y - sc.panY) / sc.scale;
-            const hitRadius = 15 / sc.scale;
+            const hitRadius = (window.innerWidth <= 768 ? 30 : 15) / sc.scale;
 
             // Check scan/decrypt box click (box is in world coords)
             if (gameState.selectedStarId !== null) {
@@ -2582,6 +2584,88 @@ export function setupStarMapCanvas() {
     window.addEventListener('mouseup', () => {
         gameState.skyChart.isDragging = false;
     });
+
+    // ─── Touch support for sky chart: pan + pinch-to-zoom + tap-to-select ────
+    let touchState = { active: false, startX: 0, startY: 0, lastDist: 0, isPinch: false, moved: false };
+
+    canvas.addEventListener('touchstart', (e) => {
+        if (gameState.starmapMode !== 'skychart') return;
+        const sc = gameState.skyChart;
+
+        if (e.touches.length === 2) {
+            // Pinch start
+            e.preventDefault();
+            touchState.isPinch = true;
+            touchState.lastDist = Math.hypot(
+                e.touches[1].clientX - e.touches[0].clientX,
+                e.touches[1].clientY - e.touches[0].clientY
+            );
+        } else if (e.touches.length === 1) {
+            // Single finger: pan or tap
+            touchState.active = true;
+            touchState.moved = false;
+            touchState.isPinch = false;
+            touchState.startX = e.touches[0].clientX;
+            touchState.startY = e.touches[0].clientY;
+            sc.lastPanX = sc.panX;
+            sc.lastPanY = sc.panY;
+        }
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+        if (gameState.starmapMode !== 'skychart') return;
+        const sc = gameState.skyChart;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        if (touchState.isPinch && e.touches.length === 2) {
+            e.preventDefault();
+            const newDist = Math.hypot(
+                e.touches[1].clientX - e.touches[0].clientX,
+                e.touches[1].clientY - e.touches[0].clientY
+            );
+            const midX = ((e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left) * scaleX;
+            const midY = ((e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top) * scaleY;
+
+            const oldScale = sc.scale;
+            const factor = newDist / touchState.lastDist;
+            sc.scale = Math.max(1, Math.min(4, sc.scale * factor));
+            sc.panX = midX - (midX - sc.panX) * (sc.scale / oldScale);
+            sc.panY = midY - (midY - sc.panY) * (sc.scale / oldScale);
+            clampPan(canvas.width, canvas.height);
+
+            touchState.lastDist = newDist;
+        } else if (touchState.active && e.touches.length === 1) {
+            const dx = e.touches[0].clientX - touchState.startX;
+            const dy = e.touches[0].clientY - touchState.startY;
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                touchState.moved = true;
+                e.preventDefault();
+                sc.panX = sc.lastPanX + dx * scaleX;
+                sc.panY = sc.lastPanY + dy * scaleY;
+                clampPan(canvas.width, canvas.height);
+            }
+        }
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+        if (gameState.starmapMode !== 'skychart') return;
+
+        // If it was a tap (no drag), simulate a click for star selection
+        if (touchState.active && !touchState.moved && !touchState.isPinch && e.changedTouches.length > 0) {
+            const touch = e.changedTouches[0];
+            const clickEvent = new MouseEvent('click', {
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                bubbles: true
+            });
+            canvas.dispatchEvent(clickEvent);
+        }
+
+        touchState.active = false;
+        touchState.isPinch = false;
+    }, { passive: true });
 }
 
 // Setup starmap mode toggle button and zoom controls
