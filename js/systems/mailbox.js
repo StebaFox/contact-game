@@ -37,11 +37,9 @@ export function closeMailbox() {
     // Day 2 cliffhanger: check if we need to advance the state machine
     if (gameState.day2CliffhangerPhase === 0 || gameState.day2CliffhangerPhase === 4) {
         const hasReadRelevant = checkCliffhangerEmailRead();
-        if (hasReadRelevant) {
-            // Dynamic import to avoid circular dependency with day-report.js
-            import('./day-report.js').then(module => {
-                module.advanceDay2Cliffhanger(gameState.day2CliffhangerPhase);
-            });
+        if (hasReadRelevant && advanceCliffhangerFn) {
+            const phase = gameState.day2CliffhangerPhase;
+            advanceCliffhangerFn(phase);
         }
     }
 }
@@ -281,4 +279,10 @@ let playSecurityBeep = () => {};
 // Set the security beep function (called from main.js to avoid circular imports)
 export function setSecurityBeepFunction(fn) {
     playSecurityBeep = fn;
+}
+
+// Cliffhanger advance function -- set from main.js to avoid circular dep with day-report.js
+let advanceCliffhangerFn = null;
+export function setAdvanceCliffhangerFn(fn) {
+    advanceCliffhangerFn = fn;
 }

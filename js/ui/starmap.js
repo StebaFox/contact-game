@@ -1202,7 +1202,7 @@ function selectDynamicStar(dStar) {
 
     // Check scan status
     const isComplete = gameState.scanResults.has(dStar.id) || gameState.contactedStars.has(dStar.id);
-    const isLockedDay2 = dStar.id === 'src7024' && gameState.currentDay < 3 && gameState.day2CliffhangerPhase !== 1;
+    const isLockedDay2 = dStar.id === 'src7024' && gameState.currentDay < 3 && gameState.day2CliffhangerPhase !== 1 && gameState.day2CliffhangerPhase < 5;
 
     // Enable scan confirmation if scannable
     gameState.showScanConfirm = !isComplete && !isLockedDay2;

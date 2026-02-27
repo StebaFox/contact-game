@@ -649,6 +649,9 @@ function devOpenInvestigation() {
 
 function devAddSRC7024() {
     if (addSRC7024Fn) addSRC7024Fn();
+    // Advance cliffhanger past the shutdown sequence so the star isn't locked
+    // and the crash-scan intercept doesn't fire
+    if (gameState.day2CliffhangerPhase < 5) gameState.day2CliffhangerPhase = 5;
     log('DEV: SRC-7024 added to starmap', 'highlight');
 }
 

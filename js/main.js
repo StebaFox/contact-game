@@ -57,9 +57,9 @@ import {
     getSfxVolume,
     loadVolumeSettings
 } from './systems/audio.js';
-import { openMailbox, closeMailbox, checkForNewMail } from './systems/mailbox.js';
+import { openMailbox, closeMailbox, checkForNewMail, setAdvanceCliffhangerFn } from './systems/mailbox.js';
 import { openJournal, closeJournal } from './systems/journal.js';
-import { openDayReport } from './systems/day-report.js';
+import { openDayReport, advanceDay2Cliffhanger } from './systems/day-report.js';
 import {
     initDishArray,
     handleKeypadPress,
@@ -143,6 +143,9 @@ function setupModuleConnections() {
         addNexusPoint: addNexusPoint,
         addGenesisPoint: addGenesisPoint
     });
+
+    // Mailbox needs cliffhanger advance from day-report (avoids circular dep + dynamic import)
+    setAdvanceCliffhangerFn(advanceDay2Cliffhanger);
 
     // Tuning minigame needs signal functions
     setTuningFunctions({

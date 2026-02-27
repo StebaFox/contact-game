@@ -449,7 +449,6 @@ function showFirstTimeHint(parentOverlay) {
     // Auto-dismiss after 8 seconds
     setTimeout(() => { if (hint.parentNode) dismiss(); }, 8000);
 
-    parentOverlay.style.position = 'relative';
     parentOverlay.appendChild(hint);
 }
 
